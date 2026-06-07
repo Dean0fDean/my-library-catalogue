@@ -81,6 +81,25 @@ async function ensureSchema() {
           kind TEXT NOT NULL,
           payload JSONB NOT NULL,
           message TEXT NOT NULL DEFAULT '',
+          sender_read_at TIMESTAMPTZ,
+          recipient_read_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        ALTER TABLE library_shares
+        ADD COLUMN IF NOT EXISTS sender_read_at TIMESTAMPTZ
+      `;
+      await sql`
+        ALTER TABLE library_shares
+        ADD COLUMN IF NOT EXISTS recipient_read_at TIMESTAMPTZ
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_share_comments (
+          id UUID PRIMARY KEY,
+          share_id UUID NOT NULL REFERENCES library_shares(id) ON DELETE CASCADE,
+          author_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          comment TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
@@ -432,11 +451,19 @@ export default async function handler(request, response) {
         SELECT follower_id, following_id, created_at FROM library_follows
       `;
       const shares = await sql`
-        SELECT id, sender_id, recipient_id, kind, payload, message, created_at
+        SELECT id, sender_id, recipient_id, kind, payload, message,
+               sender_read_at, recipient_read_at, created_at
         FROM library_shares
-        WHERE recipient_id = ${user.id}
+        WHERE recipient_id = ${user.id} OR sender_id = ${user.id}
         ORDER BY created_at DESC
         LIMIT 100
+      `;
+      const comments = await sql`
+        SELECT c.id, c.share_id, c.author_id, c.comment, c.created_at
+        FROM library_share_comments c
+        JOIN library_shares s ON s.id = c.share_id
+        WHERE s.recipient_id = ${user.id} OR s.sender_id = ${user.id}
+        ORDER BY c.created_at
       `;
       return json(response, 200, {
         accounts: users.map((item) => ({
@@ -460,7 +487,17 @@ export default async function handler(request, response) {
           kind: item.kind,
           payload: item.payload,
           message: item.message,
+          senderReadAt: item.sender_read_at,
+          recipientReadAt: item.recipient_read_at,
           createdAt: item.created_at,
+          comments: comments
+            .filter((comment) => comment.share_id === item.id)
+            .map((comment) => ({
+              id: comment.id,
+              authorId: comment.author_id,
+              comment: comment.comment,
+              createdAt: comment.created_at,
+            })),
         })),
       });
     }
@@ -515,15 +552,73 @@ export default async function handler(request, response) {
     if (action === "share" && request.method === "POST") {
       await sql`
         INSERT INTO library_shares (
-          id, sender_id, recipient_id, kind, payload, message
+          id, sender_id, recipient_id, kind, payload, message, sender_read_at
         )
         VALUES (
           ${crypto.randomUUID()}, ${user.id}, ${String(body.recipientId || "")},
           ${String(body.kind || "")}, ${JSON.stringify(body.payload || {})}::jsonb,
-          ${String(body.message || "").slice(0, 1000)}
+          ${String(body.message || "").slice(0, 1000)}, NOW()
         )
       `;
       return json(response, 201, { ok: true });
+    }
+
+    if (action === "share-comment" && request.method === "POST") {
+      const shareId = String(body.shareId || "");
+      const comment = String(body.comment || "").trim().slice(0, 1000);
+      if (!comment) {
+        return json(response, 400, { error: "Please enter a comment." });
+      }
+      const shares = await sql`
+        SELECT sender_id, recipient_id FROM library_shares
+        WHERE id = ${shareId}
+          AND (sender_id = ${user.id} OR recipient_id = ${user.id})
+        LIMIT 1
+      `;
+      if (!shares.length) {
+        return json(response, 404, { error: "That recommendation was not found." });
+      }
+      await sql`
+        INSERT INTO library_share_comments (id, share_id, author_id, comment)
+        VALUES (${crypto.randomUUID()}, ${shareId}, ${user.id}, ${comment})
+      `;
+      if (shares[0].sender_id === user.id) {
+        await sql`
+          UPDATE library_shares
+          SET sender_read_at = NOW(), recipient_read_at = NULL
+          WHERE id = ${shareId}
+        `;
+      } else {
+        await sql`
+          UPDATE library_shares
+          SET recipient_read_at = NOW(), sender_read_at = NULL
+          WHERE id = ${shareId}
+        `;
+      }
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "share-read" && request.method === "POST") {
+      const shareId = String(body.shareId || "");
+      const shares = await sql`
+        SELECT sender_id, recipient_id FROM library_shares
+        WHERE id = ${shareId}
+          AND (sender_id = ${user.id} OR recipient_id = ${user.id})
+        LIMIT 1
+      `;
+      if (!shares.length) {
+        return json(response, 404, { error: "That recommendation was not found." });
+      }
+      if (shares[0].sender_id === user.id) {
+        await sql`
+          UPDATE library_shares SET sender_read_at = NOW() WHERE id = ${shareId}
+        `;
+      } else {
+        await sql`
+          UPDATE library_shares SET recipient_read_at = NOW() WHERE id = ${shareId}
+        `;
+      }
+      return json(response, 200, { ok: true });
     }
 
     if (action === "delete-user" && request.method === "POST") {
