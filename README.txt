@@ -11,6 +11,9 @@ the normal image picker.
 Accounts, public profiles, follow relationships, recommendations, shared
 passages, and summary reading statistics use the shared online database. This
 allows the same account to log in on mobile and lets readers find one another.
+Signed-in readers can also browse one another's book catalogues and filter
+them by title, author, genre, or reading status. Reading logs and reflections
+remain private unless a passage is deliberately shared.
 
 The first account created in the online database is the administrator. Only
 that account can see the Community admin controls.
