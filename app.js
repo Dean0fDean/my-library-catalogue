@@ -123,7 +123,8 @@ let books = loadArray(STORAGE_KEY);
 let readingLog = loadArray(LOG_STORAGE_KEY);
 let passages = loadArray(PASSAGE_STORAGE_KEY);
 let wishlist = loadArray(WISHLIST_STORAGE_KEY);
-let accounts = loadArray(ACCOUNTS_STORAGE_KEY);
+const legacyAccountsSnapshot = loadArray(ACCOUNTS_STORAGE_KEY);
+let accounts = [...legacyAccountsSnapshot];
 let follows = loadArray(FOLLOWS_STORAGE_KEY);
 let shares = loadArray(SHARES_STORAGE_KEY);
 let openMenuId = null;
@@ -138,6 +139,8 @@ let currentAccount = null;
 let pendingProfileImage = "";
 let toastTimer;
 let statsSyncTimer;
+let dataSyncTimer;
+let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 
 async function apiRequest(action, options = {}) {
@@ -198,19 +201,27 @@ function saveCollection(key, value) {
 }
 
 function saveBooks() {
-  return saveCollection(STORAGE_KEY, books);
+  const saved = saveCollection(STORAGE_KEY, books);
+  if (saved) scheduleDataSync();
+  return saved;
 }
 
 function saveReadingLog() {
-  return saveCollection(LOG_STORAGE_KEY, readingLog);
+  const saved = saveCollection(LOG_STORAGE_KEY, readingLog);
+  if (saved) scheduleDataSync();
+  return saved;
 }
 
 function savePassages() {
-  return saveCollection(PASSAGE_STORAGE_KEY, passages);
+  const saved = saveCollection(PASSAGE_STORAGE_KEY, passages);
+  if (saved) scheduleDataSync();
+  return saved;
 }
 
 function saveWishlist() {
-  return saveCollection(WISHLIST_STORAGE_KEY, wishlist);
+  const saved = saveCollection(WISHLIST_STORAGE_KEY, wishlist);
+  if (saved) scheduleDataSync();
+  return saved;
 }
 
 function saveAccounts() {
@@ -437,6 +448,114 @@ async function syncCommunityStats() {
   }
 }
 
+function cloudSafeItem(item) {
+  const copy = { ...item };
+  if ("coverImage" in copy) copy.coverImage = "";
+  if ("image" in copy) copy.image = "";
+  return copy;
+}
+
+function cloudDataFor(accountId) {
+  return {
+    books: booksFor(accountId).map(cloudSafeItem),
+    readingLog: readingLog
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
+    passages: passages
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
+    wishlist: wishlist
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
+  };
+}
+
+function hasCloudData(data) {
+  return ["books", "readingLog", "passages", "wishlist"].some(
+    (key) => Array.isArray(data[key]) && data[key].length > 0,
+  );
+}
+
+async function syncAccountData() {
+  if (!currentAccount || !apiToken || isApplyingCloudData) return;
+  await apiRequest("data", {
+    method: "POST",
+    body: cloudDataFor(currentAccount.id),
+  });
+}
+
+function scheduleDataSync() {
+  if (!currentAccount || !apiToken || isApplyingCloudData) return;
+  window.clearTimeout(dataSyncTimer);
+  dataSyncTimer = window.setTimeout(() => {
+    syncAccountData().catch(() => {
+      showToast("Your changes are saved here and will sync when online.");
+    });
+  }, 700);
+}
+
+function replaceAccountItems(items, accountId, incoming) {
+  return [
+    ...items.filter((item) => item.ownerId !== accountId),
+    ...incoming.map((item) => ({ ...item, ownerId: accountId })),
+  ];
+}
+
+async function loadAccountData() {
+  if (!currentAccount || !apiToken) return;
+  const cloud = await apiRequest("data");
+  const local = cloudDataFor(currentAccount.id);
+  if (!hasCloudData(cloud) && hasCloudData(local)) {
+    await syncAccountData();
+    return;
+  }
+  if (!hasCloudData(cloud)) return;
+  isApplyingCloudData = true;
+  books = replaceAccountItems(books, currentAccount.id, cloud.books || []);
+  readingLog = replaceAccountItems(
+    readingLog,
+    currentAccount.id,
+    cloud.readingLog || [],
+  );
+  passages = replaceAccountItems(
+    passages,
+    currentAccount.id,
+    cloud.passages || [],
+  );
+  wishlist = replaceAccountItems(
+    wishlist,
+    currentAccount.id,
+    cloud.wishlist || [],
+  );
+  saveCollection(STORAGE_KEY, books);
+  saveCollection(LOG_STORAGE_KEY, readingLog);
+  saveCollection(PASSAGE_STORAGE_KEY, passages);
+  saveCollection(WISHLIST_STORAGE_KEY, wishlist);
+  isApplyingCloudData = false;
+}
+
+async function importLegacyUsers() {
+  if (
+    currentAccount?.role !== "admin" ||
+    legacyAccountsSnapshot.length < 2
+  ) {
+    return;
+  }
+  const data = {};
+  legacyAccountsSnapshot.forEach((account) => {
+    data[account.id] = cloudDataFor(account.id);
+  });
+  await apiRequest("import-users", {
+    method: "POST",
+    body: {
+      accounts: legacyAccountsSnapshot.filter(
+        (account) => normalize(account.username) !== normalize(currentAccount.username),
+      ),
+      data,
+    },
+  });
+}
+
 function scheduleStatsSync() {
   if (!currentAccount || !apiToken) return;
   window.clearTimeout(statsSyncTimer);
@@ -464,6 +583,12 @@ async function refreshCommunity() {
 async function showAuthenticatedApp(account) {
   currentAccount = account;
   localStorage.setItem(CURRENT_ACCOUNT_KEY, account.id);
+  try {
+    await importLegacyUsers();
+    await loadAccountData();
+  } catch (error) {
+    showToast(error.message);
+  }
   elements.authScreen.hidden = true;
   elements.appShell.hidden = false;
   updateProfileDisplay();
