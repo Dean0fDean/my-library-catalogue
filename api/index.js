@@ -31,6 +31,46 @@ function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+async function addNotification(userId, type, title, message, dedupeKey = null) {
+  await sql`
+    INSERT INTO library_notifications (
+      id, user_id, type, title, message, dedupe_key
+    )
+    VALUES (
+      ${crypto.randomUUID()}, ${userId}, ${type}, ${title}, ${message},
+      ${dedupeKey}
+    )
+    ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL
+    DO UPDATE SET
+      title = EXCLUDED.title,
+      message = EXCLUDED.message,
+      read_at = NULL,
+      created_at = NOW()
+  `;
+}
+
+async function unlockAchievement(userId, key, title, description) {
+  const rows = await sql`
+    INSERT INTO library_achievements (
+      id, user_id, achievement_key, title, description
+    )
+    VALUES (
+      ${crypto.randomUUID()}, ${userId}, ${key}, ${title}, ${description}
+    )
+    ON CONFLICT (user_id, achievement_key) DO NOTHING
+    RETURNING id
+  `;
+  if (rows.length) {
+    await addNotification(
+      userId,
+      "achievement",
+      `Achievement unlocked: ${title}`,
+      description,
+      `achievement:${key}`,
+    );
+  }
+}
+
 async function ensureSchema() {
   if (!schemaReady) {
     schemaReady = (async () => {
@@ -111,6 +151,34 @@ async function ensureSchema() {
           passages JSONB NOT NULL DEFAULT '[]'::jsonb,
           wishlist JSONB NOT NULL DEFAULT '[]'::jsonb,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_notifications (
+          id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          type TEXT NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          dedupe_key TEXT,
+          read_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS library_notifications_dedupe
+        ON library_notifications (user_id, dedupe_key)
+        WHERE dedupe_key IS NOT NULL
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_achievements (
+          id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          achievement_key TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE (user_id, achievement_key)
         )
       `;
     })();
@@ -413,6 +481,95 @@ export default async function handler(request, response) {
       return json(response, 200, { user: publicUser(rows[0]) });
     }
 
+    if (action === "profile-activity" && request.method === "GET") {
+      const notifications = await sql`
+        SELECT id, type, title, message, read_at, created_at
+        FROM library_notifications
+        WHERE user_id = ${user.id}
+        ORDER BY created_at DESC
+        LIMIT 100
+      `;
+      const achievements = await sql`
+        SELECT id, achievement_key, title, description, unlocked_at
+        FROM library_achievements
+        WHERE user_id = ${user.id}
+        ORDER BY unlocked_at DESC
+      `;
+      return json(response, 200, {
+        notifications: notifications.map((item) => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          message: item.message,
+          readAt: item.read_at,
+          createdAt: item.created_at,
+        })),
+        achievements: achievements.map((item) => ({
+          id: item.id,
+          key: item.achievement_key,
+          title: item.title,
+          description: item.description,
+          unlockedAt: item.unlocked_at,
+        })),
+      });
+    }
+
+    if (action === "notification-read" && request.method === "POST") {
+      if (body.all) {
+        await sql`
+          UPDATE library_notifications SET read_at = NOW()
+          WHERE user_id = ${user.id} AND read_at IS NULL
+        `;
+      } else {
+        await sql`
+          UPDATE library_notifications SET read_at = NOW()
+          WHERE id = ${String(body.notificationId || "")}
+            AND user_id = ${user.id}
+        `;
+      }
+      return json(response, 200, { ok: true });
+    }
+
+    if (action === "activity-snapshot" && request.method === "POST") {
+      const readBooks = Math.max(0, Number(body.readBooks) || 0);
+      const passages = Math.max(0, Number(body.passages) || 0);
+      const sessions = Math.max(0, Number(body.sessions) || 0);
+      const pages = Math.max(0, Number(body.pages) || 0);
+      const minutes = Math.max(0, Number(body.minutes) || 0);
+      if (readBooks >= 1) {
+        await unlockAchievement(user.id, "first-finish", "First finish", "Finished your first book.");
+      }
+      if (readBooks >= 5) {
+        await unlockAchievement(user.id, "five-finishes", "Five finished", "Finished five books in your catalogue.");
+      }
+      if (passages >= 1) {
+        await unlockAchievement(user.id, "first-passage", "Line keeper", "Saved your first passage.");
+      }
+      if (passages >= 10) {
+        await unlockAchievement(user.id, "passage-collector", "Passage collector", "Saved ten passages for future reference.");
+      }
+      if (sessions >= 1) {
+        await unlockAchievement(user.id, "first-session", "Reading rhythm", "Logged your first reading session.");
+      }
+      if (pages >= 100) {
+        await unlockAchievement(user.id, "hundred-pages", "Century reader", "Logged 100 pages of reading.");
+        await addNotification(
+          user.id, "insight", "Reading insight",
+          `You have logged ${pages} pages across ${sessions} reading sessions.`,
+          "insight:pages-100",
+        );
+      }
+      if (minutes >= 60) {
+        await unlockAchievement(user.id, "reading-hour", "Focused hour", "Logged at least one hour of reading.");
+        await addNotification(
+          user.id, "insight", "Time well read",
+          `Your reading log now contains ${minutes} minutes of focused reading.`,
+          "insight:minutes-60",
+        );
+      }
+      return json(response, 200, { ok: true });
+    }
+
     if (action === "stats" && request.method === "POST") {
       const recentBooks = Array.isArray(body.recentBooks)
         ? body.recentBooks.slice(0, 5)
@@ -550,22 +707,75 @@ export default async function handler(request, response) {
           INSERT INTO library_follows (follower_id, following_id)
           VALUES (${user.id}, ${targetId})
         `;
+        await addNotification(
+          targetId,
+          "follow",
+          "New follower",
+          `${user.username} started following you.`,
+          `follow:${user.id}`,
+        );
       }
       return json(response, 200, { following: !existing.length });
     }
 
     if (action === "share" && request.method === "POST") {
+      const shareId = crypto.randomUUID();
+      const recipientId = String(body.recipientId || "");
       await sql`
         INSERT INTO library_shares (
           id, sender_id, recipient_id, kind, payload, message, sender_read_at
         )
         VALUES (
-          ${crypto.randomUUID()}, ${user.id}, ${String(body.recipientId || "")},
+          ${shareId}, ${user.id}, ${recipientId},
           ${String(body.kind || "")}, ${JSON.stringify(body.payload || {})}::jsonb,
           ${String(body.message || "").slice(0, 1000)}, NOW()
         )
       `;
+      const itemTitle = String(body.payload?.title || "a reading item");
+      await addNotification(
+        recipientId,
+        body.kind === "book" ? "recommendation" : "passage",
+        body.kind === "book" ? "New book recommendation" : "New shared passage",
+        `${user.username} shared ${itemTitle} with you.`,
+        `share:${shareId}`,
+      );
+      if (body.kind === "book") {
+        await unlockAchievement(
+          user.id,
+          "first-recommendation",
+          "Book matchmaker",
+          "Shared your first book recommendation.",
+        );
+      }
       return json(response, 201, { ok: true });
+    }
+
+    if (action === "recommendation-wishlist" && request.method === "POST") {
+      const shareId = String(body.shareId || "");
+      const shares = await sql`
+        SELECT sender_id, recipient_id, payload
+        FROM library_shares
+        WHERE id = ${shareId} AND recipient_id = ${user.id} AND kind = 'book'
+        LIMIT 1
+      `;
+      if (!shares.length) {
+        return json(response, 404, { error: "That recommendation was not found." });
+      }
+      const title = String(shares[0].payload?.title || "the recommended book");
+      await addNotification(
+        shares[0].sender_id,
+        "recommendation",
+        "Recommendation saved",
+        `${user.username} added ${title} to their wishlist.`,
+        `recommendation-wishlist:${shareId}`,
+      );
+      await unlockAchievement(
+        shares[0].sender_id,
+        "recommendation-wishlisted",
+        "Trusted recommendation",
+        "Another reader added your recommendation to their wishlist.",
+      );
+      return json(response, 200, { ok: true });
     }
 
     if (action === "share-comment" && request.method === "POST") {
@@ -575,7 +785,7 @@ export default async function handler(request, response) {
         return json(response, 400, { error: "Please enter a comment." });
       }
       const shares = await sql`
-        SELECT sender_id, recipient_id FROM library_shares
+        SELECT sender_id, recipient_id, payload FROM library_shares
         WHERE id = ${shareId}
           AND (sender_id = ${user.id} OR recipient_id = ${user.id})
         LIMIT 1
@@ -600,6 +810,19 @@ export default async function handler(request, response) {
           WHERE id = ${shareId}
         `;
       }
+      const otherUserId =
+        shares[0].sender_id === user.id
+          ? shares[0].recipient_id
+          : shares[0].sender_id;
+      await addNotification(
+        otherUserId,
+        "recommendation",
+        "New recommendation response",
+        `${user.username} responded about ${String(
+          shares[0].payload?.title || "a shared reading item",
+        )}.`,
+        `share-comment:${shareId}`,
+      );
       return json(response, 201, { ok: true });
     }
 
