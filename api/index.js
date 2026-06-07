@@ -480,25 +480,30 @@ export default async function handler(request, response) {
           followingId: item.following_id,
           createdAt: item.created_at,
         })),
-        shares: shares.map((item) => ({
-          id: item.id,
-          senderId: item.sender_id,
-          recipientId: item.recipient_id,
-          kind: item.kind,
-          payload: item.payload,
-          message: item.message,
-          senderReadAt: item.sender_read_at,
-          recipientReadAt: item.recipient_read_at,
-          createdAt: item.created_at,
-          comments: comments
-            .filter((comment) => comment.share_id === item.id)
-            .map((comment) => ({
+        shares: shares.map((item) => {
+          const shareComments = comments.filter(
+            (comment) => comment.share_id === item.id,
+          );
+          return {
+            id: item.id,
+            senderId: item.sender_id,
+            recipientId: item.recipient_id,
+            kind: item.kind,
+            payload: item.payload,
+            message: item.message,
+            senderReadAt:
+              item.sender_read_at ||
+              (shareComments.length ? null : item.created_at),
+            recipientReadAt: item.recipient_read_at,
+            createdAt: item.created_at,
+            comments: shareComments.map((comment) => ({
               id: comment.id,
               authorId: comment.author_id,
               comment: comment.comment,
               createdAt: comment.created_at,
             })),
-        })),
+          };
+        }),
       });
     }
 
