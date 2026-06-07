@@ -84,6 +84,16 @@ async function ensureSchema() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_data (
+          user_id UUID PRIMARY KEY REFERENCES library_users(id) ON DELETE CASCADE,
+          books JSONB NOT NULL DEFAULT '[]'::jsonb,
+          reading_log JSONB NOT NULL DEFAULT '[]'::jsonb,
+          passages JSONB NOT NULL DEFAULT '[]'::jsonb,
+          wishlist JSONB NOT NULL DEFAULT '[]'::jsonb,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
     })();
   }
   return schemaReady;
@@ -178,6 +188,7 @@ async function createUser(body, legacy = false) {
     RETURNING *
   `;
   await sql`INSERT INTO library_stats (user_id) VALUES (${id})`;
+  await sql`INSERT INTO library_data (user_id) VALUES (${id})`;
   const token = await createSession(id);
   return { user: publicUser(rows[0]), token };
 }
@@ -233,6 +244,133 @@ export default async function handler(request, response) {
 
     if (action === "session" && request.method === "GET") {
       return json(response, 200, { user: publicUser(user) });
+    }
+
+    if (action === "import-users" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      const legacyAccounts = Array.isArray(body.accounts)
+        ? body.accounts.slice(0, 250)
+        : [];
+      let imported = 0;
+      for (const account of legacyAccounts) {
+        const username = String(account.username || "").trim();
+        const normalized = normalize(username);
+        const salt = String(account.salt || "");
+        const passwordHash = String(account.passwordHash || "");
+        if (
+          username.length < 2 ||
+          !/^[a-f0-9]{32}$/i.test(salt) ||
+          !/^[a-f0-9]{64}$/i.test(passwordHash)
+        ) {
+          continue;
+        }
+        const existing = await sql`
+          SELECT id FROM library_users WHERE username_normalized = ${normalized}
+        `;
+        if (existing.length) continue;
+        const id =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            String(account.id || ""),
+          )
+            ? String(account.id)
+            : crypto.randomUUID();
+        await sql`
+          INSERT INTO library_users (
+            id, username, username_normalized, password_hash, password_salt,
+            password_scheme, profile_image, role, created_at
+          )
+          VALUES (
+            ${id}, ${username}, ${normalized}, ${passwordHash}, ${salt},
+            'legacy-sha256', ${String(account.profileImage || "")}, 'user',
+            ${account.createdAt || new Date().toISOString()}
+          )
+        `;
+        await sql`INSERT INTO library_stats (user_id) VALUES (${id})`;
+        const accountData = body.data?.[account.id] || {};
+        const importedBooks = Array.isArray(accountData.books)
+          ? accountData.books
+          : [];
+        const importedLogs = Array.isArray(accountData.readingLog)
+          ? accountData.readingLog
+          : [];
+        const importedPassages = Array.isArray(accountData.passages)
+          ? accountData.passages
+          : [];
+        const importedWishlist = Array.isArray(accountData.wishlist)
+          ? accountData.wishlist
+          : [];
+        await sql`
+          INSERT INTO library_data (
+            user_id, books, reading_log, passages, wishlist
+          )
+          VALUES (
+            ${id}, ${JSON.stringify(importedBooks)}::jsonb,
+            ${JSON.stringify(importedLogs)}::jsonb,
+            ${JSON.stringify(importedPassages)}::jsonb,
+            ${JSON.stringify(importedWishlist)}::jsonb
+          )
+        `;
+        const readCount = importedBooks.filter(
+          (book) => book.status === "read",
+        ).length;
+        await sql`
+          UPDATE library_stats SET
+            owned = ${importedBooks.length},
+            read_count = ${readCount},
+            unread = ${importedBooks.length - readCount},
+            recent_books = ${JSON.stringify(
+              importedBooks.slice(0, 5).map(({ title, author, status }) => ({
+                title,
+                author,
+                status,
+              })),
+            )}::jsonb,
+            updated_at = NOW()
+          WHERE user_id = ${id}
+        `;
+        imported += 1;
+      }
+      return json(response, 200, { imported });
+    }
+
+    if (action === "data" && request.method === "GET") {
+      const rows = await sql`
+        SELECT books, reading_log, passages, wishlist, updated_at
+        FROM library_data WHERE user_id = ${user.id}
+      `;
+      const row = rows[0] || {};
+      return json(response, 200, {
+        books: row.books || [],
+        readingLog: row.reading_log || [],
+        passages: row.passages || [],
+        wishlist: row.wishlist || [],
+        updatedAt: row.updated_at || null,
+      });
+    }
+
+    if (action === "data" && request.method === "POST") {
+      const cleanArray = (value) =>
+        Array.isArray(value) ? value.slice(0, 5000) : [];
+      await sql`
+        INSERT INTO library_data (
+          user_id, books, reading_log, passages, wishlist, updated_at
+        )
+        VALUES (
+          ${user.id}, ${JSON.stringify(cleanArray(body.books))}::jsonb,
+          ${JSON.stringify(cleanArray(body.readingLog))}::jsonb,
+          ${JSON.stringify(cleanArray(body.passages))}::jsonb,
+          ${JSON.stringify(cleanArray(body.wishlist))}::jsonb, NOW()
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+          books = EXCLUDED.books,
+          reading_log = EXCLUDED.reading_log,
+          passages = EXCLUDED.passages,
+          wishlist = EXCLUDED.wishlist,
+          updated_at = NOW()
+      `;
+      return json(response, 200, { ok: true });
     }
 
     if (action === "profile" && request.method === "POST") {
