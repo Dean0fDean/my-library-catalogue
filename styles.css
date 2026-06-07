@@ -1444,6 +1444,142 @@ fieldset {
   margin: 0 auto;
 }
 
+.profile-dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 4rem auto 0;
+}
+
+.profile-panel {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(23, 42, 34, 0.13);
+}
+
+.profile-achievement-panel {
+  grid-column: 1 / -1;
+}
+
+.profile-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.profile-panel-heading h3 {
+  margin: 0.25rem 0 0;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+.profile-panel-heading button,
+.profile-notification button {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(23, 42, 34, 0.24);
+  color: var(--forest);
+  background: transparent;
+  font: 700 0.56rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.profile-insight-grid,
+.profile-achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+}
+
+.profile-insight-grid > div {
+  padding: 1rem;
+  color: var(--paper);
+  background: var(--forest);
+}
+
+.profile-insight-grid strong,
+.profile-insight-grid span {
+  display: block;
+}
+
+.profile-insight-grid strong {
+  margin-bottom: 0.35rem;
+  color: var(--gold);
+  font-size: 1.45rem;
+}
+
+.profile-insight-grid span {
+  font-size: 0.72rem;
+}
+
+.profile-notification-list {
+  display: grid;
+  gap: 0.55rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.profile-notification {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  background: rgba(23, 63, 49, 0.04);
+  border-left: 3px solid transparent;
+}
+
+.profile-notification.unread {
+  background: rgba(201, 137, 69, 0.12);
+  border-left-color: var(--gold);
+}
+
+.profile-notification-icon,
+.achievement-medal {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: var(--paper);
+  background: var(--forest);
+  border-radius: 50%;
+  font: 700 0.8rem/1 Arial, sans-serif;
+}
+
+.profile-notification p,
+.profile-achievement p {
+  margin: 0.25rem 0;
+  color: rgba(23, 42, 34, 0.65);
+  line-height: 1.4;
+}
+
+.profile-notification time,
+.profile-achievement time {
+  color: rgba(23, 42, 34, 0.48);
+  font-size: 0.68rem;
+}
+
+.profile-achievement {
+  padding: 1rem;
+  background: rgba(201, 137, 69, 0.1);
+  border: 1px solid rgba(201, 137, 69, 0.25);
+}
+
+.profile-achievement .achievement-medal {
+  margin-bottom: 0.75rem;
+  color: var(--forest);
+  background: var(--gold);
+}
+
+.profile-panel-empty {
+  padding: 1.5rem 0;
+  color: rgba(23, 42, 34, 0.55);
+  font-style: italic;
+}
+
 .profile-photo-wrap {
   width: 210px;
   height: 210px;
@@ -1564,6 +1700,28 @@ fieldset {
   .profile-card {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+
+  .profile-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-achievement-panel {
+    grid-column: auto;
+  }
+
+  .profile-insight-grid,
+  .profile-achievement-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .profile-notification {
+    grid-template-columns: auto 1fr;
+  }
+
+  .profile-notification button {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .profile-photo-wrap {
