@@ -606,7 +606,30 @@
           <div class="reader-profile-stats" id="reader-profile-stats"></div>
         </div>
         <div class="reader-profile-books">
-          <p class="eyebrow">RECENTLY ADDED</p>
+          <div class="reader-catalogue-heading">
+            <div>
+              <p class="eyebrow">BOOK CATALOGUE</p>
+              <p id="reader-catalogue-count">Loading collection...</p>
+            </div>
+            <div class="reader-catalogue-tools">
+              <label>
+                <span class="sr-only">Search this catalogue</span>
+                <input
+                  id="reader-catalogue-search"
+                  type="search"
+                  placeholder="Search title, author, or genre"
+                />
+              </label>
+              <label>
+                <span class="sr-only">Filter by reading status</span>
+                <select id="reader-catalogue-status">
+                  <option value="all">All books</option>
+                  <option value="read">Read</option>
+                  <option value="unread">To be read</option>
+                </select>
+              </label>
+            </div>
+          </div>
           <div id="reader-profile-book-list"></div>
         </div>
       </div>
