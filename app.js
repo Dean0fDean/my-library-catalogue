@@ -97,6 +97,11 @@ const elements = {
   profilePreview: document.querySelector("#profile-preview"),
   profilePreviewImage: document.querySelector("#profile-preview-image"),
   profileError: document.querySelector("#profile-error"),
+  profileInsightGrid: document.querySelector("#profile-insight-grid"),
+  profileNotificationCount: document.querySelector("#profile-notification-count"),
+  profileNotificationList: document.querySelector("#profile-notification-list"),
+  markNotificationsRead: document.querySelector("#mark-notifications-read"),
+  profileAchievementGrid: document.querySelector("#profile-achievement-grid"),
   readerGrid: document.querySelector("#reader-grid"),
   readerEmptyState: document.querySelector("#reader-empty-state"),
   shareFeed: document.querySelector("#share-feed"),
@@ -147,6 +152,8 @@ let dataSyncTimer;
 let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 let activeReaderCatalogue = [];
+let profileNotifications = [];
+let profileAchievements = [];
 
 async function apiRequest(action, options = {}) {
   const response = await fetch(
@@ -435,6 +442,113 @@ function updateProfileDisplay() {
     elements.profilePhoto.removeAttribute("src");
     elements.profilePlaceholder.hidden = false;
   }
+  renderProfileInsights();
+  renderProfileActivity();
+}
+
+function readingSnapshot() {
+  const accountBooks = ownedByCurrent(books);
+  const accountLog = ownedByCurrent(readingLog);
+  return {
+    ownedBooks: accountBooks.length,
+    readBooks: accountBooks.filter((book) => book.status === "read").length,
+    passages: ownedByCurrent(passages).length,
+    sessions: accountLog.length,
+    pages: accountLog.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0),
+    minutes: accountLog.reduce((total, entry) => total + (Number(entry.durationMinutes) || 0), 0),
+  };
+}
+
+function renderProfileInsights() {
+  if (!currentAccount) return;
+  const snapshot = readingSnapshot();
+  const averagePages = snapshot.sessions
+    ? Math.round(snapshot.pages / snapshot.sessions)
+    : 0;
+  elements.profileInsightGrid.innerHTML = `
+    <div><strong>${snapshot.readBooks}</strong><span>Books finished</span></div>
+    <div><strong>${snapshot.pages}</strong><span>Pages logged</span></div>
+    <div><strong>${formatDuration(snapshot.minutes)}</strong><span>Reading time</span></div>
+    <div><strong>${averagePages}</strong><span>Pages per session</span></div>
+  `;
+}
+
+function notificationIcon(type) {
+  return {
+    achievement: "A",
+    follow: "+",
+    recommendation: "R",
+    passage: "\"",
+    insight: "i",
+  }[type] || "i";
+}
+
+function renderProfileActivity() {
+  if (!currentAccount) return;
+  const unread = profileNotifications.filter((item) => !item.readAt).length;
+  elements.profileNotificationCount.textContent = unread ? `(${unread})` : "";
+  elements.markNotificationsRead.hidden = unread === 0;
+  elements.profileNotificationList.innerHTML = profileNotifications.length
+    ? profileNotifications
+        .map(
+          (item) => `
+            <article class="profile-notification ${item.readAt ? "" : "unread"}">
+              <span class="profile-notification-icon">${notificationIcon(item.type)}</span>
+              <div>
+                <strong>${escapeHtml(item.title)}</strong>
+                <p>${escapeHtml(item.message)}</p>
+                <time>${new Date(item.createdAt).toLocaleString()}</time>
+              </div>
+              ${
+                item.readAt
+                  ? ""
+                  : `<button type="button" data-notification-id="${item.id}">Mark read</button>`
+              }
+            </article>
+          `,
+        )
+        .join("")
+    : '<p class="profile-panel-empty">No notifications yet.</p>';
+  elements.profileAchievementGrid.innerHTML = profileAchievements.length
+    ? profileAchievements
+        .map(
+          (item) => `
+            <article class="profile-achievement">
+              <span class="achievement-medal">A</span>
+              <strong>${escapeHtml(item.title)}</strong>
+              <p>${escapeHtml(item.description)}</p>
+              <time>${new Date(item.unlockedAt).toLocaleDateString()}</time>
+            </article>
+          `,
+        )
+        .join("")
+    : '<p class="profile-panel-empty">Your reading milestones will appear here.</p>';
+}
+
+async function refreshProfileActivity() {
+  if (!currentAccount || !apiToken) return;
+  const snapshot = readingSnapshot();
+  await apiRequest("activity-snapshot", {
+    method: "POST",
+    body: snapshot,
+  });
+  const data = await apiRequest("profile-activity");
+  profileNotifications = data.notifications || [];
+  profileAchievements = data.achievements || [];
+  renderProfileInsights();
+  renderProfileActivity();
+}
+
+async function markNotificationsRead(notificationId = "") {
+  try {
+    await apiRequest("notification-read", {
+      method: "POST",
+      body: notificationId ? { notificationId } : { all: true },
+    });
+    await refreshProfileActivity();
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 async function syncCommunityStats() {
@@ -603,6 +717,7 @@ async function showAuthenticatedApp(account) {
   renderPassages();
   renderCommunity();
   await refreshCommunity();
+  await refreshProfileActivity().catch((error) => showToast(error.message));
 }
 
 function showLoginScreen() {
@@ -926,6 +1041,7 @@ async function addBook(formData) {
   scheduleStatsSync();
   elements.dialog.close();
   showToast(`"${book.title}" added to your library.`);
+  refreshProfileActivity().catch(() => {});
 }
 
 function toggleStatus(id) {
@@ -942,6 +1058,7 @@ function toggleStatus(id) {
       ? `Marked "${book.title}" as read.`
       : `Moved "${book.title}" back to your reading list.`,
   );
+  refreshProfileActivity().catch(() => {});
 }
 
 function rateBook(id, rating) {
@@ -1440,6 +1557,7 @@ function addReadingSession(formData) {
   renderReadingLog();
   elements.logDialog.close();
   showToast(`Reading session for "${entry.title}" saved.`);
+  refreshProfileActivity().catch(() => {});
 }
 
 function removeReadingSession(id) {
@@ -1729,6 +1847,7 @@ function addPassage(formData) {
   renderPassages();
   elements.passageDialog.close();
   showToast(`Passage from "${passage.title}" saved.`);
+  refreshProfileActivity().catch(() => {});
 }
 
 function removePassage(id) {
@@ -1947,7 +2066,7 @@ async function commentOnRecommendation(shareId, comment) {
   }
 }
 
-function addRecommendationToWishlist(shareId) {
+async function addRecommendationToWishlist(shareId) {
   const share = shares.find(
     (item) =>
       item.id === shareId &&
@@ -1976,6 +2095,15 @@ function addRecommendationToWishlist(shareId) {
   saveWishlist();
   renderWishlist();
   renderShareFeed();
+  try {
+    await apiRequest("recommendation-wishlist", {
+      method: "POST",
+      body: { shareId },
+    });
+  } catch {
+    // The wishlist remains saved if the social notification is briefly offline.
+  }
+  await refreshProfileActivity().catch(() => {});
   showToast(`"${share.payload.title}" added to your wishlist.`);
 }
 
@@ -2205,6 +2333,7 @@ async function shareItem(formData) {
     });
     await loadCommunity();
     renderCommunity();
+    await refreshProfileActivity().catch(() => {});
     elements.shareDialog.close();
     showToast(`Shared with ${recipient.username}.`);
   } catch (error) {
@@ -2461,6 +2590,15 @@ elements.shareFeed.addEventListener("click", (event) => {
   if (button?.dataset.shareAction === "wishlist") {
     addRecommendationToWishlist(button.dataset.id);
   }
+});
+
+elements.profileNotificationList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-notification-id]");
+  if (button) markNotificationsRead(button.dataset.notificationId);
+});
+
+elements.markNotificationsRead.addEventListener("click", () => {
+  markNotificationsRead();
 });
 
 elements.adminAccountList.addEventListener("click", (event) => {
