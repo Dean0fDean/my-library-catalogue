@@ -465,6 +465,32 @@ export default async function handler(request, response) {
       });
     }
 
+    if (action === "catalogue" && request.method === "POST") {
+      const accountId = String(body.accountId || "");
+      const rows = await sql`
+        SELECT d.books
+        FROM library_users u
+        LEFT JOIN library_data d ON d.user_id = u.id
+        WHERE u.id = ${accountId}
+        LIMIT 1
+      `;
+      if (!rows.length) {
+        return json(response, 404, { error: "That reader could not be found." });
+      }
+      const sourceBooks = Array.isArray(rows[0].books) ? rows[0].books : [];
+      const books = sourceBooks.slice(0, 5000).map((book) => ({
+        id: String(book.id || ""),
+        title: String(book.title || "Untitled"),
+        author: String(book.author || "Unknown author"),
+        genre: String(book.genre || "Uncategorized"),
+        status: book.status === "read" ? "read" : "unread",
+        rating: Math.round(
+          Math.min(5, Math.max(0, Number(book.rating) || 0)),
+        ),
+      }));
+      return json(response, 200, { books });
+    }
+
     if (action === "follow" && request.method === "POST") {
       const targetId = String(body.accountId || "");
       if (targetId === user.id) return json(response, 400, { error: "You cannot follow yourself." });
