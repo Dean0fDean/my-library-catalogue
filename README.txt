@@ -18,3 +18,5 @@ that account can see the Community admin controls.
 For privacy and storage efficiency, a reader's full catalogue and unshared
 photos do not automatically move between devices. Public profile statistics
 and explicitly shared recommendations or passages do sync.
+
+Deployment refreshed after shared database connection.
