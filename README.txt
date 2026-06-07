@@ -19,6 +19,10 @@ Book recommendations support private comments between the sender and
 recipient, read/unread receipts, collection checks, and one-click wishlist
 saving when the recipient does not already own the book.
 
+Each profile includes persistent notifications, reading insight summaries,
+and achievements for milestones such as finishing books, logging reading,
+saving passages, sharing recommendations, and inspiring wishlist additions.
+
 The first account created in the online database is the administrator. Only
 that account can see the Community admin controls.
 
