@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A personal digital library catalogue and reading habit log."
+    />
+    <title>My Library</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="auth-screen" id="auth-screen">
+      <section class="auth-card">
+        <div class="auth-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span>MY LIBRARY</span>
+        </div>
+        <div class="auth-copy">
+          <p class="eyebrow">YOUR READING LIFE</p>
+          <h1>Welcome to<br />your library.</h1>
+          <p>
+            Sign in to return to your collection, reading log, and saved
+            passages.
+          </p>
+        </div>
+
+        <div class="auth-panel">
+          <div class="auth-tabs" role="tablist" aria-label="Account access">
+            <button
+              class="auth-tab active"
+              id="login-tab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              data-auth-view="login"
+            >
+              Log in
+            </button>
+            <button
+              class="auth-tab"
+              id="signup-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              data-auth-view="signup"
+            >
+              Create account
+            </button>
+          </div>
+
+          <form id="login-form" class="auth-form">
+            <label>
+              <span>Username</span>
+              <input
+                id="login-username"
+                name="username"
+                type="text"
+                autocomplete="username"
+                required
+              />
+            </label>
+            <label>
+              <span>Password</span>
+              <input
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <p class="form-error" id="login-error" role="alert"></p>
+            <button class="primary-button submit-button" type="submit">
+              Log in
+            </button>
+          </form>
+
+          <form id="signup-form" class="auth-form" hidden>
+            <label>
+              <span>Username</span>
+              <input
+                id="signup-username"
+                name="username"
+                type="text"
+                minlength="3"
+                maxlength="30"
+                autocomplete="username"
+                required
+              />
+            </label>
+            <label>
+              <span>Password</span>
+              <input
+                name="password"
+                type="password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+              />
+            </label>
+            <label>
+              <span>Confirm password</span>
+              <input
+                name="confirmPassword"
+                type="password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+              />
+            </label>
+            <p class="auth-note">
+              This is a local account for this browser and device.
+            </p>
+            <p class="form-error" id="signup-error" role="alert"></p>
+            <button class="primary-button submit-button" type="submit">
+              Create my account
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <div class="page-shell" id="app-shell" hidden>
+      <header class="site-header">
+        <a class="brand" href="#" aria-label="My Library home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span>MY LIBRARY</span>
+        </a>
+        <nav class="site-nav" aria-label="Library sections">
+          <a href="#collection">Collection</a>
+          <a href="#wishlist">Wishlist</a>
+          <a href="#reading-log">Reading log</a>
+          <a href="#passages">Passages</a>
+          <a href="#community">Community</a>
+          <a href="#profile">Profile</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">YOUR PERSONAL COLLECTION</p>
+            <h1>Every book has<br />a place here.</h1>
+            <p class="hero-intro">
+              Catalogue the stories on your shelves, remember what you have
+              read, and find your next book.
+            </p>
+          </div>
+
+          <aside class="stats-card" aria-label="Library statistics">
+            <div class="stat">
+              <strong id="total-count">0</strong>
+              <span>BOOKS OWNED</span>
+            </div>
+            <div class="stat">
+              <strong id="read-count">0</strong>
+              <span>READ</span>
+            </div>
+            <div class="stat">
+              <strong id="unread-count">0</strong>
+              <span>TO BE READ</span>
+            </div>
+          </aside>
+        </section>
+
+        <section
+          class="collection-section"
+          id="collection"
+          aria-labelledby="collection-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">THE BOOKSHELF</p>
+              <h2 id="collection-title">My collection</h2>
+            </div>
+            <button class="primary-button" id="open-form-button" type="button">
+              <span aria-hidden="true">+</span> Add a book
+            </button>
+          </div>
+
+          <div class="toolbar">
+            <label class="search-box">
+              <span class="search-icon" aria-hidden="true"></span>
+              <span class="sr-only">Search your books</span>
+              <input
+                id="search-input"
+                type="search"
+                placeholder="Search by title or author..."
+                autocomplete="off"
+              />
+            </label>
+            <label class="select-wrap">
+              <span class="sr-only">Filter by genre</span>
+              <select id="genre-filter">
+                <option value="all">All genres</option>
+              </select>
+            </label>
+            <label class="select-wrap">
+              <span class="sr-only">Filter by reading status</span>
+              <select id="status-filter">
+                <option value="all">All books</option>
+                <option value="read">Read</option>
+                <option value="unread">To be read</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="book-grid" class="book-grid" aria-live="polite"></div>
+
+          <div id="empty-state" class="empty-state" hidden>
+            <div class="empty-books" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <h3 id="empty-title">Your shelves are waiting</h3>
+            <p id="empty-message">
+              Add your first book and begin building your personal catalogue.
+            </p>
+            <button class="text-button" id="empty-add-button" type="button">
+              Add your first book <span aria-hidden="true">-&gt;</span>
+            </button>
+          </div>
+        </section>
+
+        <section
+          class="wishlist-section"
+          id="wishlist"
+          aria-labelledby="wishlist-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">THE NEXT SHELF</p>
+              <h2 id="wishlist-title">Want to buy</h2>
+              <p class="wishlist-intro">
+                Keep track of the books you are considering before they join
+                your collection.
+              </p>
+            </div>
+            <button
+              class="primary-button"
+              id="open-wishlist-button"
+              type="button"
+            >
+              <span aria-hidden="true">+</span> Add to wishlist
+            </button>
+          </div>
+
+          <div class="wishlist-summary">
+            <strong id="wishlist-count">0</strong>
+            <span id="wishlist-count-label">books waiting</span>
+          </div>
+
+          <div id="wishlist-grid" class="wishlist-grid" aria-live="polite"></div>
+          <div id="wishlist-empty-state" class="wishlist-empty-state">
+            <div class="wishlist-icon" aria-hidden="true">+</div>
+            <h3>Your future shelf is empty.</h3>
+            <p>Save a book here the next time something catches your eye.</p>
+            <button
+              class="text-button"
+              id="empty-wishlist-button"
+              type="button"
+            >
+              Add a book to buy <span aria-hidden="true">-&gt;</span>
+            </button>
+          </div>
+        </section>
+
+        <section
+          class="reading-section"
+          id="reading-log"
+          aria-labelledby="reading-log-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">READING RHYTHMS</p>
+              <h2 id="reading-log-title">My reading log</h2>
+              <p class="section-intro">
+                Record each session and discover the patterns behind your
+                reading life.
+              </p>
+            </div>
+            <button
+              class="primary-button light-button"
+              id="open-log-button"
+              type="button"
+            >
+              <span aria-hidden="true">+</span> Log a session
+            </button>
+          </div>
+
+          <div class="insight-grid" aria-label="Reading habit insights">
+            <article class="insight-card">
+              <span>Total reading time</span>
+              <strong id="total-time-insight">0m</strong>
+              <small id="session-count-insight">No sessions yet</small>
+            </article>
+            <article class="insight-card">
+              <span>Pages read</span>
+              <strong id="pages-insight">0</strong>
+              <small id="pages-week-insight">0 in the last 7 days</small>
+            </article>
+            <article class="insight-card">
+              <span>Reading pace</span>
+              <strong id="pace-insight">--</strong>
+              <small>Average pages per hour</small>
+            </article>
+            <article class="insight-card">
+              <span>Average session</span>
+              <strong id="average-insight">--</strong>
+              <small id="streak-insight">Start your first streak</small>
+            </article>
+          </div>
+
+          <div class="habit-panel">
+            <div class="weekly-chart-wrap">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">LAST 7 DAYS</p>
+                  <h3>Reading consistency</h3>
+                </div>
+                <span id="weekly-total">0 minutes</span>
+              </div>
+              <div
+                class="weekly-chart"
+                id="weekly-chart"
+                aria-label="Reading minutes over the last seven days"
+              ></div>
+            </div>
+            <aside class="habit-note">
+              <p class="eyebrow">A USEFUL PATTERN</p>
+              <h3 id="habit-title">Your insights will appear here.</h3>
+              <p id="habit-message">
+                Log a few reading sessions to learn when you read most and how
+                your pace changes over time.
+              </p>
+            </aside>
+          </div>
+
+          <div class="log-history-heading">
+            <div>
+              <p class="eyebrow">SESSION HISTORY</p>
+              <h3>Recent reading</h3>
+            </div>
+            <label class="select-wrap log-filter-wrap">
+              <span class="sr-only">Filter reading log by book</span>
+              <select id="log-book-filter">
+                <option value="all">All books</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="log-list" class="log-list" aria-live="polite"></div>
+          <div id="log-empty-state" class="log-empty-state">
+            <p>No reading sessions logged yet.</p>
+            <button
+              class="text-button light-text-button"
+              id="empty-log-button"
+              type="button"
+            >
+              Log your first session <span aria-hidden="true">-&gt;</span>
+            </button>
+          </div>
+        </section>
+
+        <section
+          class="passage-section"
+          id="passages"
+          aria-labelledby="passages-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">COMMONPLACE BOOK</p>
+              <h2 id="passages-title">Saved passages</h2>
+              <p class="passage-intro">
+                Keep the lines that matter, along with where you found them
+                and what they made you think.
+              </p>
+            </div>
+            <button
+              class="primary-button"
+              id="open-passage-button"
+              type="button"
+            >
+              <span aria-hidden="true">+</span> Save a passage
+            </button>
+          </div>
+
+          <div class="passage-toolbar">
+            <label class="search-box">
+              <span class="search-icon" aria-hidden="true"></span>
+              <span class="sr-only">Search saved passages</span>
+              <input
+                id="passage-search-input"
+                type="search"
+                placeholder="Search passages, books, or reflections..."
+                autocomplete="off"
+              />
+            </label>
+            <label class="select-wrap passage-filter-wrap">
+              <span class="sr-only">Filter passages by book</span>
+              <select id="passage-book-filter">
+                <option value="all">All books</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="passage-grid" class="passage-grid" aria-live="polite"></div>
+          <div id="passage-empty-state" class="passage-empty-state">
+            <div class="quote-mark" aria-hidden="true">"</div>
+            <h3>Keep a line worth returning to.</h3>
+            <p>
+              Photograph and highlight a page, or type a passage manually.
+            </p>
+            <button
+              class="text-button"
+              id="empty-passage-button"
+              type="button"
+            >
+              Save your first passage <span aria-hidden="true">-&gt;</span>
+            </button>
+          </div>
+        </section>
+
+        <section
+          class="profile-section"
+          id="profile"
+          aria-labelledby="profile-title"
+        >
+          <div class="profile-card">
+            <div class="profile-photo-wrap">
+              <img id="profile-photo" alt="Profile picture" hidden />
+              <div id="profile-placeholder" class="profile-placeholder">R</div>
+            </div>
+            <div class="profile-copy">
+              <p class="eyebrow">YOUR READER PROFILE</p>
+              <h2 id="profile-title">Hello, <span id="profile-greeting">Reader</span>.</h2>
+              <p>
+                Personalize the identity attached to this library on your
+                device.
+              </p>
+              <button
+                class="primary-button"
+                id="open-profile-button"
+                type="button"
+              >
+                Edit profile
+              </button>
+              <button class="logout-button" id="logout-button" type="button">
+                Log out
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="community-section"
+          id="community"
+          aria-labelledby="community-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">READING TOGETHER</p>
+              <h2 id="community-title">Reader community</h2>
+              <p class="community-intro">
+                Follow other readers, browse their library statistics, and
+                exchange books and passages worth sharing.
+              </p>
+            </div>
+          </div>
+
+          <div class="community-tabs" role="tablist" aria-label="Community views">
+            <button
+              class="community-tab active"
+              type="button"
+              data-community-view="readers"
+              aria-selected="true"
+            >
+              Readers
+            </button>
+            <button
+              class="community-tab"
+              type="button"
+              data-community-view="feed"
+              aria-selected="false"
+            >
+              Shared with me
+            </button>
+            <button
+              class="community-tab admin-community-tab"
+              type="button"
+              data-community-view="admin"
+              aria-selected="false"
+              hidden
+            >
+              Admin
+            </button>
+          </div>
+
+          <div id="community-readers-view">
+            <div id="reader-grid" class="reader-grid" aria-live="polite"></div>
+            <div id="reader-empty-state" class="community-empty">
+              <p>No other readers have created an account on this device yet.</p>
+            </div>
+          </div>
+
+          <div id="community-feed-view" hidden>
+            <div id="share-feed" class="share-feed" aria-live="polite"></div>
+            <div id="share-empty-state" class="community-empty">
+              <p>Nothing has been shared with you yet.</p>
+            </div>
+          </div>
+
+          <div id="community-admin-view" hidden>
+            <div class="admin-heading">
+              <div>
+                <p class="eyebrow">PRIVATE CONTROLS</p>
+                <h3>Account administration</h3>
+              </div>
+              <span class="admin-badge">Admin only</span>
+            </div>
+            <div id="admin-account-list" class="admin-account-list"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>MY LIBRARY</span>
+        <p>Made for the stories worth keeping.</p>
+      </footer>
+    </div>
+
+    <dialog id="profile-dialog">
+      <form id="profile-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">YOUR IDENTITY</p>
+            <h2>Edit profile</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-profile-button"
+            type="button"
+            aria-label="Close profile form"
+          >
+            X
+          </button>
+        </div>
+
+        <label>
+          <span>Username</span>
+          <input
+            id="profile-username-input"
+            name="username"
+            type="text"
+            minlength="3"
+            maxlength="30"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Profile picture (optional)</span>
+          <input
+            id="profile-photo-input"
+            name="photo"
+            type="file"
+            accept="image/*"
+            capture="user"
+          />
+        </label>
+
+        <div class="profile-preview" id="profile-preview" hidden>
+          <img id="profile-preview-image" alt="Profile picture preview" />
+        </div>
+
+        <p class="form-error" id="profile-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">
+          Save profile
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="reader-profile-dialog" class="wide-dialog">
+      <div class="reader-profile-detail">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">READER PROFILE</p>
+            <h2 id="reader-profile-name">Reader</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-reader-profile-button"
+            type="button"
+            aria-label="Close reader profile"
+          >
+            X
+          </button>
+        </div>
+        <div class="reader-profile-hero">
+          <div class="mini-avatar" id="reader-profile-avatar"></div>
+          <div class="reader-profile-stats" id="reader-profile-stats"></div>
+        </div>
+        <div class="reader-profile-books">
+          <p class="eyebrow">RECENTLY ADDED</p>
+          <div id="reader-profile-book-list"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="share-dialog">
+      <form id="share-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">PASS IT ALONG</p>
+            <h2>Share with a reader</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-share-button"
+            type="button"
+            aria-label="Close sharing form"
+          >
+            X
+          </button>
+        </div>
+        <input id="share-kind-input" name="kind" type="hidden" />
+        <input id="share-item-id-input" name="itemId" type="hidden" />
+        <p class="dialog-copy" id="share-item-summary"></p>
+        <label>
+          <span>Share with</span>
+          <select id="share-recipient-input" name="recipientId" required></select>
+        </label>
+        <label>
+          <span>Message (optional)</span>
+          <textarea
+            name="message"
+            rows="4"
+            maxlength="500"
+            placeholder="Why do you think they would enjoy this?"
+          ></textarea>
+        </label>
+        <p class="form-error" id="share-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">
+          Share
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="book-dialog">
+      <form id="book-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">A NEW STORY</p>
+            <h2>Add a book</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-form-button"
+            type="button"
+            aria-label="Close form"
+          >
+            X
+          </button>
+        </div>
+
+        <label>
+          <span>Book title</span>
+          <input
+            id="title-input"
+            name="title"
+            type="text"
+            placeholder="e.g. The Secret History"
+            maxlength="120"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Author</span>
+          <input
+            id="author-input"
+            name="author"
+            type="text"
+            placeholder="e.g. Donna Tartt"
+            maxlength="100"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Genre</span>
+          <input
+            id="genre-input"
+            name="genre"
+            type="text"
+            placeholder="e.g. Literary fiction"
+            maxlength="60"
+            list="genre-suggestions"
+            required
+          />
+          <datalist id="genre-suggestions">
+            <option value="Biography"></option>
+            <option value="Classics"></option>
+            <option value="Fantasy"></option>
+            <option value="Fiction"></option>
+            <option value="History"></option>
+            <option value="Horror"></option>
+            <option value="Mystery"></option>
+            <option value="Non-fiction"></option>
+            <option value="Poetry"></option>
+            <option value="Romance"></option>
+            <option value="Science fiction"></option>
+            <option value="Thriller"></option>
+          </datalist>
+        </label>
+
+        <label>
+          <span>Photo of your copy (optional)</span>
+          <input
+            id="cover-input"
+            name="cover"
+            type="file"
+            accept="image/*"
+            capture="environment"
+          />
+          <small class="field-help">
+            Take a photo or choose one from your device.
+          </small>
+        </label>
+
+        <fieldset>
+          <legend>Reading status</legend>
+          <label class="radio-card">
+            <input type="radio" name="status" value="read" />
+            <span class="radio-dot"></span>
+            <span>
+              <strong>I've read it</strong>
+              <small>Finished and fondly remembered.</small>
+            </span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="status" value="unread" checked />
+            <span class="radio-dot"></span>
+            <span>
+              <strong>Still to read</strong>
+              <small>Waiting patiently on the shelf.</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <button class="primary-button submit-button" type="submit">
+          Add to my library
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="wishlist-dialog">
+      <form id="wishlist-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">A FUTURE READ</p>
+            <h2>Add to wishlist</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-wishlist-button"
+            type="button"
+            aria-label="Close wishlist form"
+          >
+            X
+          </button>
+        </div>
+
+        <label>
+          <span>Book title</span>
+          <input
+            id="wishlist-title-input"
+            name="title"
+            type="text"
+            maxlength="120"
+            placeholder="e.g. The Dispossessed"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Author</span>
+          <input
+            name="author"
+            type="text"
+            maxlength="100"
+            placeholder="e.g. Ursula K. Le Guin"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Genre (optional)</span>
+          <input
+            name="genre"
+            type="text"
+            maxlength="60"
+            list="genre-suggestions"
+            placeholder="e.g. Science fiction"
+          />
+        </label>
+
+        <button class="primary-button submit-button" type="submit">
+          Save to wishlist
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="cover-dialog">
+      <form id="cover-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">YOUR EDITION</p>
+            <h2>Book display photo</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-cover-button"
+            type="button"
+            aria-label="Close book photo form"
+          >
+            X
+          </button>
+        </div>
+        <p class="dialog-copy" id="cover-book-name"></p>
+        <label>
+          <span>Take or choose a photo</span>
+          <input
+            id="replace-cover-input"
+            name="cover"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            required
+          />
+        </label>
+        <div class="image-preview-frame" id="cover-preview-frame" hidden>
+          <img id="cover-preview" alt="Preview of selected book photo" />
+        </div>
+        <button class="primary-button submit-button" type="submit">
+          Save display photo
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="log-dialog" class="wide-dialog">
+      <form id="log-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">TIME WITH A BOOK</p>
+            <h2>Log a reading session</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-log-button"
+            type="button"
+            aria-label="Close reading log form"
+          >
+            X
+          </button>
+        </div>
+
+        <label>
+          <span>Book title</span>
+          <input
+            id="log-title-input"
+            name="title"
+            type="text"
+            placeholder="Choose a book or enter a title"
+            maxlength="120"
+            list="book-title-suggestions"
+            autocomplete="off"
+            required
+          />
+          <datalist id="book-title-suggestions"></datalist>
+        </label>
+
+        <label>
+          <span>Author</span>
+          <input
+            id="log-author-input"
+            name="author"
+            type="text"
+            placeholder="Author's name"
+            maxlength="100"
+            required
+          />
+        </label>
+
+        <div class="form-row three-columns">
+          <label>
+            <span>Pages read</span>
+            <input
+              id="pages-read-input"
+              name="pagesRead"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="25"
+              required
+            />
+          </label>
+          <label>
+            <span>Started at page</span>
+            <input
+              id="start-page-input"
+              name="startPage"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="1"
+              required
+            />
+          </label>
+          <label>
+            <span>Finished at page</span>
+            <input
+              id="end-page-input"
+              name="endPage"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="25"
+              required
+            />
+          </label>
+        </div>
+
+        <div class="form-row three-columns">
+          <label>
+            <span>Session date</span>
+            <input id="session-date-input" name="date" type="date" required />
+          </label>
+          <label>
+            <span>Started reading</span>
+            <input id="start-time-input" name="startTime" type="time" required />
+          </label>
+          <label>
+            <span>Finished reading</span>
+            <input id="end-time-input" name="endTime" type="time" required />
+          </label>
+        </div>
+
+        <div class="duration-preview" id="duration-preview">
+          Enter your start and finish times to calculate the session duration.
+        </div>
+
+        <button class="primary-button submit-button" type="submit">
+          Save reading session
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="passage-dialog" class="wide-dialog">
+      <form id="passage-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">A LINE TO KEEP</p>
+            <h2>Save a passage</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-passage-button"
+            type="button"
+            aria-label="Close passage form"
+          >
+            X
+          </button>
+        </div>
+
+        <div class="passage-mode-tabs" role="group" aria-label="Passage entry method">
+          <button
+            class="mode-button active"
+            type="button"
+            data-passage-mode="photo"
+            aria-pressed="true"
+          >
+            Photograph a page
+          </button>
+          <button
+            class="mode-button"
+            type="button"
+            data-passage-mode="text"
+            aria-pressed="false"
+          >
+            Type the passage
+          </button>
+        </div>
+
+        <div id="photo-passage-fields">
+          <label>
+            <span>Page photo</span>
+            <input
+              id="passage-photo-input"
+              name="photo"
+              type="file"
+              accept="image/*"
+              capture="environment"
+            />
+          </label>
+          <div class="highlight-workspace" id="highlight-workspace" hidden>
+            <p>
+              Drag over the passage to place a highlight. Drag again to replace
+              it.
+            </p>
+            <canvas
+              id="highlight-canvas"
+              aria-label="Page photo highlighting area"
+            ></canvas>
+            <button
+              class="text-button"
+              id="clear-highlight-button"
+              type="button"
+            >
+              Clear highlight
+            </button>
+          </div>
+        </div>
+
+        <div id="text-passage-fields" hidden>
+          <label>
+            <span>Passage text</span>
+            <textarea
+              id="passage-text-input"
+              name="passageText"
+              rows="6"
+              maxlength="4000"
+              placeholder="Type the passage you want to remember..."
+            ></textarea>
+          </label>
+        </div>
+
+        <div class="form-row two-columns">
+          <label>
+            <span>Book title</span>
+            <input
+              id="passage-title-input"
+              name="title"
+              type="text"
+              list="book-title-suggestions"
+              maxlength="120"
+              required
+            />
+          </label>
+          <label>
+            <span>Author</span>
+            <input
+              id="passage-author-input"
+              name="author"
+              type="text"
+              maxlength="100"
+              required
+            />
+          </label>
+        </div>
+
+        <label>
+          <span>Page number</span>
+          <input
+            id="passage-page-input"
+            name="page"
+            type="text"
+            maxlength="30"
+            placeholder="e.g. 142 or xii-xiv"
+            required
+          />
+        </label>
+
+        <label>
+          <span>Your reflection or comment (optional)</span>
+          <textarea
+            id="passage-reflection-input"
+            name="reflection"
+            rows="4"
+            maxlength="2000"
+            placeholder="Why did this stand out? What does it connect to?"
+          ></textarea>
+        </label>
+
+        <button class="primary-button submit-button" type="submit">
+          Save passage
+        </button>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
