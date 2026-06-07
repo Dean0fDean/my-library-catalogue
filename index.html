@@ -455,6 +455,42 @@
               </button>
             </div>
           </div>
+          <div class="profile-dashboard">
+            <section class="profile-panel" aria-labelledby="profile-insights-title">
+              <div class="profile-panel-heading">
+                <div>
+                  <p class="eyebrow">AT A GLANCE</p>
+                  <h3 id="profile-insights-title">Reading insights</h3>
+                </div>
+              </div>
+              <div id="profile-insight-grid" class="profile-insight-grid"></div>
+            </section>
+
+            <section class="profile-panel" aria-labelledby="notifications-title">
+              <div class="profile-panel-heading">
+                <div>
+                  <p class="eyebrow">WHAT'S NEW</p>
+                  <h3 id="notifications-title">
+                    Notifications <span id="profile-notification-count"></span>
+                  </h3>
+                </div>
+                <button id="mark-notifications-read" type="button">
+                  Mark all read
+                </button>
+              </div>
+              <div id="profile-notification-list" class="profile-notification-list"></div>
+            </section>
+
+            <section class="profile-panel profile-achievement-panel" aria-labelledby="achievements-title">
+              <div class="profile-panel-heading">
+                <div>
+                  <p class="eyebrow">MILESTONES</p>
+                  <h3 id="achievements-title">Achievements</h3>
+                </div>
+              </div>
+              <div id="profile-achievement-grid" class="profile-achievement-grid"></div>
+            </section>
+          </div>
         </section>
 
         <section
