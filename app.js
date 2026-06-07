@@ -6,6 +6,7 @@ const ACCOUNTS_STORAGE_KEY = "my-library-accounts-v1";
 const CURRENT_ACCOUNT_KEY = "my-library-current-account-v1";
 const FOLLOWS_STORAGE_KEY = "my-library-follows-v1";
 const SHARES_STORAGE_KEY = "my-library-shares-v1";
+const API_TOKEN_KEY = "my-library-api-token-v1";
 
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
@@ -136,6 +137,43 @@ let isHighlighting = false;
 let currentAccount = null;
 let pendingProfileImage = "";
 let toastTimer;
+let statsSyncTimer;
+let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
+
+async function apiRequest(action, options = {}) {
+  const response = await fetch(`/api?action=${encodeURIComponent(action)}`, {
+    method: options.method || "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(apiToken ? { Authorization: `Bearer ${apiToken}` } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "The online service is unavailable.");
+  }
+  return data;
+}
+
+function storeApiSession(token) {
+  apiToken = token || "";
+  if (apiToken) localStorage.setItem(API_TOKEN_KEY, apiToken);
+  else localStorage.removeItem(API_TOKEN_KEY);
+}
+
+function adoptLocalAccount(localAccount, onlineAccount) {
+  if (!localAccount || localAccount.id === onlineAccount.id) return;
+  [books, readingLog, passages, wishlist].forEach((items) => {
+    items.forEach((item) => {
+      if (item.ownerId === localAccount.id) item.ownerId = onlineAccount.id;
+    });
+  });
+  saveBooks();
+  saveReadingLog();
+  savePassages();
+  saveWishlist();
+}
 
 function loadArray(key) {
   try {
@@ -194,6 +232,8 @@ function booksFor(accountId) {
 }
 
 function statsFor(accountId) {
+  const account = accounts.find((item) => item.id === accountId);
+  if (account?.stats && accountId !== currentAccount?.id) return account.stats;
   const accountBooks = booksFor(accountId);
   const read = accountBooks.filter((book) => book.status === "read").length;
   return {
@@ -378,7 +418,47 @@ function updateProfileDisplay() {
   }
 }
 
-function showAuthenticatedApp(account) {
+async function syncCommunityStats() {
+  if (!currentAccount || !apiToken) return;
+  const stats = statsFor(currentAccount.id);
+  const recentBooks = booksFor(currentAccount.id)
+    .slice(0, 5)
+    .map(({ title, author, status }) => ({ title, author, status }));
+  try {
+    await apiRequest("stats", {
+      method: "POST",
+      body: { owned: stats.total, read: stats.read, unread: stats.unread, recentBooks },
+    });
+  } catch {
+    // Catalogue use remains available if the community service is briefly offline.
+  }
+}
+
+function scheduleStatsSync() {
+  if (!currentAccount || !apiToken) return;
+  window.clearTimeout(statsSyncTimer);
+  statsSyncTimer = window.setTimeout(syncCommunityStats, 500);
+}
+
+async function loadCommunity() {
+  if (!apiToken) return;
+  const data = await apiRequest("community");
+  accounts = data.accounts;
+  follows = data.follows;
+  shares = data.shares;
+}
+
+async function refreshCommunity() {
+  try {
+    await syncCommunityStats();
+    await loadCommunity();
+    renderCommunity();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function showAuthenticatedApp(account) {
   currentAccount = account;
   localStorage.setItem(CURRENT_ACCOUNT_KEY, account.id);
   elements.authScreen.hidden = true;
@@ -389,10 +469,12 @@ function showAuthenticatedApp(account) {
   renderReadingLog();
   renderPassages();
   renderCommunity();
+  await refreshCommunity();
 }
 
 function showLoginScreen() {
   currentAccount = null;
+  storeApiSession("");
   localStorage.removeItem(CURRENT_ACCOUNT_KEY);
   elements.appShell.hidden = true;
   elements.authScreen.hidden = false;
@@ -401,12 +483,15 @@ function showLoginScreen() {
   setAuthView(accounts.length ? "login" : "signup");
 }
 
-function initializeAuthentication() {
-  const accountId = localStorage.getItem(CURRENT_ACCOUNT_KEY);
-  const account = accounts.find((item) => item.id === accountId);
-  if (account) {
-    showAuthenticatedApp(account);
-  } else {
+async function initializeAuthentication() {
+  if (!apiToken) {
+    showLoginScreen();
+    return;
+  }
+  try {
+    const data = await apiRequest("session");
+    await showAuthenticatedApp(data.user);
+  } catch {
     showLoginScreen();
   }
 }
@@ -417,51 +502,59 @@ async function createAccount(formData) {
   const confirmation = formData.get("confirmPassword");
   elements.signupError.textContent = "";
 
-  if (findAccountByUsername(username)) {
-    elements.signupError.textContent = "That username is already in use.";
-    return;
-  }
   if (password !== confirmation) {
     elements.signupError.textContent = "The passwords do not match.";
     return;
   }
 
-  const salt = createSalt();
-  const account = {
-    id: crypto.randomUUID(),
-    username,
-    salt,
-    passwordHash: await hashPassword(password, salt),
-    profileImage: "",
-    role: accounts.length === 0 ? "admin" : "user",
-    createdAt: new Date().toISOString(),
-  };
-  accounts.push(account);
-  if (!saveAccounts()) {
-    accounts.pop();
-    return;
+  try {
+    const data = await apiRequest("signup", {
+      method: "POST",
+      body: { username, password },
+    });
+    storeApiSession(data.token);
+    accounts = [data.user];
+    await showAuthenticatedApp(data.user);
+    showToast(`Welcome to your library, ${data.user.username}.`);
+  } catch (error) {
+    elements.signupError.textContent = error.message;
   }
-  showAuthenticatedApp(account);
-  showToast(`Welcome to your library, ${account.username}.`);
 }
 
 async function login(formData) {
   const username = formData.get("username").trim();
   const password = formData.get("password");
-  const account = findAccountByUsername(username);
   elements.loginError.textContent = "";
-  if (!account) {
-    elements.loginError.textContent = "Incorrect username or password.";
-    return;
+  const localAccount = findAccountByUsername(username);
+  try {
+    let data;
+    try {
+      data = await apiRequest("login", {
+        method: "POST",
+        body: { username, password },
+      });
+    } catch (error) {
+      if (!localAccount) throw error;
+      const passwordHash = await hashPassword(password, localAccount.salt);
+      if (passwordHash !== localAccount.passwordHash) throw error;
+      data = await apiRequest("migrate", {
+        method: "POST",
+        body: {
+          username: localAccount.username,
+          salt: localAccount.salt,
+          passwordHash: localAccount.passwordHash,
+          profileImage: localAccount.profileImage || "",
+        },
+      });
+    }
+    storeApiSession(data.token);
+    adoptLocalAccount(localAccount, data.user);
+    elements.loginForm.reset();
+    await showAuthenticatedApp(data.user);
+    showToast(`Welcome back, ${data.user.username}.`);
+  } catch (error) {
+    elements.loginError.textContent = error.message;
   }
-  const passwordHash = await hashPassword(password, account.salt);
-  if (passwordHash !== account.passwordHash) {
-    elements.loginError.textContent = "Incorrect username or password.";
-    return;
-  }
-  elements.loginForm.reset();
-  showAuthenticatedApp(account);
-  showToast(`Welcome back, ${account.username}.`);
 }
 
 function openProfileForm() {
@@ -492,31 +585,22 @@ async function previewProfilePhoto() {
   }
 }
 
-function saveProfile(formData) {
+async function saveProfile(formData) {
   if (!currentAccount) return;
   const username = formData.get("username").trim();
-  const duplicate = accounts.find(
-    (account) =>
-      account.id !== currentAccount.id &&
-      normalize(account.username) === normalize(username),
-  );
-  if (duplicate) {
-    elements.profileError.textContent = "That username is already in use.";
-    return;
+  try {
+    const data = await apiRequest("profile", {
+      method: "POST",
+      body: { username, profileImage: pendingProfileImage },
+    });
+    currentAccount = data.user;
+    updateProfileDisplay();
+    await refreshCommunity();
+    elements.profileDialog.close();
+    showToast("Your profile has been updated.");
+  } catch (error) {
+    elements.profileError.textContent = error.message;
   }
-  const previousUsername = currentAccount.username;
-  const previousImage = currentAccount.profileImage || "";
-  currentAccount.username = username;
-  currentAccount.profileImage = pendingProfileImage;
-  if (!saveAccounts()) {
-    currentAccount.username = previousUsername;
-    currentAccount.profileImage = previousImage;
-    return;
-  }
-  updateProfileDisplay();
-  renderCommunity();
-  elements.profileDialog.close();
-  showToast("Your profile has been updated.");
 }
 
 function colorForGenre(genre) {
@@ -706,6 +790,7 @@ async function addBook(formData) {
     return;
   }
   renderBooks();
+  scheduleStatsSync();
   elements.dialog.close();
   showToast(`"${book.title}" added to your library.`);
 }
@@ -718,6 +803,7 @@ function toggleStatus(id) {
   book.status = book.status === "read" ? "unread" : "read";
   saveBooks();
   renderBooks();
+  scheduleStatsSync();
   showToast(
     book.status === "read"
       ? `Marked "${book.title}" as read.`
@@ -745,6 +831,7 @@ function removeBook(id) {
   openMenuId = null;
   saveBooks();
   renderBooks();
+  scheduleStatsSync();
   showToast(`"${book.title}" removed.`);
 }
 
@@ -1675,24 +1762,18 @@ function renderCommunity() {
   renderAdminAccounts();
 }
 
-function toggleFollow(accountId) {
+async function toggleFollow(accountId) {
   if (!currentAccount || accountId === currentAccount.id) return;
-  const index = follows.findIndex(
-    (follow) =>
-      follow.followerId === currentAccount.id &&
-      follow.followingId === accountId,
-  );
-  if (index >= 0) {
-    follows.splice(index, 1);
-  } else {
-    follows.push({
-      followerId: currentAccount.id,
-      followingId: accountId,
-      createdAt: new Date().toISOString(),
+  try {
+    await apiRequest("follow", {
+      method: "POST",
+      body: { accountId },
     });
+    await loadCommunity();
+    renderCommunity();
+  } catch (error) {
+    showToast(error.message);
   }
-  saveFollows();
-  renderCommunity();
 }
 
 function openReaderProfile(accountId) {
@@ -1706,7 +1787,10 @@ function openReaderProfile(accountId) {
     <div class="reader-stat"><strong>${stats.read}</strong><span>Read</span></div>
     <div class="reader-stat"><strong>${stats.unread}</strong><span>To read</span></div>
   `;
-  const recentBooks = booksFor(account.id).slice(0, 5);
+  const recentBooks =
+    account.id === currentAccount?.id
+      ? booksFor(account.id).slice(0, 5)
+      : account.recentBooks || [];
   elements.readerProfileBookList.innerHTML = recentBooks.length
     ? recentBooks
         .map(
@@ -1759,7 +1843,7 @@ function openShareDialog(kind, itemId) {
   elements.shareDialog.showModal();
 }
 
-function shareItem(formData) {
+async function shareItem(formData) {
   const kind = formData.get("kind");
   const itemId = formData.get("itemId");
   const recipientId = formData.get("recipientId");
@@ -1777,12 +1861,7 @@ function shareItem(formData) {
     elements.shareError.textContent = "That item or reader is no longer available.";
     return;
   }
-  shares.unshift({
-    id: crypto.randomUUID(),
-    senderId: currentAccount.id,
-    recipientId,
-    kind,
-    payload:
+  const payload =
       kind === "book"
         ? {
             title: item.title,
@@ -1797,44 +1876,39 @@ function shareItem(formData) {
             text: item.text || "",
             image: item.image || "",
             reflection: item.reflection || "",
-          },
-    message: formData.get("message").trim(),
-    createdAt: new Date().toISOString(),
-  });
-  if (!saveShares()) {
-    shares.shift();
-    return;
+          };
+  try {
+    await apiRequest("share", {
+      method: "POST",
+      body: {
+        recipientId,
+        kind,
+        payload,
+        message: formData.get("message").trim(),
+      },
+    });
+    elements.shareDialog.close();
+    showToast(`Shared with ${recipient.username}.`);
+  } catch (error) {
+    elements.shareError.textContent = error.message;
   }
-  elements.shareDialog.close();
-  showToast(`Shared with ${recipient.username}.`);
 }
 
-function deleteAccountAsAdmin(accountId) {
+async function deleteAccountAsAdmin(accountId) {
   if (!currentAccount || currentAccount.role !== "admin") return;
   const account = accounts.find((item) => item.id === accountId);
   if (!account || account.role === "admin") return;
-  accounts = accounts.filter((item) => item.id !== accountId);
-  books = books.filter((item) => item.ownerId !== accountId);
-  readingLog = readingLog.filter((item) => item.ownerId !== accountId);
-  passages = passages.filter((item) => item.ownerId !== accountId);
-  wishlist = wishlist.filter((item) => item.ownerId !== accountId);
-  follows = follows.filter(
-    (follow) =>
-      follow.followerId !== accountId && follow.followingId !== accountId,
-  );
-  shares = shares.filter(
-    (share) =>
-      share.senderId !== accountId && share.recipientId !== accountId,
-  );
-  saveAccounts();
-  saveBooks();
-  saveReadingLog();
-  savePassages();
-  saveWishlist();
-  saveFollows();
-  saveShares();
-  renderCommunity();
-  showToast(`Account "${account.username}" was deleted.`);
+  try {
+    await apiRequest("delete-user", {
+      method: "POST",
+      body: { accountId },
+    });
+    await loadCommunity();
+    renderCommunity();
+    showToast(`Account "${account.username}" was deleted.`);
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 document
