@@ -101,6 +101,7 @@ const elements = {
   readerEmptyState: document.querySelector("#reader-empty-state"),
   shareFeed: document.querySelector("#share-feed"),
   shareEmptyState: document.querySelector("#share-empty-state"),
+  recommendationUnreadCount: document.querySelector("#recommendation-unread-count"),
   adminAccountList: document.querySelector("#admin-account-list"),
   readerProfileDialog: document.querySelector("#reader-profile-dialog"),
   readerProfileName: document.querySelector("#reader-profile-name"),
@@ -1810,14 +1811,30 @@ function renderReaders() {
 
 function renderShareCard(share) {
   const sender = accounts.find((account) => account.id === share.senderId);
-  if (!sender) return "";
+  const recipient = accounts.find((account) => account.id === share.recipientId);
+  if (!sender || !recipient) return "";
   const isBook = share.kind === "book";
+  const isSender = share.senderId === currentAccount.id;
+  const otherReader = isSender ? recipient : sender;
+  const myReadAt = isSender ? share.senderReadAt : share.recipientReadAt;
+  const otherReadAt = isSender ? share.recipientReadAt : share.senderReadAt;
+  const accountBooks = ownedByCurrent(books);
+  const accountWishlist = ownedByCurrent(wishlist);
+  const matchesBook = (item) =>
+    normalize(item.title) === normalize(share.payload.title) &&
+    normalize(item.author) === normalize(share.payload.author);
+  const alreadyOwned = isBook && accountBooks.some(matchesBook);
+  const alreadyWishlisted = isBook && accountWishlist.some(matchesBook);
+  const comments = share.comments || [];
   return `
-    <article class="share-card">
-      <div class="mini-avatar">${avatarMarkup(sender)}</div>
+    <article class="share-card ${myReadAt ? "" : "unread"}" data-share-id="${share.id}">
+      <div class="mini-avatar">${avatarMarkup(otherReader)}</div>
       <div>
-        <h3>${isBook ? "Book recommendation" : "Shared passage"}</h3>
-        <p class="share-meta">From ${escapeHtml(sender.username)} / ${new Date(share.createdAt).toLocaleDateString()}</p>
+        <div class="share-card-heading">
+          <h3>${isBook ? "Book recommendation" : "Shared passage"}</h3>
+          <span class="share-direction">${isSender ? (myReadAt ? "Sent" : "New reply") : myReadAt ? "Read" : "Unread"}</span>
+        </div>
+        <p class="share-meta">${isSender ? `To ${escapeHtml(recipient.username)}` : `From ${escapeHtml(sender.username)}`} / ${new Date(share.createdAt).toLocaleDateString()}</p>
         <p class="share-content">${
           isBook
             ? `${escapeHtml(share.payload.title)} by ${escapeHtml(share.payload.author)}`
@@ -1829,6 +1846,46 @@ function renderShareCard(share) {
             : ""
         }
         ${share.message ? `<p class="share-message">${escapeHtml(share.message)}</p>` : ""}
+        ${
+          isBook && !isSender
+            ? `<div class="recommendation-collection-check">
+                <strong>${alreadyOwned ? "Already in your collection" : alreadyWishlisted ? "Already on your wishlist" : "Not in your collection"}</strong>
+                ${
+                  !alreadyOwned && !alreadyWishlisted
+                    ? `<button type="button" data-share-action="wishlist" data-id="${share.id}">Add to wishlist</button>`
+                    : ""
+                }
+              </div>`
+            : ""
+        }
+        <div class="recommendation-thread">
+          <p class="share-read-status">
+            ${otherReadAt ? `${escapeHtml(otherReader.username)} has seen this conversation.` : `${escapeHtml(otherReader.username)} has not seen the latest message yet.`}
+          </p>
+          <div class="recommendation-comments">
+            ${
+              comments.length
+                ? comments
+                    .map((comment) => {
+                      const author = accounts.find((account) => account.id === comment.authorId);
+                      return `<div class="recommendation-comment">
+                        <strong>${escapeHtml(author?.username || "Reader")}</strong>
+                        <span>${escapeHtml(comment.comment)}</span>
+                        <time>${new Date(comment.createdAt).toLocaleString()}</time>
+                      </div>`;
+                    })
+                    .join("")
+                : '<p class="no-recommendation-comments">No comments yet.</p>'
+            }
+          </div>
+          <form class="recommendation-reply-form" data-share-id="${share.id}">
+            <label>
+              <span class="sr-only">Comment on this recommendation</span>
+              <input name="comment" maxlength="1000" placeholder="Write a response..." required />
+            </label>
+            <button type="submit">Send</button>
+          </form>
+        </div>
       </div>
     </article>
   `;
@@ -1836,12 +1893,90 @@ function renderShareCard(share) {
 
 function renderShareFeed() {
   if (!currentAccount) return;
-  const incoming = shares
-    .filter((share) => share.recipientId === currentAccount.id)
+  const conversations = shares
+    .filter(
+      (share) =>
+        share.recipientId === currentAccount.id ||
+        share.senderId === currentAccount.id,
+    )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  elements.shareFeed.innerHTML = incoming.map(renderShareCard).join("");
-  elements.shareFeed.hidden = incoming.length === 0;
-  elements.shareEmptyState.hidden = incoming.length > 0;
+  const unreadCount = conversations.filter((share) =>
+    share.senderId === currentAccount.id
+      ? !share.senderReadAt
+      : !share.recipientReadAt,
+  ).length;
+  elements.recommendationUnreadCount.textContent = unreadCount
+    ? `(${unreadCount})`
+    : "";
+  elements.shareFeed.innerHTML = conversations.map(renderShareCard).join("");
+  elements.shareFeed.hidden = conversations.length === 0;
+  elements.shareEmptyState.hidden = conversations.length > 0;
+}
+
+async function markRecommendationThreadsRead() {
+  if (!currentAccount) return;
+  const unread = shares.filter((share) =>
+    share.senderId === currentAccount.id
+      ? !share.senderReadAt
+      : share.recipientId === currentAccount.id && !share.recipientReadAt,
+  );
+  if (!unread.length) return;
+  await Promise.all(
+    unread.map((share) =>
+      apiRequest("share-read", {
+        method: "POST",
+        body: { shareId: share.id },
+      }),
+    ),
+  );
+  await loadCommunity();
+  renderCommunity();
+}
+
+async function commentOnRecommendation(shareId, comment) {
+  try {
+    await apiRequest("share-comment", {
+      method: "POST",
+      body: { shareId, comment },
+    });
+    await loadCommunity();
+    renderCommunity();
+    showToast("Your response was sent.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function addRecommendationToWishlist(shareId) {
+  const share = shares.find(
+    (item) =>
+      item.id === shareId &&
+      item.kind === "book" &&
+      item.recipientId === currentAccount?.id,
+  );
+  if (!share) return;
+  const duplicate = [...ownedByCurrent(books), ...ownedByCurrent(wishlist)].some(
+    (item) =>
+      normalize(item.title) === normalize(share.payload.title) &&
+      normalize(item.author) === normalize(share.payload.author),
+  );
+  if (duplicate) {
+    showToast("That book is already in your collection or wishlist.");
+    renderShareFeed();
+    return;
+  }
+  wishlist.unshift({
+    id: crypto.randomUUID(),
+    title: share.payload.title,
+    author: share.payload.author,
+    genre: share.payload.genre || "Uncategorized",
+    createdAt: new Date().toISOString(),
+    ownerId: currentAccount.id,
+  });
+  saveWishlist();
+  renderWishlist();
+  renderShareFeed();
+  showToast(`"${share.payload.title}" added to your wishlist.`);
 }
 
 function renderAdminAccounts() {
@@ -1880,6 +2015,9 @@ function setCommunityView(view) {
     button.classList.toggle("active", selected);
     button.setAttribute("aria-selected", String(selected));
   });
+  if (view === "feed") {
+    markRecommendationThreadsRead().catch((error) => showToast(error.message));
+  }
 }
 
 function renderCommunity() {
@@ -2065,6 +2203,8 @@ async function shareItem(formData) {
         message: formData.get("message").trim(),
       },
     });
+    await loadCommunity();
+    renderCommunity();
     elements.shareDialog.close();
     showToast(`Shared with ${recipient.username}.`);
   } catch (error) {
@@ -2307,6 +2447,21 @@ elements.readerGrid.addEventListener("click", (event) => {
 
 elements.readerCatalogueSearch.addEventListener("input", renderReaderCatalogue);
 elements.readerCatalogueStatus.addEventListener("change", renderReaderCatalogue);
+
+elements.shareFeed.addEventListener("submit", (event) => {
+  const form = event.target.closest(".recommendation-reply-form");
+  if (!form) return;
+  event.preventDefault();
+  const comment = new FormData(form).get("comment").trim();
+  if (comment) commentOnRecommendation(form.dataset.shareId, comment);
+});
+
+elements.shareFeed.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-share-action]");
+  if (button?.dataset.shareAction === "wishlist") {
+    addRecommendationToWishlist(button.dataset.id);
+  }
+});
 
 elements.adminAccountList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-admin-action]");
