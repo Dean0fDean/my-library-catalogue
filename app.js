@@ -141,14 +141,17 @@ let statsSyncTimer;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 
 async function apiRequest(action, options = {}) {
-  const response = await fetch(`/api?action=${encodeURIComponent(action)}`, {
+  const response = await fetch(
+    `/api/index?action=${encodeURIComponent(action)}`,
+    {
     method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
       ...(apiToken ? { Authorization: `Bearer ${apiToken}` } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+    },
+  );
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.error || "The online service is unavailable.");
