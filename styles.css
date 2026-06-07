@@ -1045,7 +1045,11 @@ fieldset {
 }
 
 .reader-profile-book-item {
-  padding: 0.85rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
   border-top: 1px solid var(--line);
 }
 
@@ -1057,6 +1061,80 @@ fieldset {
 .reader-profile-book-item span {
   margin-top: 0.2rem;
   color: rgba(23, 42, 34, 0.6);
+  font-style: italic;
+}
+
+.reader-catalogue-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.reader-catalogue-heading p:last-child {
+  margin-top: 0.25rem;
+  color: rgba(23, 42, 34, 0.58);
+  font-style: italic;
+}
+
+.reader-catalogue-tools {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.reader-catalogue-tools input,
+.reader-catalogue-tools select {
+  height: 42px;
+  padding: 0 0.75rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(23, 42, 34, 0.22);
+  border-radius: 2px;
+}
+
+.reader-catalogue-tools input {
+  width: min(250px, 42vw);
+}
+
+.reader-profile-book-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  text-align: right;
+}
+
+.reader-profile-book-meta span {
+  margin: 0;
+}
+
+.reader-profile-book-meta .reader-book-status {
+  padding: 0.3rem 0.45rem;
+  color: var(--forest);
+  background: rgba(23, 63, 49, 0.08);
+  font: 700 0.56rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.reader-profile-book-meta .reader-book-status.read {
+  color: #fff;
+  background: var(--forest);
+}
+
+.reader-profile-book-meta .reader-book-rating {
+  min-width: 82px;
+  color: #9a6e18;
+  font-style: normal;
+  letter-spacing: 0.06em;
+}
+
+.reader-catalogue-empty {
+  padding: 2rem 0;
+  color: rgba(23, 42, 34, 0.58);
+  border-top: 1px solid var(--line);
   font-style: italic;
 }
 
@@ -2458,5 +2536,30 @@ fieldset {
 
   .three-columns {
     grid-template-columns: 1fr;
+  }
+
+  .reader-profile-hero,
+  .reader-catalogue-heading,
+  .reader-profile-book-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reader-profile-stats {
+    width: 100%;
+  }
+
+  .reader-catalogue-tools {
+    flex-direction: column;
+  }
+
+  .reader-catalogue-tools input,
+  .reader-catalogue-tools select {
+    width: 100%;
+  }
+
+  .reader-profile-book-meta {
+    justify-content: flex-start;
+    text-align: left;
   }
 }
