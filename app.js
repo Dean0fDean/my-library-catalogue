@@ -106,6 +106,9 @@ const elements = {
   readerProfileName: document.querySelector("#reader-profile-name"),
   readerProfileAvatar: document.querySelector("#reader-profile-avatar"),
   readerProfileStats: document.querySelector("#reader-profile-stats"),
+  readerCatalogueCount: document.querySelector("#reader-catalogue-count"),
+  readerCatalogueSearch: document.querySelector("#reader-catalogue-search"),
+  readerCatalogueStatus: document.querySelector("#reader-catalogue-status"),
   readerProfileBookList: document.querySelector("#reader-profile-book-list"),
   shareDialog: document.querySelector("#share-dialog"),
   shareForm: document.querySelector("#share-form"),
@@ -142,6 +145,7 @@ let statsSyncTimer;
 let dataSyncTimer;
 let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
+let activeReaderCatalogue = [];
 
 async function apiRequest(action, options = {}) {
   const response = await fetch(
@@ -1904,7 +1908,50 @@ async function toggleFollow(accountId) {
   }
 }
 
-function openReaderProfile(accountId) {
+function renderReaderCatalogue() {
+  const query = elements.readerCatalogueSearch.value.trim().toLowerCase();
+  const status = elements.readerCatalogueStatus.value;
+  const filteredBooks = activeReaderCatalogue.filter((book) => {
+    const matchesQuery = [book.title, book.author, book.genre]
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+    return matchesQuery && (status === "all" || book.status === status);
+  });
+  elements.readerCatalogueCount.textContent = `${filteredBooks.length} ${
+    filteredBooks.length === 1 ? "book" : "books"
+  }${filteredBooks.length !== activeReaderCatalogue.length ? ` of ${activeReaderCatalogue.length}` : ""}`;
+  elements.readerProfileBookList.innerHTML = filteredBooks.length
+    ? filteredBooks
+        .map((book) => {
+          const rating = Number(book.rating) || 0;
+          return `
+            <article class="reader-profile-book-item">
+              <div>
+                <strong>${escapeHtml(book.title)}</strong>
+                <span>${escapeHtml(book.author)}</span>
+              </div>
+              <div class="reader-profile-book-meta">
+                <span>${escapeHtml(book.genre || "Uncategorized")}</span>
+                <span class="reader-book-status ${book.status}">
+                  ${book.status === "read" ? "Read" : "To be read"}
+                </span>
+                <span class="reader-book-rating" aria-label="${rating ? `${rating} out of 5 stars` : "Not rated"}">
+                  ${rating ? `${"★".repeat(rating)}${"☆".repeat(5 - rating)}` : "Not rated"}
+                </span>
+              </div>
+            </article>
+          `;
+        })
+        .join("")
+    : `<p class="reader-catalogue-empty">${
+        activeReaderCatalogue.length
+          ? "No books match this search."
+          : "No books added yet."
+      }</p>`;
+}
+
+async function openReaderProfile(accountId) {
   const account = accounts.find((item) => item.id === accountId);
   if (!account) return;
   const stats = statsFor(account.id);
@@ -1915,23 +1962,26 @@ function openReaderProfile(accountId) {
     <div class="reader-stat"><strong>${stats.read}</strong><span>Read</span></div>
     <div class="reader-stat"><strong>${stats.unread}</strong><span>To read</span></div>
   `;
-  const recentBooks =
-    account.id === currentAccount?.id
-      ? booksFor(account.id).slice(0, 5)
-      : account.recentBooks || [];
-  elements.readerProfileBookList.innerHTML = recentBooks.length
-    ? recentBooks
-        .map(
-          (book) => `
-            <div class="reader-profile-book-item">
-              <strong>${escapeHtml(book.title)}</strong>
-              <span>${escapeHtml(book.author)} / ${book.status === "read" ? "Read" : "To be read"}</span>
-            </div>
-          `,
-        )
-        .join("")
-    : "<p>No books added yet.</p>";
+  activeReaderCatalogue = [];
+  elements.readerCatalogueSearch.value = "";
+  elements.readerCatalogueStatus.value = "all";
+  elements.readerCatalogueCount.textContent = "Loading collection...";
+  elements.readerProfileBookList.innerHTML =
+    '<p class="reader-catalogue-empty">Loading books...</p>';
   elements.readerProfileDialog.showModal();
+  try {
+    const result = await apiRequest("catalogue", {
+      method: "POST",
+      body: { accountId },
+    });
+    activeReaderCatalogue = (result.books || []).sort((first, second) =>
+      first.title.localeCompare(second.title),
+    );
+    renderReaderCatalogue();
+  } catch (error) {
+    elements.readerCatalogueCount.textContent = "Catalogue unavailable";
+    elements.readerProfileBookList.innerHTML = `<p class="reader-catalogue-empty">${escapeHtml(error.message)}</p>`;
+  }
 }
 
 function openShareDialog(kind, itemId) {
@@ -2254,6 +2304,9 @@ elements.readerGrid.addEventListener("click", (event) => {
     openReaderProfile(button.dataset.id);
   }
 });
+
+elements.readerCatalogueSearch.addEventListener("input", renderReaderCatalogue);
+elements.readerCatalogueStatus.addEventListener("change", renderReaderCatalogue);
 
 elements.adminAccountList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-admin-action]");
