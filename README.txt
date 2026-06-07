@@ -15,6 +15,10 @@ Signed-in readers can also browse one another's book catalogues and filter
 them by title, author, genre, or reading status. Reading logs and reflections
 remain private unless a passage is deliberately shared.
 
+Book recommendations support private comments between the sender and
+recipient, read/unread receipts, collection checks, and one-click wishlist
+saving when the recipient does not already own the book.
+
 The first account created in the online database is the administrator. Only
 that account can see the Community admin controls.
 
