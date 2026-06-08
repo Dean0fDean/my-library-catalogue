@@ -212,6 +212,14 @@
           </div>
 
           <div id="book-grid" class="book-grid" aria-live="polite"></div>
+          <button
+            class="catalogue-expand-button"
+            id="catalogue-expand-button"
+            type="button"
+            hidden
+          >
+            Show all books
+          </button>
 
           <div id="empty-state" class="empty-state" hidden>
             <div class="empty-books" aria-hidden="true">
@@ -667,6 +675,14 @@
             </div>
           </div>
           <div id="reader-profile-book-list"></div>
+          <button
+            class="catalogue-expand-button reader-expand-button"
+            id="reader-catalogue-expand-button"
+            type="button"
+            hidden
+          >
+            Show all books
+          </button>
         </div>
       </div>
     </dialog>
@@ -785,7 +801,6 @@
             name="cover"
             type="file"
             accept="image/*"
-            capture="environment"
           />
           <small class="field-help">
             Take a photo or choose one from your device.
@@ -899,7 +914,6 @@
             name="cover"
             type="file"
             accept="image/*"
-            capture="environment"
             required
           />
         </label>
