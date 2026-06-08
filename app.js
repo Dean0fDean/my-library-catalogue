@@ -159,6 +159,19 @@ const elements = {
   communityMarketplaceView: document.querySelector(
     "#community-marketplace-view",
   ),
+  communityDebatesView: document.querySelector("#community-debates-view"),
+  debateList: document.querySelector("#debate-list"),
+  debateEmpty: document.querySelector("#debate-empty"),
+  debateInviteDialog: document.querySelector("#debate-invite-dialog"),
+  debateInviteForm: document.querySelector("#debate-invite-form"),
+  debateInviteeId: document.querySelector("#debate-invitee-id"),
+  debateInviteeSummary: document.querySelector("#debate-invitee-summary"),
+  debateInviteError: document.querySelector("#debate-invite-error"),
+  communityBulletinView: document.querySelector("#community-bulletin-view"),
+  announcementForm: document.querySelector("#announcement-form"),
+  announcementError: document.querySelector("#announcement-error"),
+  announcementList: document.querySelector("#announcement-list"),
+  announcementEmpty: document.querySelector("#announcement-empty"),
   marketplaceGrid: document.querySelector("#marketplace-grid"),
   marketplaceEmpty: document.querySelector("#marketplace-empty"),
   marketListingDialog: document.querySelector("#market-listing-dialog"),
@@ -183,6 +196,8 @@ let sharedJournals = [];
 let readingFacts = [];
 let marketplaceListings = [];
 let learningTasks = [];
+let debates = [];
+let announcements = [];
 let runesBalance = 0;
 let readingFactIndex = 0;
 let readingFactTimer;
@@ -545,6 +560,8 @@ function notificationIcon(type) {
     journal: "J",
     marketplace: "$",
     learning: "R",
+    debate: "D",
+    announcement: "!",
     insight: "i",
   }[type] || "i";
 }
@@ -851,10 +868,20 @@ async function loadLearningNook() {
   elements.profileRunesCount.textContent = runesBalance;
 }
 
+async function loadSocialSpaces() {
+  if (!apiToken) return;
+  const [debateData, announcementData] = await Promise.all([
+    apiRequest("debates"),
+    apiRequest("announcements"),
+  ]);
+  debates = debateData.debates || [];
+  announcements = announcementData.announcements || [];
+}
+
 async function refreshCommunity() {
   try {
     await syncCommunityStats();
-    await loadCommunity();
+    await Promise.all([loadCommunity(), loadSocialSpaces()]);
     renderCommunity();
   } catch (error) {
     showToast(error.message);
@@ -871,6 +898,7 @@ async function showAuthenticatedApp(account) {
     await loadReadingFacts();
     await loadMarketplace();
     await loadLearningNook();
+    await loadSocialSpaces();
   } catch (error) {
     showToast(error.message);
   }
@@ -1274,7 +1302,7 @@ function renderLearningNook() {
       (task) => `
         <article class="learning-task ${task.completed ? "completed" : ""}">
           <div class="learning-task-heading">
-            <span class="owl-seal" aria-hidden="true">O</span>
+            ${owlIconMarkup("owl-seal")}
             <div>
               <p>${task.type === "choice" ? "LANGUAGE INQUIRY" : "WRITING ASSIGNMENT"}</p>
               <h3>${escapeHtml(task.title)}</h3>
@@ -1321,6 +1349,17 @@ function renderLearningNook() {
       `,
     )
     .join("");
+}
+
+function owlIconMarkup(className = "") {
+  return `
+    <svg class="owl-icon ${className}" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M14 21 9 8l18 9a24 24 0 0 1 10 0L55 8l-5 13a23 23 0 1 1-36 0Z"></path>
+      <circle cx="23" cy="30" r="7"></circle>
+      <circle cx="41" cy="30" r="7"></circle>
+      <path d="m28 39 4 5 4-5M20 52h24"></path>
+    </svg>
+  `;
 }
 
 async function completeLearningTask(form) {
@@ -2322,6 +2361,7 @@ function renderReaderCard(account) {
         <div class="reader-stat"><strong>${stats.read}</strong><span>Read</span></div>
         <div class="reader-stat"><strong>${stats.reading || 0}</strong><span>Reading</span></div>
         <div class="reader-stat"><strong>${stats.unread}</strong><span>To read</span></div>
+        <div class="reader-stat rune-stat"><strong>${Number(account.runes) || 0}</strong><span>Runes</span></div>
       </div>
       <div class="reader-actions">
         <button
@@ -2336,6 +2376,12 @@ function renderReaderCard(account) {
           data-community-action="profile"
           data-id="${account.id}"
         >View profile</button>
+        <button
+          class="debate-invite-button"
+          type="button"
+          data-community-action="debate"
+          data-id="${account.id}"
+        >Invite to debate</button>
       </div>
     </article>
   `;
@@ -2898,12 +2944,211 @@ async function deleteReadingFact(id) {
   }
 }
 
+function debateParticipantMarkup(name, image) {
+  return image
+    ? `<span class="debate-person"><img src="${image}" alt="" />${escapeHtml(name)}</span>`
+    : `<span class="debate-person"><i>${escapeHtml(name.charAt(0).toUpperCase())}</i>${escapeHtml(name)}</span>`;
+}
+
+function renderDebates() {
+  if (!currentAccount) return;
+  elements.debateList.innerHTML = debates
+    .map((debate) => {
+      const isInviter = debate.inviterId === currentAccount.id;
+      const isInvitee = debate.inviteeId === currentAccount.id;
+      const isParticipant = isInviter || isInvitee;
+      const pending = debate.status === "pending";
+      return `
+        <article class="debate-card ${pending ? "pending" : ""}">
+          <div class="debate-card-heading">
+            <div>
+              <p class="eyebrow">${pending ? "PENDING INVITATION" : "PUBLIC DEBATE"}</p>
+              <h3>${escapeHtml(debate.topic)}</h3>
+            </div>
+            <span class="debate-access">${pending ? "Invitation" : isParticipant ? "Participant" : "Read only"}</span>
+          </div>
+          <div class="debate-participants">
+            ${debateParticipantMarkup(debate.inviter, debate.inviterImage)}
+            <span>and</span>
+            ${debateParticipantMarkup(debate.invitee, debate.inviteeImage)}
+          </div>
+          ${
+            pending
+              ? `<div class="debate-invitation-actions">
+                  ${
+                    isInvitee
+                      ? `<button type="button" data-debate-action="respond" data-decision="accepted" data-id="${debate.id}">Accept</button>
+                         <button type="button" data-debate-action="respond" data-decision="declined" data-id="${debate.id}">Decline</button>`
+                      : `<p>Waiting for ${escapeHtml(debate.invitee)} to respond.</p>`
+                  }
+                </div>`
+              : `<div class="debate-messages">
+                  ${
+                    debate.messages.length
+                      ? debate.messages
+                          .map(
+                            (message) => `
+                              <div class="debate-message">
+                                <strong>${escapeHtml(message.author)}</strong>
+                                <p>${escapeHtml(message.message)}</p>
+                                <time>${new Date(message.createdAt).toLocaleString()}</time>
+                              </div>
+                            `,
+                          )
+                          .join("")
+                      : '<p class="debate-no-messages">The floor is open. No messages yet.</p>'
+                  }
+                </div>
+                ${
+                  isParticipant
+                    ? `<form class="debate-message-form" data-debate-id="${debate.id}">
+                        <label>
+                          <span class="sr-only">Add to this debate</span>
+                          <textarea name="message" rows="3" maxlength="3000" placeholder="Make your point..." required></textarea>
+                        </label>
+                        <button type="submit">Send message</button>
+                      </form>`
+                    : '<p class="debate-spectator-note">You may follow this exchange, but only the invited participants can contribute.</p>'
+                }`
+          }
+        </article>
+      `;
+    })
+    .join("");
+  elements.debateList.hidden = debates.length === 0;
+  elements.debateEmpty.hidden = debates.length > 0;
+}
+
+function openDebateInvite(accountId) {
+  const account = accounts.find((item) => item.id === accountId);
+  if (!account || account.id === currentAccount?.id) return;
+  elements.debateInviteForm.reset();
+  elements.debateInviteError.textContent = "";
+  elements.debateInviteeId.value = account.id;
+  elements.debateInviteeSummary.textContent = `Invite ${account.username} to a public, two-person debate.`;
+  elements.debateInviteDialog.showModal();
+}
+
+async function sendDebateInvite(formData) {
+  elements.debateInviteError.textContent = "";
+  try {
+    await apiRequest("debate-invite", {
+      method: "POST",
+      body: {
+        inviteeId: formData.get("inviteeId"),
+        topic: formData.get("topic").trim(),
+      },
+    });
+    elements.debateInviteDialog.close();
+    await loadSocialSpaces();
+    renderDebates();
+    setCommunityView("debates");
+    showToast("Debate invitation sent.");
+  } catch (error) {
+    elements.debateInviteError.textContent = error.message;
+  }
+}
+
+async function respondToDebate(debateId, decision) {
+  try {
+    await apiRequest("debate-respond", {
+      method: "POST",
+      body: { debateId, decision },
+    });
+    await loadSocialSpaces();
+    renderDebates();
+    showToast(
+      decision === "accepted"
+        ? "Debate invitation accepted."
+        : "Debate invitation declined.",
+    );
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function postDebateMessage(debateId, message) {
+  try {
+    await apiRequest("debate-message", {
+      method: "POST",
+      body: { debateId, message },
+    });
+    await loadSocialSpaces();
+    renderDebates();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderAnnouncements() {
+  if (!currentAccount) return;
+  elements.announcementForm.hidden = currentAccount.role !== "admin";
+  elements.announcementList.innerHTML = announcements
+    .map(
+      (announcement) => `
+        <article class="announcement-card">
+          <div class="announcement-card-heading">
+            <div>
+              <p class="eyebrow">COMMUNITY NOTICE</p>
+              <h3>${escapeHtml(announcement.title)}</h3>
+            </div>
+            ${
+              currentAccount.role === "admin"
+                ? `<button type="button" data-announcement-action="delete" data-id="${announcement.id}">Delete</button>`
+                : ""
+            }
+          </div>
+          <p>${escapeHtml(announcement.message)}</p>
+          <footer>Posted by ${escapeHtml(announcement.author)} on ${new Date(announcement.createdAt).toLocaleDateString()}</footer>
+        </article>
+      `,
+    )
+    .join("");
+  elements.announcementList.hidden = announcements.length === 0;
+  elements.announcementEmpty.hidden = announcements.length > 0;
+}
+
+async function saveAnnouncement(formData) {
+  elements.announcementError.textContent = "";
+  try {
+    await apiRequest("announcement-save", {
+      method: "POST",
+      body: {
+        title: formData.get("title").trim(),
+        message: formData.get("message").trim(),
+      },
+    });
+    elements.announcementForm.reset();
+    await loadSocialSpaces();
+    renderAnnouncements();
+    showToast("Announcement posted for everyone.");
+  } catch (error) {
+    elements.announcementError.textContent = error.message;
+  }
+}
+
+async function deleteAnnouncement(id) {
+  try {
+    await apiRequest("announcement-delete", {
+      method: "POST",
+      body: { id },
+    });
+    await loadSocialSpaces();
+    renderAnnouncements();
+    showToast("Announcement removed.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 function setCommunityView(view) {
   if (view === "admin" && currentAccount?.role !== "admin") return;
   elements.communityReadersView.hidden = view !== "readers";
   elements.communityFeedView.hidden = view !== "feed";
   elements.communityJournalsView.hidden = view !== "journals";
   elements.communityMarketplaceView.hidden = view !== "marketplace";
+  elements.communityDebatesView.hidden = view !== "debates";
+  elements.communityBulletinView.hidden = view !== "bulletin";
   elements.communityAdminView.hidden = view !== "admin";
   document.querySelectorAll("[data-community-view]").forEach((button) => {
     const selected = button.dataset.communityView === view;
@@ -2926,6 +3171,8 @@ function renderCommunity() {
   renderShareFeed();
   renderSharedJournals();
   renderMarketplace();
+  renderDebates();
+  renderAnnouncements();
   renderAdminFacts();
   renderAdminAccounts();
 }
@@ -3012,6 +3259,7 @@ async function openReaderProfile(accountId) {
     <div class="reader-stat"><strong>${stats.read}</strong><span>Read</span></div>
     <div class="reader-stat"><strong>${stats.reading || 0}</strong><span>Reading</span></div>
     <div class="reader-stat"><strong>${stats.unread}</strong><span>To read</span></div>
+    <div class="reader-stat rune-stat"><strong>${Number(account.runes) || 0}</strong><span>Runes</span></div>
   `;
   activeReaderCatalogue = [];
   readerCatalogueExpanded = false;
@@ -3214,6 +3462,9 @@ document
   .querySelector("#close-share-button")
   .addEventListener("click", () => elements.shareDialog.close());
 document
+  .querySelector("#close-debate-invite-button")
+  .addEventListener("click", () => elements.debateInviteDialog.close());
+document
   .querySelector("#close-cover-view-button")
   .addEventListener("click", () => elements.coverViewDialog.close());
 document
@@ -3256,6 +3507,20 @@ elements.shareForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.shareForm.reportValidity()) {
     shareItem(new FormData(elements.shareForm));
+  }
+});
+
+elements.debateInviteForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.debateInviteForm.reportValidity()) {
+    sendDebateInvite(new FormData(elements.debateInviteForm));
+  }
+});
+
+elements.announcementForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.announcementForm.reportValidity()) {
+    saveAnnouncement(new FormData(elements.announcementForm));
   }
 });
 
@@ -3337,6 +3602,12 @@ elements.passageDialog.addEventListener("click", (event) => {
 
 elements.journalDialog.addEventListener("click", (event) => {
   if (event.target === elements.journalDialog) elements.journalDialog.close();
+});
+
+elements.debateInviteDialog.addEventListener("click", (event) => {
+  if (event.target === elements.debateInviteDialog) {
+    elements.debateInviteDialog.close();
+  }
 });
 
 elements.profileDialog.addEventListener("click", (event) => {
@@ -3434,6 +3705,9 @@ elements.readerGrid.addEventListener("click", (event) => {
   if (button.dataset.communityAction === "profile") {
     openReaderProfile(button.dataset.id);
   }
+  if (button.dataset.communityAction === "debate") {
+    openDebateInvite(button.dataset.id);
+  }
 });
 
 elements.readerCatalogueSearch.addEventListener("input", () => {
@@ -3498,6 +3772,31 @@ elements.marketplaceGrid.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-market-action]");
   if (button?.dataset.marketAction === "withdraw") {
     withdrawMarketListing(button.dataset.id);
+  }
+});
+
+elements.debateList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-debate-action]");
+  if (button?.dataset.debateAction === "respond") {
+    respondToDebate(
+      button.dataset.id,
+      button.dataset.decision,
+    );
+  }
+});
+
+elements.debateList.addEventListener("submit", (event) => {
+  const form = event.target.closest(".debate-message-form");
+  if (!form) return;
+  event.preventDefault();
+  const message = new FormData(form).get("message").trim();
+  if (message) postDebateMessage(form.dataset.debateId, message);
+});
+
+elements.announcementList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-announcement-action]");
+  if (button?.dataset.announcementAction === "delete") {
+    deleteAnnouncement(button.dataset.id);
   }
 });
 
