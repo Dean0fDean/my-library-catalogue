@@ -126,22 +126,47 @@
 
     <div class="page-shell" id="app-shell" hidden>
       <header class="site-header">
-        <a class="brand" href="#" aria-label="My Library home">
+        <a class="brand" href="#home" aria-label="My Library home">
           <span class="brand-mark" aria-hidden="true">
             <span></span><span></span><span></span>
           </span>
           <span>MY LIBRARY</span>
         </a>
-        <nav class="site-nav" aria-label="Library sections">
-          <a href="#collection">Collection</a>
-          <a href="#wishlist">Wishlist</a>
-          <a href="#reading-log">Reading log</a>
-          <a href="#passages">Passages</a>
-          <a href="#journal">Journal</a>
-          <a href="#learning-nook">Learning Nook</a>
-          <a href="#the-chippings">The Chippings</a>
-          <a href="#community">Community</a>
-          <a href="#profile">Profile</a>
+        <nav class="site-nav" aria-label="Main navigation">
+          <a class="home-nav-link" href="#home">Home</a>
+          <button
+            class="menu-toggle"
+            id="menu-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="feature-menu"
+          >
+            <span>Menu</span>
+            <i aria-hidden="true"></i>
+          </button>
+          <div class="feature-menu" id="feature-menu" hidden>
+            <div class="menu-group">
+              <p>Your library</p>
+              <a href="#collection"><strong>Collection</strong><span>Books you own</span></a>
+              <a href="#wishlist"><strong>Wishlist</strong><span>Books to purchase</span></a>
+            </div>
+            <div class="menu-group">
+              <p>Reading life</p>
+              <a href="#reading-log"><strong>Reading Log</strong><span>Sessions and insights</span></a>
+              <a href="#passages"><strong>Passages</strong><span>Saved lines and reflections</span></a>
+              <a href="#journal"><strong>Journal</strong><span>Your reading reflections</span></a>
+            </div>
+            <div class="menu-group">
+              <p>Explore</p>
+              <a href="#learning-nook"><strong>Learning Nook</strong><span>Tasks from the owls</span></a>
+              <a href="#the-chippings"><strong>The Chippings</strong><span>Themes and profile frames</span></a>
+              <a href="#community"><strong>Community</strong><span>Readers, debates, and more</span></a>
+            </div>
+            <div class="menu-group">
+              <p>Your account</p>
+              <a href="#profile"><strong>Profile</strong><span>Notifications and achievements</span></a>
+            </div>
+          </div>
         </nav>
       </header>
 
@@ -159,14 +184,18 @@
       </aside>
 
       <main>
-        <section class="hero">
+        <section class="hero home-section" id="home" aria-labelledby="home-title">
           <div class="hero-copy">
-            <p class="eyebrow">YOUR PERSONAL COLLECTION</p>
-            <h1>Every book has<br />a place here.</h1>
+            <p class="eyebrow">YOUR READING HOME</p>
+            <h1 id="home-title">Welcome back,<br /><span id="home-reader-name">Reader</span>.</h1>
             <p class="hero-intro">
-              Catalogue the stories on your shelves, remember what you have
-              read, and find your next book.
+              Your books, reading habits, ideas, and reader community are all
+              gathered here.
             </p>
+            <div class="home-primary-actions">
+              <a class="primary-button" href="#collection">Open my collection</a>
+              <a class="home-menu-link" href="#reading-log">Log today's reading</a>
+            </div>
           </div>
 
           <aside class="stats-card" aria-label="Library statistics">
@@ -187,6 +216,38 @@
               <span>TO BE READ</span>
             </div>
           </aside>
+          <div class="home-feature-grid" aria-label="Library features">
+            <a href="#wishlist">
+              <span aria-hidden="true">01</span>
+              <strong>Wishlist</strong>
+              <small>Plan your next shelf</small>
+            </a>
+            <a href="#passages">
+              <span aria-hidden="true">02</span>
+              <strong>Saved passages</strong>
+              <small>Return to lines worth keeping</small>
+            </a>
+            <a href="#journal">
+              <span aria-hidden="true">03</span>
+              <strong>Journal</strong>
+              <small>Reflect on what you read</small>
+            </a>
+            <a href="#learning-nook">
+              <span aria-hidden="true">04</span>
+              <strong>Learning Nook</strong>
+              <small>Earn Runes and keep your streak</small>
+            </a>
+            <a href="#community">
+              <span aria-hidden="true">05</span>
+              <strong>Community</strong>
+              <small>Meet readers and exchange ideas</small>
+            </a>
+            <a href="#the-chippings">
+              <span aria-hidden="true">06</span>
+              <strong>The Chippings</strong>
+              <small>Spend Runes on your library style</small>
+            </a>
+          </div>
         </section>
 
         <section
