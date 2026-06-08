@@ -28,6 +28,60 @@ body {
   font-family: Georgia, "Times New Roman", serif;
 }
 
+body[data-theme="theme-midnight"] {
+  --ink: #172235;
+  --forest: #172b46;
+  --forest-light: #244363;
+  --paper: #e9eef5;
+  --cream: #d8e0ea;
+  --gold: #7393b3;
+  --terracotta: #586f91;
+  --sage: #9aacc1;
+  --line: rgba(23, 34, 53, 0.2);
+}
+
+body[data-theme="theme-rosewood"] {
+  --ink: #3b2024;
+  --forest: #4b2028;
+  --forest-light: #6a3039;
+  --paper: #f3e7d5;
+  --cream: #e6d5bf;
+  --gold: #b86f52;
+  --terracotta: #8f4549;
+  --sage: #b49b83;
+  --line: rgba(75, 32, 40, 0.2);
+}
+
+body[data-theme="theme-scriptorium"] {
+  --ink: #292117;
+  --forest: #201c17;
+  --forest-light: #393025;
+  --paper: #f2e4bd;
+  --cream: #e6d39f;
+  --gold: #d5a744;
+  --terracotta: #9d6235;
+  --sage: #ad9d6d;
+  --line: rgba(41, 33, 23, 0.22);
+}
+
+body[data-theme="theme-moss"] {
+  --ink: #273126;
+  --forest: #26382c;
+  --forest-light: #3d5741;
+  --paper: #e9e2ca;
+  --cream: #d9d0b4;
+  --gold: #9a7e48;
+  --terracotta: #7d5c43;
+  --sage: #8da071;
+  --line: rgba(39, 49, 38, 0.2);
+}
+
+body[data-theme] .learning-section,
+body[data-theme] .community-section,
+body[data-theme] .reading-section {
+  background-color: var(--forest);
+}
+
 button,
 input,
 select,
@@ -2159,6 +2213,36 @@ fieldset {
   box-shadow: var(--shadow);
 }
 
+.profile-photo-wrap[data-frame],
+.mini-avatar[data-frame] {
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+[data-frame="frame-laurel"] {
+  border-color: #c98945 !important;
+  box-shadow: 0 0 0 4px #315840, 0 0 0 8px #c98945, var(--shadow) !important;
+}
+
+[data-frame="frame-moon"] {
+  border-color: #d6e2ef !important;
+  box-shadow: 0 0 0 4px #526f91, 0 0 18px 8px rgba(146, 179, 214, 0.55) !important;
+}
+
+[data-frame="frame-ember"] {
+  border-color: #dc8b5d !important;
+  box-shadow: 0 0 0 4px #7b2731, 0 0 16px 5px rgba(209, 88, 55, 0.5) !important;
+}
+
+[data-frame="frame-owl"] {
+  border-color: #f0d280 !important;
+  box-shadow: 0 0 0 3px #8d6827, 0 0 0 7px #d5a744, 0 0 20px rgba(213, 167, 68, 0.45) !important;
+}
+
+[data-frame="frame-runes"] {
+  border-color: #d8c7ee !important;
+  box-shadow: 0 0 0 4px #8066a5, 0 0 20px 7px rgba(128, 102, 165, 0.5) !important;
+}
+
 .profile-photo-wrap img,
 .profile-placeholder {
   width: 100%;
@@ -3308,6 +3392,8 @@ fieldset {
 @media (max-width: 540px) {
   .site-nav {
     gap: 0.8rem;
+    max-width: 68vw;
+    overflow-x: auto;
   }
 
   .site-nav a {
@@ -3317,6 +3403,7 @@ fieldset {
 
   .site-nav a[href="#community"],
   .site-nav a[href="#learning-nook"],
+  .site-nav a[href="#the-chippings"],
   .site-nav a[href="#profile"] {
     display: block;
   }
@@ -3732,6 +3819,257 @@ fieldset {
   font-weight: 400;
 }
 
+/* The Chippings */
+.chippings-section {
+  padding: 5rem clamp(1.25rem, 6vw, 6rem) 6rem;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 88% 10%, rgba(201, 137, 69, 0.16), transparent 25rem),
+    var(--cream);
+}
+
+.chippings-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.chippings-heading > div:first-child {
+  max-width: 44rem;
+}
+
+.chippings-heading h2 {
+  margin-bottom: 0.6rem;
+}
+
+.chippings-heading p:last-child {
+  margin: 0;
+  color: color-mix(in srgb, var(--ink) 68%, transparent);
+  line-height: 1.65;
+}
+
+.chippings-reset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.chippings-reset-actions button {
+  padding: 0.55rem 0.65rem;
+  color: var(--forest);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--forest) 28%, transparent);
+  font: 700 0.56rem/1 Arial, sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.chippings-balance {
+  min-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  color: var(--paper);
+  background: var(--forest);
+  border: 1px solid var(--gold);
+}
+
+.chippings-balance > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--forest);
+  background: var(--gold);
+  border-radius: 50%;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.chippings-balance strong,
+.chippings-balance small {
+  display: block;
+}
+
+.chippings-balance strong {
+  font-size: 1.8rem;
+  font-weight: 400;
+}
+
+.chippings-balance small {
+  margin-top: 0.15rem;
+  color: color-mix(in srgb, var(--paper) 60%, transparent);
+  font: 700 0.55rem/1 Arial, sans-serif;
+  letter-spacing: 0.1em;
+}
+
+.chippings-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin: 2rem 0 1.4rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.chippings-tabs button {
+  flex: 0 0 auto;
+  padding: 0.8rem 0.9rem;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  font: 700 0.6rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chippings-tabs button.active {
+  color: var(--ink);
+  border-bottom-color: var(--gold);
+}
+
+.chippings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.chippings-card {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 150px 1fr auto;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--paper) 92%, white);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 30px rgba(34, 45, 38, 0.08);
+}
+
+.chippings-card.equipped {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+.store-theme-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-content: end;
+  gap: 0.5rem;
+  padding: 1rem;
+  position: relative;
+  background: var(--preview-one);
+}
+
+.store-theme-preview span {
+  height: 62px;
+  position: relative;
+  z-index: 1;
+  background: var(--preview-two);
+  border: 1px solid color-mix(in srgb, var(--preview-three) 65%, transparent);
+}
+
+.store-theme-preview span:nth-child(2) {
+  height: 88px;
+}
+
+.store-theme-preview i {
+  position: absolute;
+  inset: 18px 22px auto auto;
+  width: 36px;
+  height: 36px;
+  background: var(--preview-three);
+  border-radius: 50%;
+}
+
+.store-frame-preview {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--gold) 18%, transparent), transparent 55%),
+    var(--forest);
+}
+
+.store-frame-preview span {
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  color: var(--paper);
+  background: var(--terracotta);
+  border: 7px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  font-size: 2.2rem;
+  font-style: italic;
+}
+
+.store-frame-preview[data-frame="frame-laurel"] span,
+.store-frame-preview[data-frame="frame-moon"] span,
+.store-frame-preview[data-frame="frame-ember"] span,
+.store-frame-preview[data-frame="frame-owl"] span,
+.store-frame-preview[data-frame="frame-runes"] span {
+  border-color: inherit;
+  box-shadow: inherit;
+}
+
+.chippings-card-copy {
+  padding: 1.15rem 1.2rem;
+}
+
+.chippings-card-copy p {
+  margin: 0 0 0.35rem;
+  color: var(--gold);
+  font: 700 0.55rem/1 Arial, sans-serif;
+  letter-spacing: 0.1em;
+}
+
+.chippings-card-copy h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.chippings-card-copy span {
+  color: color-mix(in srgb, var(--ink) 62%, transparent);
+  line-height: 1.5;
+}
+
+.chippings-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0 1.2rem 1.2rem;
+}
+
+.chippings-card-action button {
+  padding: 0.7rem 0.8rem;
+  color: var(--paper);
+  background: var(--forest);
+  border: 0;
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.chippings-card-action button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.chippings-card-action strong {
+  color: var(--gold);
+  font-size: 0.76rem;
+}
+
+.chippings-empty {
+  padding: 2rem;
+  text-align: center;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  border: 1px dashed var(--line);
+}
+
 .admin-quandary-panel {
   margin: 1.5rem 0;
   padding: clamp(1.2rem, 3vw, 1.8rem);
@@ -4050,6 +4388,16 @@ fieldset {
   .learning-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .chippings-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chippings-balance {
+    width: 100%;
+    min-width: 0;
   }
 
   .learning-rewards,
