@@ -99,6 +99,9 @@ const elements = {
   loginUsername: document.querySelector("#login-username"),
   signupUsername: document.querySelector("#signup-username"),
   profileGreeting: document.querySelector("#profile-greeting"),
+  homeReaderName: document.querySelector("#home-reader-name"),
+  menuToggle: document.querySelector("#menu-toggle"),
+  featureMenu: document.querySelector("#feature-menu"),
   profilePhoto: document.querySelector("#profile-photo"),
   profilePlaceholder: document.querySelector("#profile-placeholder"),
   profileDialog: document.querySelector("#profile-dialog"),
@@ -525,6 +528,7 @@ function setAuthView(view) {
 
 function updateProfileDisplay() {
   if (!currentAccount) return;
+  elements.homeReaderName.textContent = currentAccount.username;
   elements.profileGreeting.textContent = currentAccount.username;
   elements.profilePlaceholder.textContent =
     currentAccount.username.charAt(0).toUpperCase() || "R";
@@ -546,6 +550,17 @@ function updateProfileDisplay() {
     : "";
   elements.profilePhoto.closest(".profile-photo-wrap").dataset.frame =
     equippedFrame;
+}
+
+function setFeatureMenu(open) {
+  elements.featureMenu.hidden = !open;
+  elements.menuToggle.setAttribute("aria-expanded", String(open));
+  elements.menuToggle.classList.toggle("open", open);
+  document.body.classList.toggle("feature-menu-open", open);
+}
+
+function closeFeatureMenu() {
+  setFeatureMenu(false);
 }
 
 function readingSnapshot() {
@@ -3719,6 +3734,12 @@ document
 document
   .querySelector("#close-market-listing-button")
   .addEventListener("click", () => elements.marketListingDialog.close());
+elements.menuToggle.addEventListener("click", () => {
+  setFeatureMenu(elements.featureMenu.hidden);
+});
+elements.featureMenu.addEventListener("click", (event) => {
+  if (event.target.closest("a[href^='#']")) closeFeatureMenu();
+});
 elements.readingFactBanner.addEventListener("click", dismissReadingFact);
 elements.readingFactBanner.addEventListener("keydown", (event) => {
   if (event.key === "Enter" || event.key === " ") {
@@ -4156,6 +4177,12 @@ elements.highlightCanvas.addEventListener("pointercancel", endHighlight);
 document.addEventListener("click", (event) => {
   ensureAudioContext();
   if (
+    !elements.featureMenu.hidden &&
+    !event.target.closest(".site-nav")
+  ) {
+    closeFeatureMenu();
+  }
+  if (
     openMenuId &&
     !event.target.closest(".book-card") &&
     !event.target.closest(".menu-button")
@@ -4165,7 +4192,14 @@ document.addEventListener("click", (event) => {
   }
 });
 
-document.addEventListener("keydown", ensureAudioContext, { once: true });
+document.addEventListener("keydown", (event) => {
+  ensureAudioContext();
+  if (event.key === "Escape" && !elements.featureMenu.hidden) {
+    closeFeatureMenu();
+    elements.menuToggle.focus();
+  }
+});
+window.addEventListener("hashchange", closeFeatureMenu);
 
 migrateAccountData();
 initializeAuthentication();
