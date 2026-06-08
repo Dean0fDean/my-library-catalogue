@@ -1090,7 +1090,7 @@ fieldset {
 
 .reader-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   margin-bottom: 1.2rem;
   border-top: 1px solid rgba(244, 240, 231, 0.13);
   border-bottom: 1px solid rgba(244, 240, 231, 0.13);
@@ -1099,6 +1099,10 @@ fieldset {
 .reader-stat {
   padding: 0.8rem 0.3rem;
   text-align: center;
+}
+
+.reader-stat.rune-stat strong {
+  color: var(--gold);
 }
 
 .reader-stat + .reader-stat {
@@ -1665,7 +1669,7 @@ fieldset {
 .reader-profile-stats {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   border: 1px solid var(--line);
 }
 
@@ -3525,20 +3529,18 @@ fieldset {
   opacity: 0.38;
 }
 
-.owl-parliament span,
-.owl-seal {
+.owl-icon {
   width: 44px;
   height: 52px;
-  display: grid;
-  place-items: center;
   color: var(--gold);
-  border: 1px solid rgba(201, 137, 69, 0.55);
-  border-radius: 50% 50% 42% 42%;
-  font-style: italic;
-  font-weight: 700;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
 }
 
-.owl-parliament span:nth-child(2) {
+.owl-parliament .parliament-owl:nth-child(2) {
   transform: translateY(-10px);
 }
 
@@ -3573,6 +3575,9 @@ fieldset {
 .owl-seal {
   width: 40px;
   height: 46px;
+  padding: 0.25rem;
+  border: 1px solid rgba(201, 137, 69, 0.55);
+  border-radius: 50% 50% 42% 42%;
 }
 
 .learning-task-heading p {
@@ -3675,10 +3680,240 @@ fieldset {
 }
 
 .profile-runes {
+  width: fit-content;
+  padding: 0.55rem 0.7rem;
   color: var(--gold);
+  background: rgba(201, 137, 69, 0.1);
+  border: 1px solid rgba(201, 137, 69, 0.3);
   font: 700 0.68rem/1 Arial, sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Debate club and bulletin board */
+.debate-club-heading,
+.bulletin-heading {
+  margin-bottom: 1.5rem;
+}
+
+.debate-club-heading h3,
+.bulletin-heading h3 {
+  margin: 0.2rem 0 0.55rem;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 400;
+}
+
+.debate-club-heading p:last-child,
+.bulletin-heading p:last-child {
+  max-width: 45rem;
+  margin: 0;
+  color: rgba(244, 240, 231, 0.66);
+  line-height: 1.6;
+}
+
+.debate-list,
+.announcement-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.debate-card,
+.announcement-card {
+  min-width: 0;
+  padding: clamp(1.2rem, 3vw, 1.8rem);
+  background: rgba(244, 240, 231, 0.07);
+  border: 1px solid rgba(244, 240, 231, 0.16);
+}
+
+.debate-card.pending {
+  border-left: 4px solid var(--gold);
+}
+
+.debate-card-heading,
+.announcement-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.debate-card-heading h3,
+.announcement-card-heading h3 {
+  margin: 0.25rem 0;
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.debate-access {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.55rem;
+  color: var(--gold);
+  border: 1px solid rgba(201, 137, 69, 0.4);
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.debate-participants {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 1rem 0;
+  color: rgba(244, 240, 231, 0.58);
+  font-style: italic;
+}
+
+.debate-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--paper);
+  font-style: normal;
+}
+
+.debate-person img,
+.debate-person i {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  color: var(--paper);
+  background: var(--terracotta);
+  border-radius: 50%;
+  font-style: normal;
+}
+
+.debate-messages {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1.1rem 0;
+}
+
+.debate-message {
+  padding: 0.9rem 1rem;
+  overflow-wrap: anywhere;
+  background: rgba(0, 0, 0, 0.13);
+}
+
+.debate-message p {
+  margin: 0.35rem 0;
+  color: rgba(244, 240, 231, 0.82);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.debate-message time,
+.announcement-card footer {
+  color: rgba(244, 240, 231, 0.45);
+  font-size: 0.72rem;
+}
+
+.debate-message-form {
+  display: flex;
+  align-items: end;
+  gap: 0.65rem;
+}
+
+.debate-message-form label {
+  flex: 1;
+}
+
+.debate-message-form textarea,
+.announcement-form input,
+.announcement-form textarea {
+  width: 100%;
+  padding: 0.8rem;
+  color: var(--paper);
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(244, 240, 231, 0.23);
+  resize: vertical;
+}
+
+.debate-message-form button,
+.debate-invitation-actions button,
+.announcement-card-heading button {
+  padding: 0.75rem 0.85rem;
+  color: var(--forest);
+  background: var(--gold);
+  border: 0;
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.debate-invitation-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.debate-invitation-actions p,
+.debate-spectator-note,
+.debate-no-messages {
+  margin: 0;
+  color: rgba(244, 240, 231, 0.57);
+  font-style: italic;
+}
+
+.debate-invite-button {
+  color: var(--gold);
+  border-color: rgba(201, 137, 69, 0.45);
+}
+
+.announcement-form {
+  margin-bottom: 1.3rem;
+  padding: 1.25rem;
+  background: rgba(201, 137, 69, 0.09);
+  border: 1px solid rgba(201, 137, 69, 0.28);
+}
+
+.announcement-form label {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+.announcement-card {
+  position: relative;
+  background: rgba(244, 240, 231, 0.1);
+}
+
+.announcement-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--gold);
+}
+
+.announcement-card > p {
+  margin: 0.8rem 0 1.2rem;
+  color: rgba(244, 240, 231, 0.8);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.announcement-card footer {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+}
+
+@media (max-width: 760px) {
+  .reader-stats,
+  .reader-profile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .debate-card-heading,
+  .announcement-card-heading,
+  .debate-message-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 760px) {
