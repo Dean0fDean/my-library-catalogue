@@ -16,6 +16,7 @@ const elements = {
   emptyMessage: document.querySelector("#empty-message"),
   totalCount: document.querySelector("#total-count"),
   readCount: document.querySelector("#read-count"),
+  readingCount: document.querySelector("#reading-count"),
   unreadCount: document.querySelector("#unread-count"),
   searchInput: document.querySelector("#search-input"),
   genreFilter: document.querySelector("#genre-filter"),
@@ -117,6 +118,17 @@ const elements = {
   shareEmptyState: document.querySelector("#share-empty-state"),
   recommendationUnreadCount: document.querySelector("#recommendation-unread-count"),
   adminAccountList: document.querySelector("#admin-account-list"),
+  adminFactForm: document.querySelector("#admin-fact-form"),
+  adminFactInput: document.querySelector("#admin-fact-input"),
+  adminFactError: document.querySelector("#admin-fact-error"),
+  adminFactList: document.querySelector("#admin-fact-list"),
+  readingFactBanner: document.querySelector("#reading-fact-banner"),
+  readingFactText: document.querySelector("#reading-fact-text"),
+  dismissReadingFact: document.querySelector("#dismiss-reading-fact"),
+  coverViewDialog: document.querySelector("#cover-view-dialog"),
+  coverViewImage: document.querySelector("#cover-view-image"),
+  coverViewTitle: document.querySelector("#cover-view-title"),
+  coverViewAuthor: document.querySelector("#cover-view-author"),
   readerProfileDialog: document.querySelector("#reader-profile-dialog"),
   readerProfileName: document.querySelector("#reader-profile-name"),
   readerProfileAvatar: document.querySelector("#reader-profile-avatar"),
@@ -153,6 +165,7 @@ let follows = loadArray(FOLLOWS_STORAGE_KEY);
 let shares = loadArray(SHARES_STORAGE_KEY);
 let journals = [];
 let sharedJournals = [];
+let readingFacts = [];
 let openMenuId = null;
 let activeCoverBookId = null;
 let pendingCoverImage = "";
@@ -282,10 +295,14 @@ function statsFor(accountId) {
   if (account?.stats && accountId !== currentAccount?.id) return account.stats;
   const accountBooks = booksFor(accountId);
   const read = accountBooks.filter((book) => book.status === "read").length;
+  const reading = accountBooks.filter(
+    (book) => book.status === "reading",
+  ).length;
   return {
     total: accountBooks.length,
     read,
-    unread: accountBooks.length - read,
+    reading,
+    unread: accountBooks.length - read - reading,
   };
 }
 
@@ -582,7 +599,13 @@ async function syncCommunityStats() {
   try {
     await apiRequest("stats", {
       method: "POST",
-      body: { owned: stats.total, read: stats.read, unread: stats.unread, recentBooks },
+      body: {
+        owned: stats.total,
+        read: stats.read,
+        reading: stats.reading,
+        unread: stats.unread,
+        recentBooks,
+      },
     });
   } catch {
     // Catalogue use remains available if the community service is briefly offline.
@@ -767,6 +790,14 @@ async function loadJournals() {
   journals = data.journals || [];
 }
 
+async function loadReadingFacts() {
+  if (!apiToken) return;
+  const data = await apiRequest("facts");
+  readingFacts = data.facts || [];
+  renderReadingFact();
+  renderAdminFacts();
+}
+
 async function refreshCommunity() {
   try {
     await syncCommunityStats();
@@ -784,6 +815,7 @@ async function showAuthenticatedApp(account) {
     await importLegacyUsers();
     await loadAccountData();
     await loadJournals();
+    await loadReadingFacts();
   } catch (error) {
     showToast(error.message);
   }
@@ -986,21 +1018,25 @@ function updateGenreOptions() {
 function updateStats() {
   const accountBooks = ownedByCurrent(books);
   const readBooks = accountBooks.filter((book) => book.status === "read").length;
+  const readingBooks = accountBooks.filter(
+    (book) => book.status === "reading",
+  ).length;
   elements.totalCount.textContent = accountBooks.length;
   elements.readCount.textContent = readBooks;
-  elements.unreadCount.textContent = accountBooks.length - readBooks;
+  elements.readingCount.textContent = readingBooks;
+  elements.unreadCount.textContent =
+    accountBooks.length - readBooks - readingBooks;
 }
 
 function renderBook(book) {
-  const isRead = book.status === "read";
   const menuIsOpen = openMenuId === book.id;
   const rating = Number(book.rating) || 0;
   const cover = book.coverImage
     ? `<img src="${book.coverImage}" alt="The user's copy of ${escapeHtml(book.title)}" />`
     : `<div class="book-cover-placeholder" aria-hidden="true">${escapeHtml(book.title.charAt(0).toUpperCase())}</div>`;
   return `
-    <article class="book-card" style="--card-accent: ${colorForGenre(book.genre)}">
-      <div class="book-cover">${cover}</div>
+    <article class="book-card" data-book-id="${book.id}" style="--card-accent: ${colorForGenre(book.genre)}">
+      <div class="book-cover" title="${book.coverImage ? "View full picture" : "No picture added"}">${cover}</div>
       <div class="book-card-top">
         <p class="genre-label">${escapeHtml(book.genre)}</p>
         <button
@@ -1050,15 +1086,26 @@ function renderBook(book) {
         data-action="share"
         data-id="${book.id}"
       >Recommend</button>
-      <button
-        class="status-button ${isRead ? "read" : ""}"
-        type="button"
-        data-action="toggle"
-        data-id="${book.id}"
-        aria-label="Mark ${escapeHtml(book.title)} as ${isRead ? "unread" : "read"}"
-      >
-        ${isRead ? "Read" : "To be read"}
-      </button>
+      <div class="book-status-options" role="group" aria-label="Reading status for ${escapeHtml(book.title)}">
+        ${[
+          ["unread", "To be read"],
+          ["reading", "Busy reading"],
+          ["read", "Read"],
+        ]
+          .map(
+            ([status, label]) => `
+              <button
+                class="status-button ${status} ${book.status === status ? "active" : ""}"
+                type="button"
+                data-action="status"
+                data-status="${status}"
+                data-id="${book.id}"
+                aria-pressed="${book.status === status}"
+              >${label}</button>
+            `,
+          )
+          .join("")}
+      </div>
     </article>
   `;
 }
@@ -1145,21 +1192,35 @@ async function addBook(formData) {
   refreshProfileActivity().catch(() => {});
 }
 
-function toggleStatus(id) {
+function setBookStatus(id, status) {
   const book = books.find(
     (item) => item.id === id && item.ownerId === currentAccount?.id,
   );
-  if (!book) return;
-  book.status = book.status === "read" ? "unread" : "read";
+  if (!book || !["unread", "reading", "read"].includes(status)) return;
+  book.status = status;
   saveBooks();
   renderBooks();
   scheduleStatsSync();
   showToast(
-    book.status === "read"
+    status === "read"
       ? `Marked "${book.title}" as read.`
-      : `Moved "${book.title}" back to your reading list.`,
+      : status === "reading"
+        ? `Marked "${book.title}" as busy reading.`
+        : `Moved "${book.title}" to your reading list.`,
   );
   refreshProfileActivity().catch(() => {});
+}
+
+function openFullCover(book) {
+  if (!book?.coverImage) {
+    showToast("No picture has been added for this book.");
+    return;
+  }
+  elements.coverViewImage.src = book.coverImage;
+  elements.coverViewImage.alt = `Full picture of the user's copy of ${book.title}`;
+  elements.coverViewTitle.textContent = book.title;
+  elements.coverViewAuthor.textContent = `by ${book.author}`;
+  elements.coverViewDialog.showModal();
 }
 
 function rateBook(id, rating) {
@@ -2009,6 +2070,7 @@ function renderReaderCard(account) {
       <div class="reader-stats">
         <div class="reader-stat"><strong>${stats.total}</strong><span>Owned</span></div>
         <div class="reader-stat"><strong>${stats.read}</strong><span>Read</span></div>
+        <div class="reader-stat"><strong>${stats.reading || 0}</strong><span>Reading</span></div>
         <div class="reader-stat"><strong>${stats.unread}</strong><span>To read</span></div>
       </div>
       <div class="reader-actions">
@@ -2389,6 +2451,79 @@ function renderAdminAccounts() {
     .join("");
 }
 
+function currentReadingFact() {
+  if (!readingFacts.length || !currentAccount) return null;
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const seed = [...`${currentAccount.id}:${dayKey}`].reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  );
+  return readingFacts[seed % readingFacts.length];
+}
+
+function renderReadingFact() {
+  const fact = currentReadingFact();
+  if (!fact || sessionStorage.getItem(`dismissed-reading-fact:${fact.id}`)) {
+    elements.readingFactBanner.hidden = true;
+    return;
+  }
+  elements.readingFactText.textContent = fact.fact;
+  elements.readingFactBanner.dataset.factId = fact.id;
+  elements.readingFactBanner.hidden = false;
+}
+
+function dismissReadingFact() {
+  const factId = elements.readingFactBanner.dataset.factId;
+  if (factId) sessionStorage.setItem(`dismissed-reading-fact:${factId}`, "1");
+  elements.readingFactBanner.hidden = true;
+}
+
+function renderAdminFacts() {
+  if (!currentAccount || currentAccount.role !== "admin") {
+    elements.adminFactList.innerHTML = "";
+    return;
+  }
+  elements.adminFactList.innerHTML = readingFacts
+    .map(
+      (item) => `
+        <article class="admin-fact-row">
+          <p>${escapeHtml(item.fact)}</p>
+          ${
+            item.removable
+              ? `<button type="button" data-fact-action="delete" data-id="${item.id}">Delete</button>`
+              : '<span>Built in</span>'
+          }
+        </article>
+      `,
+    )
+    .join("");
+}
+
+async function addReadingFact(formData) {
+  elements.adminFactError.textContent = "";
+  try {
+    await apiRequest("fact-save", {
+      method: "POST",
+      body: { fact: formData.get("fact").trim() },
+    });
+    elements.adminFactForm.reset();
+    await loadReadingFacts();
+    showToast("Reading fact added for everyone.");
+  } catch (error) {
+    elements.adminFactError.textContent = error.message;
+  }
+}
+
+async function deleteReadingFact(id) {
+  try {
+    await apiRequest("fact-delete", { method: "POST", body: { id } });
+    await loadReadingFacts();
+    showToast("Reading fact removed.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 function setCommunityView(view) {
   if (view === "admin" && currentAccount?.role !== "admin") return;
   elements.communityReadersView.hidden = view !== "readers";
@@ -2415,6 +2550,7 @@ function renderCommunity() {
   renderReaders();
   renderShareFeed();
   renderSharedJournals();
+  renderAdminFacts();
   renderAdminAccounts();
 }
 
@@ -2472,7 +2608,7 @@ function renderReaderCatalogue() {
               <div class="reader-profile-book-meta">
                 <span>${escapeHtml(book.genre || "Uncategorized")}</span>
                 <span class="reader-book-status ${book.status}">
-                  ${book.status === "read" ? "Read" : "To be read"}
+                  ${book.status === "read" ? "Read" : book.status === "reading" ? "Busy reading" : "To be read"}
                 </span>
                 <span class="reader-book-rating" aria-label="${rating ? `${rating} out of 5 stars` : "Not rated"}">
                   ${rating ? `${"★".repeat(rating)}${"☆".repeat(5 - rating)}` : "Not rated"}
@@ -2498,6 +2634,7 @@ async function openReaderProfile(accountId) {
   elements.readerProfileStats.innerHTML = `
     <div class="reader-stat"><strong>${stats.total}</strong><span>Owned</span></div>
     <div class="reader-stat"><strong>${stats.read}</strong><span>Read</span></div>
+    <div class="reader-stat"><strong>${stats.reading || 0}</strong><span>Reading</span></div>
     <div class="reader-stat"><strong>${stats.unread}</strong><span>To read</span></div>
   `;
   activeReaderCatalogue = [];
@@ -2700,6 +2837,16 @@ document
 document
   .querySelector("#close-share-button")
   .addEventListener("click", () => elements.shareDialog.close());
+document
+  .querySelector("#close-cover-view-button")
+  .addEventListener("click", () => elements.coverViewDialog.close());
+elements.readingFactBanner.addEventListener("click", dismissReadingFact);
+elements.readingFactBanner.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    dismissReadingFact();
+  }
+});
 document.querySelector("#logout-button").addEventListener("click", () => {
   elements.profileDialog.close();
   showLoginScreen();
@@ -2730,6 +2877,13 @@ elements.shareForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.shareForm.reportValidity()) {
     shareItem(new FormData(elements.shareForm));
+  }
+});
+
+elements.adminFactForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.adminFactForm.reportValidity()) {
+    addReadingFact(new FormData(elements.adminFactForm));
   }
 });
 
@@ -2813,11 +2967,26 @@ elements.shareDialog.addEventListener("click", (event) => {
   if (event.target === elements.shareDialog) elements.shareDialog.close();
 });
 
+elements.coverViewDialog.addEventListener("click", (event) => {
+  if (event.target === elements.coverViewDialog) {
+    elements.coverViewDialog.close();
+  }
+});
+
 elements.bookGrid.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-action]");
-  if (!button) return;
+  if (!button) {
+    const card = event.target.closest(".book-card");
+    const book = books.find(
+      (item) =>
+        item.id === card?.dataset.bookId &&
+        item.ownerId === currentAccount?.id,
+    );
+    if (book) openFullCover(book);
+    return;
+  }
   const { action, id } = button.dataset;
-  if (action === "toggle") toggleStatus(id);
+  if (action === "status") setBookStatus(id, button.dataset.status);
   if (action === "rate") rateBook(id, button.dataset.rating);
   if (action === "share") openShareDialog("book", id);
   if (action === "delete") removeBook(id);
@@ -2915,6 +3084,13 @@ elements.adminAccountList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-admin-action]");
   if (button?.dataset.adminAction === "delete") {
     deleteAccountAsAdmin(button.dataset.id);
+  }
+});
+
+elements.adminFactList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-fact-action]");
+  if (button?.dataset.factAction === "delete") {
+    deleteReadingFact(button.dataset.id);
   }
 });
 
