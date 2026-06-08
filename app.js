@@ -2952,7 +2952,8 @@ async function withdrawMarketListing(listingId) {
 }
 
 function applyEquippedCosmetics() {
-  document.body.dataset.theme = equippedTheme;
+  if (equippedTheme) document.body.dataset.theme = equippedTheme;
+  else delete document.body.dataset.theme;
   const profileWrap = elements.profilePhoto.closest(".profile-photo-wrap");
   if (profileWrap) profileWrap.dataset.frame = equippedFrame;
   elements.profileRunesCount.textContent = runesBalance;
