@@ -76,10 +76,17 @@ body[data-theme="theme-moss"] {
   --line: rgba(39, 49, 38, 0.2);
 }
 
-body[data-theme] .learning-section,
+body[data-theme] .learning-section {
+  background:
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--gold) 18%, transparent), transparent 24rem),
+    linear-gradient(135deg, var(--forest), var(--forest-light));
+}
+
 body[data-theme] .community-section,
 body[data-theme] .reading-section {
-  background-color: var(--forest);
+  background:
+    radial-gradient(circle at 88% 10%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 25rem),
+    var(--forest);
 }
 
 button,
