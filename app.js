@@ -24,6 +24,7 @@ const elements = {
   dialog: document.querySelector("#book-dialog"),
   form: document.querySelector("#book-form"),
   titleInput: document.querySelector("#title-input"),
+  authorSuggestions: document.querySelector("#author-suggestions"),
   toast: document.querySelector("#toast"),
   logDialog: document.querySelector("#log-dialog"),
   logForm: document.querySelector("#log-form"),
@@ -112,6 +113,9 @@ const elements = {
   profileNotificationList: document.querySelector("#profile-notification-list"),
   markNotificationsRead: document.querySelector("#mark-notifications-read"),
   profileAchievementGrid: document.querySelector("#profile-achievement-grid"),
+  profileRunesCount: document.querySelector("#profile-runes-count"),
+  learningRunesCount: document.querySelector("#learning-runes-count"),
+  learningTaskGrid: document.querySelector("#learning-task-grid"),
   readerGrid: document.querySelector("#reader-grid"),
   readerEmptyState: document.querySelector("#reader-empty-state"),
   shareFeed: document.querySelector("#share-feed"),
@@ -178,8 +182,14 @@ let journals = [];
 let sharedJournals = [];
 let readingFacts = [];
 let marketplaceListings = [];
+let learningTasks = [];
+let runesBalance = 0;
 let readingFactIndex = 0;
 let readingFactTimer;
+let notificationPollTimer;
+let knownNotificationIds = new Set();
+let notificationBaselineReady = false;
+let audioContext;
 let openMenuId = null;
 let activeCoverBookId = null;
 let pendingCoverImage = "";
@@ -495,6 +505,7 @@ function updateProfileDisplay() {
   }
   renderProfileInsights();
   renderProfileActivity();
+  elements.profileRunesCount.textContent = runesBalance;
 }
 
 function readingSnapshot() {
@@ -533,6 +544,7 @@ function notificationIcon(type) {
     passage: "\"",
     journal: "J",
     marketplace: "$",
+    learning: "R",
     insight: "i",
   }[type] || "i";
 }
@@ -587,8 +599,19 @@ async function refreshProfileActivity() {
     body: snapshot,
   });
   const data = await apiRequest("profile-activity");
-  profileNotifications = data.notifications || [];
+  const nextNotifications = data.notifications || [];
+  const newlyReceived = notificationBaselineReady
+    ? nextNotifications.filter(
+        (item) => !item.readAt && !knownNotificationIds.has(item.id),
+      )
+    : [];
+  profileNotifications = nextNotifications;
   profileAchievements = data.achievements || [];
+  knownNotificationIds = new Set(nextNotifications.map((item) => item.id));
+  if (notificationBaselineReady && newlyReceived.length) {
+    playNotificationChime();
+  }
+  notificationBaselineReady = true;
   renderProfileInsights();
   renderProfileActivity();
 }
@@ -819,6 +842,15 @@ async function loadMarketplace() {
   marketplaceListings = data.listings || [];
 }
 
+async function loadLearningNook() {
+  if (!apiToken) return;
+  const data = await apiRequest("learning");
+  learningTasks = data.tasks || [];
+  runesBalance = Number(data.runes) || 0;
+  renderLearningNook();
+  elements.profileRunesCount.textContent = runesBalance;
+}
+
 async function refreshCommunity() {
   try {
     await syncCommunityStats();
@@ -838,6 +870,7 @@ async function showAuthenticatedApp(account) {
     await loadJournals();
     await loadReadingFacts();
     await loadMarketplace();
+    await loadLearningNook();
   } catch (error) {
     showToast(error.message);
   }
@@ -852,9 +885,16 @@ async function showAuthenticatedApp(account) {
   renderCommunity();
   await refreshCommunity();
   await refreshProfileActivity().catch((error) => showToast(error.message));
+  window.clearInterval(notificationPollTimer);
+  notificationPollTimer = window.setInterval(() => {
+    refreshProfileActivity().catch(() => {});
+  }, 30_000);
 }
 
 function showLoginScreen() {
+  window.clearInterval(notificationPollTimer);
+  notificationBaselineReady = false;
+  knownNotificationIds = new Set();
   currentAccount = null;
   storeApiSession("");
   localStorage.removeItem(CURRENT_ACCOUNT_KEY);
@@ -1037,6 +1077,21 @@ function updateGenreOptions() {
     : "all";
 }
 
+function updateAuthorSuggestions() {
+  const authors = [
+    ...new Set(
+      ownedByCurrent(books)
+        .map((book) => book.author?.trim())
+        .filter(Boolean),
+    ),
+  ].sort((first, second) =>
+    first.localeCompare(second, undefined, { sensitivity: "base" }),
+  );
+  elements.authorSuggestions.innerHTML = authors
+    .map((author) => `<option value="${escapeHtml(author)}"></option>`)
+    .join("");
+}
+
 function updateStats() {
   const accountBooks = ownedByCurrent(books);
   const readBooks = accountBooks.filter((book) => book.status === "read").length;
@@ -1137,6 +1192,7 @@ function renderBook(book) {
 
 function renderBooks() {
   updateGenreOptions();
+  updateAuthorSuggestions();
   updateStats();
   updateBookSuggestions();
 
@@ -1173,6 +1229,118 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => {
     elements.toast.classList.remove("visible");
   }, 2200);
+}
+
+function ensureAudioContext() {
+  if (!audioContext) {
+    const AudioContextClass =
+      window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) audioContext = new AudioContextClass();
+  }
+  if (audioContext?.state === "suspended") {
+    audioContext.resume().catch(() => {});
+  }
+}
+
+function playNotificationChime() {
+  ensureAudioContext();
+  if (!audioContext || audioContext.state !== "running") return;
+  const now = audioContext.currentTime;
+  [
+    { frequency: 659.25, start: 0, duration: 0.22 },
+    { frequency: 880, start: 0.16, duration: 0.34 },
+  ].forEach(({ frequency, start, duration }) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.0001, now + start);
+    gain.gain.exponentialRampToValueAtTime(0.09, now + start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      now + start + duration,
+    );
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(now + start);
+    oscillator.stop(now + start + duration + 0.03);
+  });
+}
+
+function renderLearningNook() {
+  elements.learningRunesCount.textContent = runesBalance;
+  elements.learningTaskGrid.innerHTML = learningTasks
+    .map(
+      (task) => `
+        <article class="learning-task ${task.completed ? "completed" : ""}">
+          <div class="learning-task-heading">
+            <span class="owl-seal" aria-hidden="true">O</span>
+            <div>
+              <p>${task.type === "choice" ? "LANGUAGE INQUIRY" : "WRITING ASSIGNMENT"}</p>
+              <h3>${escapeHtml(task.title)}</h3>
+            </div>
+            <strong>+${task.runes} Runes</strong>
+          </div>
+          <p class="learning-prompt">${escapeHtml(task.prompt)}</p>
+          ${
+            task.completed
+              ? `<div class="learning-complete">
+                  <span aria-hidden="true">R</span>
+                  Completed by order of the Parliament
+                </div>`
+              : task.type === "choice"
+                ? `<form class="learning-choice-form" data-task-key="${task.key}">
+                    ${task.options
+                      .map(
+                        (option, index) => `
+                          <label>
+                            <input type="radio" name="answer" value="${index}" required />
+                            <span>${escapeHtml(option)}</span>
+                          </label>
+                        `,
+                      )
+                      .join("")}
+                    <p class="learning-task-error" role="alert"></p>
+                    <button type="submit">Submit answer</button>
+                  </form>`
+                : `<form class="learning-writing-form" data-task-key="${task.key}">
+                    <textarea
+                      name="response"
+                      rows="7"
+                      maxlength="5000"
+                      minlength="${task.minimumLength}"
+                      placeholder="Write your response here..."
+                      required
+                    ></textarea>
+                    <small>Minimum ${task.minimumLength} characters</small>
+                    <p class="learning-task-error" role="alert"></p>
+                    <button type="submit">Complete assignment</button>
+                  </form>`
+          }
+        </article>
+      `,
+    )
+    .join("");
+}
+
+async function completeLearningTask(form) {
+  const formData = new FormData(form);
+  const errorElement = form.querySelector(".learning-task-error");
+  errorElement.textContent = "";
+  try {
+    const data = await apiRequest("learning-complete", {
+      method: "POST",
+      body: {
+        taskKey: form.dataset.taskKey,
+        answer: formData.get("answer"),
+        response: formData.get("response"),
+      },
+    });
+    await Promise.all([loadLearningNook(), refreshProfileActivity()]);
+    showToast(`The Parliament awarded ${data.runesAwarded} Runes.`);
+  } catch (error) {
+    errorElement.textContent = error.message;
+  }
 }
 
 function openBookForm() {
@@ -3333,6 +3501,15 @@ elements.marketplaceGrid.addEventListener("click", (event) => {
   }
 });
 
+elements.learningTaskGrid.addEventListener("submit", (event) => {
+  const form = event.target.closest(
+    ".learning-choice-form, .learning-writing-form",
+  );
+  if (!form) return;
+  event.preventDefault();
+  if (form.reportValidity()) completeLearningTask(form);
+});
+
 elements.searchInput.addEventListener("input", () => {
   catalogueExpanded = false;
   renderBooks();
@@ -3377,6 +3554,7 @@ elements.highlightCanvas.addEventListener("pointerup", endHighlight);
 elements.highlightCanvas.addEventListener("pointercancel", endHighlight);
 
 document.addEventListener("click", (event) => {
+  ensureAudioContext();
   if (
     openMenuId &&
     !event.target.closest(".book-card") &&
@@ -3386,6 +3564,8 @@ document.addEventListener("click", (event) => {
     renderBooks();
   }
 });
+
+document.addEventListener("keydown", ensureAudioContext, { once: true });
 
 migrateAccountData();
 initializeAuthentication();
