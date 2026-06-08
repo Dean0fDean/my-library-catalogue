@@ -591,6 +591,14 @@
               Shared journals
             </button>
             <button
+              class="community-tab"
+              type="button"
+              data-community-view="marketplace"
+              aria-selected="false"
+            >
+              Marketplace
+            </button>
+            <button
               class="community-tab admin-community-tab"
               type="button"
               data-community-view="admin"
@@ -619,6 +627,25 @@
             <div id="community-journal-feed" class="community-journal-feed" aria-live="polite"></div>
             <div id="community-journal-empty" class="community-empty">
               <p>No journal entries have been shared yet.</p>
+            </div>
+          </div>
+
+          <div id="community-marketplace-view" hidden>
+            <div class="marketplace-heading">
+              <div>
+                <p class="eyebrow">READER-TO-READER BOOKS</p>
+                <h3>Marketplace</h3>
+                <p>Books that readers have actively listed from their collections.</p>
+              </div>
+            </div>
+            <aside class="marketplace-disclaimer">
+              <strong>Important:</strong> My Library does not process payments,
+              arrange couriers, or take responsibility for collection,
+              delivery, condition, or agreements between users.
+            </aside>
+            <div id="marketplace-grid" class="marketplace-grid" aria-live="polite"></div>
+            <div id="marketplace-empty" class="community-empty">
+              <p>No books are listed for sale yet.</p>
             </div>
           </div>
 
@@ -855,6 +882,66 @@
         <p class="form-error" id="share-error" role="alert"></p>
         <button class="primary-button submit-button" type="submit">
           Share
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="market-listing-dialog">
+      <form id="market-listing-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">LIST YOUR COPY</p>
+            <h2>Sell a book</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-market-listing-button"
+            type="button"
+            aria-label="Close sale listing form"
+          >
+            X
+          </button>
+        </div>
+        <input id="market-book-id-input" name="bookId" type="hidden" />
+        <p id="market-book-summary" class="dialog-copy"></p>
+        <label>
+          <span>Asking price</span>
+          <input
+            id="market-price-input"
+            name="price"
+            type="number"
+            min="0.01"
+            max="1000000"
+            step="0.01"
+            inputmode="decimal"
+            required
+          />
+        </label>
+        <label>
+          <span>Currency</span>
+          <select name="currency" required>
+            <option value="ZAR">ZAR (R)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+          </select>
+        </label>
+        <label>
+          <span>Condition or seller note (optional)</span>
+          <textarea
+            name="note"
+            rows="4"
+            maxlength="800"
+            placeholder="Describe the condition or anything a buyer should know."
+          ></textarea>
+        </label>
+        <aside class="marketplace-disclaimer compact">
+          This creates a listing only. Payments and courier arrangements must
+          be handled privately and responsibly outside the app.
+        </aside>
+        <p class="form-error" id="market-listing-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">
+          Publish listing
         </button>
       </form>
     </dialog>
