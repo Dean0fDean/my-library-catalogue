@@ -61,7 +61,16 @@ author field still accepts new names.
 
 The Learning Nook contains assignments from the Parliament of Owls, including
 English-language questions and guided book-review or reflection exercises.
-Completing each assignment once earns synchronized in-app Runes.
+Completing each assignment once earns synchronized in-app Runes. Rune totals
+appear on personal profiles and on the profiles other readers can view. Owl
+icons represent the Parliament throughout the Learning Nook.
+
+The Debate Club lets a reader invite another reader to discuss a topic. The
+invitation must be accepted or declined before messages can be sent. Accepted
+debates are public to read, while only the two invited participants can post.
+
+The Bulletin Board contains announcements for the whole reading community.
+Only the administrator can publish or remove these notices.
 
 New notifications are checked periodically and announced with a short musical
 chime after the reader has interacted with the page. Existing notifications do
