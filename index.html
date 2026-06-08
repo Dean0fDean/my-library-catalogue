@@ -137,6 +137,7 @@
           <a href="#wishlist">Wishlist</a>
           <a href="#reading-log">Reading log</a>
           <a href="#passages">Passages</a>
+          <a href="#journal">Journal</a>
           <a href="#community">Community</a>
           <a href="#profile">Profile</a>
         </nav>
@@ -435,6 +436,35 @@
         </section>
 
         <section
+          class="journal-section"
+          id="journal"
+          aria-labelledby="journal-title"
+        >
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">READING REFLECTIONS</p>
+              <h2 id="journal-title">My journal</h2>
+              <p class="journal-intro">
+                Gather your thoughts, connect them to the books that inspired
+                them, and decide which reflections to share.
+              </p>
+            </div>
+            <button class="primary-button" id="open-journal-button" type="button">
+              <span aria-hidden="true">+</span> New entry
+            </button>
+          </div>
+          <div id="journal-grid" class="journal-grid" aria-live="polite"></div>
+          <div id="journal-empty-state" class="journal-empty-state">
+            <div class="journal-flourish" aria-hidden="true">J</div>
+            <h3>A quiet place for ideas.</h3>
+            <p>Write about one book, several books, or your reading life as a whole.</p>
+            <button class="text-button" id="empty-journal-button" type="button">
+              Write your first entry <span aria-hidden="true">-&gt;</span>
+            </button>
+          </div>
+        </section>
+
+        <section
           class="profile-section"
           id="profile"
           aria-labelledby="profile-title"
@@ -535,6 +565,14 @@
               Recommendations <span id="recommendation-unread-count"></span>
             </button>
             <button
+              class="community-tab"
+              type="button"
+              data-community-view="journals"
+              aria-selected="false"
+            >
+              Shared journals
+            </button>
+            <button
               class="community-tab admin-community-tab"
               type="button"
               data-community-view="admin"
@@ -559,6 +597,13 @@
             </div>
           </div>
 
+          <div id="community-journals-view" hidden>
+            <div id="community-journal-feed" class="community-journal-feed" aria-live="polite"></div>
+            <div id="community-journal-empty" class="community-empty">
+              <p>No journal entries have been shared yet.</p>
+            </div>
+          </div>
+
           <div id="community-admin-view" hidden>
             <div class="admin-heading">
               <div>
@@ -577,6 +622,52 @@
         <p>Made for the stories worth keeping.</p>
       </footer>
     </div>
+
+    <dialog id="journal-dialog" class="wide-dialog">
+      <form id="journal-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">A READER'S NOTEBOOK</p>
+            <h2>New journal entry</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-journal-button"
+            type="button"
+            aria-label="Close journal form"
+          >
+            X
+          </button>
+        </div>
+        <label>
+          <span>Date written</span>
+          <input id="journal-date-input" name="entryDate" type="date" required />
+        </label>
+        <fieldset class="journal-book-fieldset">
+          <legend>Books connected to this reflection (optional)</legend>
+          <div id="journal-book-options" class="journal-book-options"></div>
+        </fieldset>
+        <label>
+          <span>Reflection</span>
+          <textarea
+            id="journal-reflection-input"
+            name="reflection"
+            rows="10"
+            maxlength="10000"
+            placeholder="What stayed with you? What changed your mind?"
+            required
+          ></textarea>
+        </label>
+        <label class="journal-share-choice">
+          <input name="isShared" type="checkbox" />
+          <span>Share this entry with other readers</span>
+        </label>
+        <p class="form-error" id="journal-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">
+          Save entry
+        </button>
+      </form>
+    </dialog>
 
     <dialog id="profile-dialog">
       <form id="profile-form" method="dialog">
