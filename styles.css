@@ -3313,6 +3313,7 @@ fieldset {
 
   .site-nav a[href="#community"],
   .site-nav a[href="#journal"],
+  .site-nav a[href="#learning-nook"],
   .site-nav a[href="#profile"] {
     display: block;
   }
@@ -3431,6 +3432,254 @@ fieldset {
   border-left: 1px solid rgba(23, 42, 34, 0.1);
   box-shadow: -25px 0 48px rgba(34, 45, 38, 0.08);
   transform: perspective(900px) rotateY(-18deg);
+}
+
+/* Learning Nook */
+.learning-section {
+  padding: 5rem clamp(1.25rem, 6vw, 6rem) 6rem;
+  position: relative;
+  overflow: hidden;
+  color: var(--paper);
+  background:
+    radial-gradient(circle at 90% 10%, rgba(201, 137, 69, 0.14), transparent 24rem),
+    linear-gradient(135deg, #142b23, #1a4938);
+}
+
+.learning-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.learning-heading > div:first-child {
+  max-width: 44rem;
+}
+
+.learning-heading h2 {
+  color: var(--paper);
+}
+
+.learning-heading p:last-child {
+  margin: 0.8rem 0 0;
+  color: rgba(244, 240, 231, 0.68);
+  line-height: 1.65;
+}
+
+.runes-balance {
+  min-width: 165px;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  background: rgba(244, 240, 231, 0.08);
+  border: 1px solid rgba(201, 137, 69, 0.45);
+}
+
+.runes-balance > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--forest);
+  background: var(--gold);
+  border-radius: 50%;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.runes-balance strong,
+.runes-balance small {
+  display: block;
+}
+
+.runes-balance strong {
+  color: var(--paper);
+  font-size: 1.8rem;
+  font-weight: 400;
+}
+
+.runes-balance small {
+  color: rgba(244, 240, 231, 0.58);
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.13em;
+}
+
+.owl-parliament {
+  display: flex;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 2.4rem 0 -1rem;
+  opacity: 0.38;
+}
+
+.owl-parliament span,
+.owl-seal {
+  width: 44px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  border: 1px solid rgba(201, 137, 69, 0.55);
+  border-radius: 50% 50% 42% 42%;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.owl-parliament span:nth-child(2) {
+  transform: translateY(-10px);
+}
+
+.learning-task-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.learning-task {
+  min-width: 0;
+  padding: 1.4rem;
+  background: rgba(244, 240, 231, 0.075);
+  border: 1px solid rgba(244, 240, 231, 0.16);
+}
+
+.learning-task.completed {
+  background: rgba(157, 175, 154, 0.12);
+  border-color: rgba(157, 175, 154, 0.36);
+}
+
+.learning-task-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.owl-seal {
+  width: 40px;
+  height: 46px;
+}
+
+.learning-task-heading p {
+  margin: 0 0 0.25rem;
+  color: rgba(244, 240, 231, 0.5);
+  font: 700 0.55rem/1 Arial, sans-serif;
+  letter-spacing: 0.1em;
+}
+
+.learning-task-heading h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.learning-task-heading > strong {
+  color: var(--gold);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.learning-prompt {
+  margin: 1.2rem 0;
+  color: rgba(244, 240, 231, 0.8);
+  line-height: 1.65;
+}
+
+.learning-choice-form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.learning-choice-form label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(244, 240, 231, 0.12);
+}
+
+.learning-choice-form input {
+  margin-top: 0.18rem;
+}
+
+.learning-writing-form textarea {
+  width: 100%;
+  padding: 0.85rem;
+  color: var(--paper);
+  background: rgba(0, 0, 0, 0.13);
+  border: 1px solid rgba(244, 240, 231, 0.22);
+  resize: vertical;
+}
+
+.learning-writing-form small {
+  display: block;
+  margin-top: 0.35rem;
+  color: rgba(244, 240, 231, 0.48);
+}
+
+.learning-choice-form button,
+.learning-writing-form button {
+  margin-top: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  color: var(--forest);
+  background: var(--gold);
+  border: 0;
+  font: 700 0.6rem/1 Arial, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.learning-task-error {
+  min-height: 1rem;
+  margin: 0.2rem 0 0;
+  color: #ffd4c8;
+  font-size: 0.8rem;
+}
+
+.learning-complete {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  color: var(--paper);
+  background: rgba(157, 175, 154, 0.16);
+  font-style: italic;
+}
+
+.learning-complete span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: var(--forest);
+  background: var(--sage);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.profile-runes {
+  color: var(--gold);
+  font: 700 0.68rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 760px) {
+  .learning-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .learning-task-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .journal-intro {
