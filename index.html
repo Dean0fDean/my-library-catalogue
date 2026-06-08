@@ -494,14 +494,27 @@
               <h2 id="learning-title">Learning Nook</h2>
               <p>
                 Complete small language and literary assignments issued by the
-                Parliament. Each completed task earns Runes.
+                Parliament of Owls. Each completed task earns Runes and reveals
+                another assignment.
               </p>
+              <button class="quandary-button" id="open-quandary-button" type="button">
+                Flag a quandary
+              </button>
             </div>
-            <div class="runes-balance" aria-label="Rune balance">
-              <span aria-hidden="true">R</span>
-              <div>
-                <strong id="learning-runes-count">0</strong>
-                <small>RUNES</small>
+            <div class="learning-rewards">
+              <div class="streak-balance" aria-label="Daily streak">
+                <span aria-hidden="true">S</span>
+                <div>
+                  <strong id="learning-streak-count">0</strong>
+                  <small>DAY STREAK</small>
+                </div>
+              </div>
+              <div class="runes-balance" aria-label="Rune balance">
+                <span aria-hidden="true">R</span>
+                <div>
+                  <strong id="learning-runes-count">0</strong>
+                  <small>RUNES</small>
+                </div>
               </div>
             </div>
           </div>
@@ -543,6 +556,10 @@
               <h2 id="profile-title">Hello, <span id="profile-greeting">Reader</span>.</h2>
               <p class="profile-runes">
                 <strong id="profile-runes-count">0</strong> Runes earned
+              </p>
+              <p class="profile-streak">
+                <strong id="profile-streak-count">0</strong> day streak
+                <span id="profile-streak-best"></span>
               </p>
               <p>
                 Personalize the identity attached to this library on your
@@ -790,6 +807,17 @@
               </form>
               <div id="admin-fact-list" class="admin-fact-list"></div>
             </section>
+            <section class="admin-quandary-panel" aria-labelledby="admin-quandary-title">
+              <div>
+                <p class="eyebrow">READER REPORTS</p>
+                <h3 id="admin-quandary-title">Quandaries</h3>
+                <p>Review questions, concerns, and problems flagged by readers.</p>
+              </div>
+              <div id="admin-quandary-list" class="admin-quandary-list"></div>
+              <div id="admin-quandary-empty" class="community-empty">
+                <p>No quandaries have been reported.</p>
+              </div>
+            </section>
             <div id="admin-account-list" class="admin-account-list"></div>
           </div>
         </section>
@@ -1028,6 +1056,51 @@
         <p class="form-error" id="debate-invite-error" role="alert"></p>
         <button class="primary-button submit-button" type="submit">
           Send invitation
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="quandary-dialog">
+      <form id="quandary-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">ASK FOR ADMIN REVIEW</p>
+            <h2>Flag a quandary</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-quandary-button"
+            type="button"
+            aria-label="Close quandary form"
+          >
+            X
+          </button>
+        </div>
+        <p class="dialog-copy">
+          Report a question, concern, confusing task, or problem to the administrator.
+        </p>
+        <label>
+          <span>Category</span>
+          <select name="category" required>
+            <option value="Learning Nook">Learning Nook</option>
+            <option value="Account or profile">Account or profile</option>
+            <option value="Community">Community</option>
+            <option value="Book catalogue">Book catalogue</option>
+            <option value="Technical problem">Technical problem</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Short title</span>
+          <input name="title" minlength="4" maxlength="160" required />
+        </label>
+        <label>
+          <span>What is the quandary?</span>
+          <textarea name="details" rows="7" minlength="10" maxlength="5000" required></textarea>
+        </label>
+        <p class="form-error" id="quandary-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">
+          Report to Admin
         </button>
       </form>
     </dialog>
