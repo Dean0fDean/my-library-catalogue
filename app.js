@@ -10,6 +10,7 @@ const API_TOKEN_KEY = "my-library-api-token-v1";
 
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
+  catalogueExpandButton: document.querySelector("#catalogue-expand-button"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
   emptyMessage: document.querySelector("#empty-message"),
@@ -116,6 +117,9 @@ const elements = {
   readerCatalogueSearch: document.querySelector("#reader-catalogue-search"),
   readerCatalogueStatus: document.querySelector("#reader-catalogue-status"),
   readerProfileBookList: document.querySelector("#reader-profile-book-list"),
+  readerCatalogueExpandButton: document.querySelector(
+    "#reader-catalogue-expand-button",
+  ),
   shareDialog: document.querySelector("#share-dialog"),
   shareForm: document.querySelector("#share-form"),
   shareKindInput: document.querySelector("#share-kind-input"),
@@ -154,6 +158,9 @@ let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 let activeReaderCatalogue = [];
 let profileNotifications = [];
 let profileAchievements = [];
+let catalogueExpanded = false;
+let readerCatalogueExpanded = false;
+const CATALOGUE_PREVIEW_LIMIT = 8;
 
 async function apiRequest(action, options = {}) {
   const response = await fetch(
@@ -574,6 +581,32 @@ function cloudSafeItem(item) {
   return copy;
 }
 
+async function saveCloudBookCover(book) {
+  if (!book?.coverImage || !apiToken) return;
+  await apiRequest("cover-save", {
+    method: "POST",
+    body: { bookId: book.id, image: book.coverImage },
+  });
+}
+
+async function loadCloudBookCovers() {
+  if (!currentAccount || !apiToken) return;
+  const index = await apiRequest("cover-index");
+  const bookIds = new Set(index.bookIds || []);
+  await Promise.all(
+    booksFor(currentAccount.id)
+      .filter((book) => bookIds.has(book.id))
+      .map(async (book) => {
+        const result = await apiRequest("cover-load", {
+          method: "POST",
+          body: { bookId: book.id },
+        });
+        if (result.image) book.coverImage = result.image;
+      }),
+  );
+  saveCollection(STORAGE_KEY, books);
+}
+
 function cloudDataFor(accountId) {
   return {
     books: booksFor(accountId).map(cloudSafeItem),
@@ -626,11 +659,28 @@ async function loadAccountData() {
   const local = cloudDataFor(currentAccount.id);
   if (!hasCloudData(cloud) && hasCloudData(local)) {
     await syncAccountData();
+    await Promise.all(
+      booksFor(currentAccount.id).map((book) =>
+        saveCloudBookCover(book).catch(() => {}),
+      ),
+    );
     return;
   }
   if (!hasCloudData(cloud)) return;
+  const localCovers = new Map(
+    booksFor(currentAccount.id)
+      .filter((book) => book.coverImage)
+      .map((book) => [book.id, book.coverImage]),
+  );
   isApplyingCloudData = true;
-  books = replaceAccountItems(books, currentAccount.id, cloud.books || []);
+  books = replaceAccountItems(
+    books,
+    currentAccount.id,
+    (cloud.books || []).map((book) => ({
+      ...book,
+      coverImage: book.coverImage || localCovers.get(book.id) || "",
+    })),
+  );
   readingLog = replaceAccountItems(
     readingLog,
     currentAccount.id,
@@ -651,6 +701,12 @@ async function loadAccountData() {
   saveCollection(PASSAGE_STORAGE_KEY, passages);
   saveCollection(WISHLIST_STORAGE_KEY, wishlist);
   isApplyingCloudData = false;
+  await Promise.all(
+    booksFor(currentAccount.id)
+      .filter((book) => localCovers.has(book.id))
+      .map((book) => saveCloudBookCover(book).catch(() => {})),
+  );
+  await loadCloudBookCovers().catch(() => {});
 }
 
 async function importLegacyUsers() {
@@ -865,15 +921,25 @@ function filteredBooks() {
   const genre = elements.genreFilter.value;
   const status = elements.statusFilter.value;
 
-  return ownedByCurrent(books).filter((book) => {
-    const matchesQuery =
-      !query ||
-      normalize(book.title).includes(query) ||
-      normalize(book.author).includes(query);
-    const matchesGenre = genre === "all" || book.genre === genre;
-    const matchesStatus = status === "all" || book.status === status;
-    return matchesQuery && matchesGenre && matchesStatus;
-  });
+  return ownedByCurrent(books)
+    .filter((book) => {
+      const matchesQuery =
+        !query ||
+        normalize(book.title).includes(query) ||
+        normalize(book.author).includes(query);
+      const matchesGenre = genre === "all" || book.genre === genre;
+      const matchesStatus = status === "all" || book.status === status;
+      return matchesQuery && matchesGenre && matchesStatus;
+    })
+    .sort(
+      (first, second) =>
+        first.title.localeCompare(second.title, undefined, {
+          sensitivity: "base",
+        }) ||
+        first.author.localeCompare(second.author, undefined, {
+          sensitivity: "base",
+        }),
+    );
 }
 
 function updateGenreOptions() {
@@ -978,10 +1044,18 @@ function renderBooks() {
   updateStats();
   updateBookSuggestions();
 
-  const visibleBooks = filteredBooks();
+  const matchingBooks = filteredBooks();
+  const visibleBooks = catalogueExpanded
+    ? matchingBooks
+    : matchingBooks.slice(0, CATALOGUE_PREVIEW_LIMIT);
   elements.bookGrid.innerHTML = visibleBooks.map(renderBook).join("");
+  elements.catalogueExpandButton.hidden =
+    matchingBooks.length <= CATALOGUE_PREVIEW_LIMIT;
+  elements.catalogueExpandButton.textContent = catalogueExpanded
+    ? "Show fewer books"
+    : `Show all ${matchingBooks.length} books`;
   const hasBooks = ownedByCurrent(books).length > 0;
-  const hasResults = visibleBooks.length > 0;
+  const hasResults = matchingBooks.length > 0;
   elements.bookGrid.hidden = !hasResults;
   elements.emptyState.hidden = hasResults;
 
@@ -1016,7 +1090,7 @@ async function addBook(formData) {
   const coverFile = elements.coverInput.files[0];
   if (coverFile) {
     try {
-      coverImage = await compressImage(coverFile, 900, 0.72);
+      coverImage = await compressImage(coverFile, 560, 0.64);
     } catch (error) {
       showToast(error.message);
       return;
@@ -1041,6 +1115,9 @@ async function addBook(formData) {
   scheduleStatsSync();
   elements.dialog.close();
   showToast(`"${book.title}" added to your library.`);
+  saveCloudBookCover(book).catch(() => {
+    showToast("The book was saved, but its photo will sync when online.");
+  });
   refreshProfileActivity().catch(() => {});
 }
 
@@ -1080,6 +1157,10 @@ function removeBook(id) {
   books = books.filter((item) => item.id !== id);
   openMenuId = null;
   saveBooks();
+  apiRequest("cover-delete", {
+    method: "POST",
+    body: { bookId: id },
+  }).catch(() => {});
   renderBooks();
   scheduleStatsSync();
   showToast(`"${book.title}" removed.`);
@@ -1103,7 +1184,7 @@ async function previewReplacementCover() {
   const file = elements.replaceCoverInput.files[0];
   if (!file) return;
   try {
-    pendingCoverImage = await compressImage(file, 900, 0.72);
+    pendingCoverImage = await compressImage(file, 560, 0.64);
     elements.coverPreview.src = pendingCoverImage;
     elements.coverPreviewFrame.hidden = false;
   } catch (error) {
@@ -1112,7 +1193,7 @@ async function previewReplacementCover() {
   }
 }
 
-function saveReplacementCover() {
+async function saveReplacementCover() {
   const book = books.find(
     (item) =>
       item.id === activeCoverBookId && item.ownerId === currentAccount?.id,
@@ -1126,6 +1207,12 @@ function saveReplacementCover() {
   }
   renderBooks();
   elements.coverDialog.close();
+  try {
+    await saveCloudBookCover(book);
+  } catch {
+    showToast("The photo is saved here and will sync when online.");
+    return;
+  }
   showToast(`Display photo saved for "${book.title}".`);
 }
 
@@ -2177,18 +2264,32 @@ async function toggleFollow(accountId) {
 function renderReaderCatalogue() {
   const query = elements.readerCatalogueSearch.value.trim().toLowerCase();
   const status = elements.readerCatalogueStatus.value;
-  const filteredBooks = activeReaderCatalogue.filter((book) => {
-    const matchesQuery = [book.title, book.author, book.genre]
-      .join(" ")
-      .toLowerCase()
-      .includes(query);
-    return matchesQuery && (status === "all" || book.status === status);
-  });
+  const filteredBooks = activeReaderCatalogue
+    .filter((book) => {
+      const matchesQuery = [book.title, book.author, book.genre]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+      return matchesQuery && (status === "all" || book.status === status);
+    })
+    .sort((first, second) =>
+      first.title.localeCompare(second.title, undefined, {
+        sensitivity: "base",
+      }),
+    );
+  const displayedBooks = readerCatalogueExpanded
+    ? filteredBooks
+    : filteredBooks.slice(0, CATALOGUE_PREVIEW_LIMIT);
   elements.readerCatalogueCount.textContent = `${filteredBooks.length} ${
     filteredBooks.length === 1 ? "book" : "books"
   }${filteredBooks.length !== activeReaderCatalogue.length ? ` of ${activeReaderCatalogue.length}` : ""}`;
+  elements.readerCatalogueExpandButton.hidden =
+    filteredBooks.length <= CATALOGUE_PREVIEW_LIMIT;
+  elements.readerCatalogueExpandButton.textContent = readerCatalogueExpanded
+    ? "Show fewer books"
+    : `Show all ${filteredBooks.length} books`;
   elements.readerProfileBookList.innerHTML = filteredBooks.length
-    ? filteredBooks
+    ? displayedBooks
         .map((book) => {
           const rating = Number(book.rating) || 0;
           return `
@@ -2229,6 +2330,7 @@ async function openReaderProfile(accountId) {
     <div class="reader-stat"><strong>${stats.unread}</strong><span>To read</span></div>
   `;
   activeReaderCatalogue = [];
+  readerCatalogueExpanded = false;
   elements.readerCatalogueSearch.value = "";
   elements.readerCatalogueStatus.value = "all";
   elements.readerCatalogueCount.textContent = "Loading collection...";
@@ -2574,8 +2676,18 @@ elements.readerGrid.addEventListener("click", (event) => {
   }
 });
 
-elements.readerCatalogueSearch.addEventListener("input", renderReaderCatalogue);
-elements.readerCatalogueStatus.addEventListener("change", renderReaderCatalogue);
+elements.readerCatalogueSearch.addEventListener("input", () => {
+  readerCatalogueExpanded = false;
+  renderReaderCatalogue();
+});
+elements.readerCatalogueStatus.addEventListener("change", () => {
+  readerCatalogueExpanded = false;
+  renderReaderCatalogue();
+});
+elements.readerCatalogueExpandButton.addEventListener("click", () => {
+  readerCatalogueExpanded = !readerCatalogueExpanded;
+  renderReaderCatalogue();
+});
 
 elements.shareFeed.addEventListener("submit", (event) => {
   const form = event.target.closest(".recommendation-reply-form");
@@ -2608,9 +2720,22 @@ elements.adminAccountList.addEventListener("click", (event) => {
   }
 });
 
-elements.searchInput.addEventListener("input", renderBooks);
-elements.genreFilter.addEventListener("change", renderBooks);
-elements.statusFilter.addEventListener("change", renderBooks);
+elements.searchInput.addEventListener("input", () => {
+  catalogueExpanded = false;
+  renderBooks();
+});
+elements.genreFilter.addEventListener("change", () => {
+  catalogueExpanded = false;
+  renderBooks();
+});
+elements.statusFilter.addEventListener("change", () => {
+  catalogueExpanded = false;
+  renderBooks();
+});
+elements.catalogueExpandButton.addEventListener("click", () => {
+  catalogueExpanded = !catalogueExpanded;
+  renderBooks();
+});
 elements.logBookFilter.addEventListener("change", renderReadingLog);
 elements.logTitleInput.addEventListener("input", fillAuthorFromCollection);
 elements.startPageInput.addEventListener("input", suggestPagesRead);
