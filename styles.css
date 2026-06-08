@@ -3312,10 +3312,20 @@ fieldset {
   }
 
   .site-nav a[href="#community"],
-  .site-nav a[href="#journal"],
   .site-nav a[href="#learning-nook"],
   .site-nav a[href="#profile"] {
     display: block;
+  }
+
+  .community-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+
+  .community-tab {
+    flex: 0 0 auto;
   }
 
   .reading-section {
