@@ -139,6 +139,7 @@
           <a href="#passages">Passages</a>
           <a href="#journal">Journal</a>
           <a href="#learning-nook">Learning Nook</a>
+          <a href="#the-chippings">The Chippings</a>
           <a href="#community">Community</a>
           <a href="#profile">Profile</a>
         </nav>
@@ -539,6 +540,44 @@
             </svg>
           </div>
           <div id="learning-task-grid" class="learning-task-grid" aria-live="polite"></div>
+        </section>
+
+        <section
+          class="chippings-section"
+          id="the-chippings"
+          aria-labelledby="chippings-title"
+        >
+          <div class="chippings-heading">
+            <div>
+              <p class="eyebrow">A CURIO SHOP FOR READERS</p>
+              <h2 id="chippings-title">The Chippings</h2>
+              <p>
+                Spend earned Runes on themes and profile adornments. Purchased
+                items remain in your collection and can be equipped at any time.
+              </p>
+              <div class="chippings-reset-actions">
+                <button type="button" data-store-reset="theme">Use classic theme</button>
+                <button type="button" data-store-reset="frame">Remove profile frame</button>
+              </div>
+            </div>
+            <div class="chippings-balance">
+              <span aria-hidden="true">R</span>
+              <div>
+                <strong id="chippings-runes-count">0</strong>
+                <small>RUNES AVAILABLE</small>
+              </div>
+            </div>
+          </div>
+          <div class="chippings-tabs" role="tablist" aria-label="Store categories">
+            <button class="active" type="button" data-store-view="all" aria-selected="true">All wares</button>
+            <button type="button" data-store-view="theme" aria-selected="false">Themes</button>
+            <button type="button" data-store-view="frame" aria-selected="false">Profile frames</button>
+            <button type="button" data-store-view="owned" aria-selected="false">My collection</button>
+          </div>
+          <div id="chippings-grid" class="chippings-grid" aria-live="polite"></div>
+          <div id="chippings-empty" class="chippings-empty" hidden>
+            <p>No items match this view yet.</p>
+          </div>
         </section>
 
         <section
