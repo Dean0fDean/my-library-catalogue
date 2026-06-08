@@ -303,6 +303,26 @@ h2 {
   gap: 1.25rem;
 }
 
+.catalogue-expand-button {
+  display: block;
+  margin: 1.5rem auto 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--forest);
+  color: var(--forest);
+  background: transparent;
+  font: 700 0.62rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.catalogue-expand-button[hidden] {
+  display: none;
+}
+
+.reader-expand-button {
+  margin-bottom: 0.5rem;
+}
+
 .book-card {
   min-height: 290px;
   display: flex;
@@ -1446,13 +1466,14 @@ fieldset {
 
 .profile-dashboard {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
   max-width: 1100px;
   margin: 4rem auto 0;
 }
 
 .profile-panel {
+  min-width: 0;
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.42);
   border: 1px solid rgba(23, 42, 34, 0.13);
@@ -1516,20 +1537,41 @@ fieldset {
 }
 
 .profile-notification-list {
+  width: 100%;
+  min-width: 0;
   display: grid;
   gap: 0.55rem;
   max-height: 360px;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
 .profile-notification {
+  width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: start;
   gap: 0.75rem;
   padding: 0.85rem;
+  box-sizing: border-box;
   background: rgba(23, 63, 49, 0.04);
   border-left: 3px solid transparent;
+}
+
+.profile-notification > div {
+  min-width: 0;
+}
+
+.profile-notification strong,
+.profile-notification p,
+.profile-notification time {
+  overflow-wrap: anywhere;
+}
+
+.profile-notification button {
+  max-width: 100%;
+  white-space: normal;
 }
 
 .profile-notification.unread {
