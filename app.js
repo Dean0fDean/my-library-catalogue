@@ -163,6 +163,14 @@ const elements = {
   shareRecipientInput: document.querySelector("#share-recipient-input"),
   shareError: document.querySelector("#share-error"),
   communityReadersView: document.querySelector("#community-readers-view"),
+  communityFollowersView: document.querySelector("#community-followers-view"),
+  communityFollowingView: document.querySelector("#community-following-view"),
+  followerGrid: document.querySelector("#follower-grid"),
+  followingGrid: document.querySelector("#following-grid"),
+  followerEmptyState: document.querySelector("#follower-empty-state"),
+  followingEmptyState: document.querySelector("#following-empty-state"),
+  followersTabCount: document.querySelector("#followers-tab-count"),
+  followingTabCount: document.querySelector("#following-tab-count"),
   communityFeedView: document.querySelector("#community-feed-view"),
   communityJournalsView: document.querySelector("#community-journals-view"),
   communityJournalFeed: document.querySelector("#community-journal-feed"),
@@ -2465,6 +2473,35 @@ function renderReaders() {
   elements.readerEmptyState.hidden = otherAccounts.length > 0;
 }
 
+function renderFollowLists() {
+  if (!currentAccount) return;
+  const followerIds = new Set(
+    follows
+      .filter((follow) => follow.followingId === currentAccount.id)
+      .map((follow) => follow.followerId),
+  );
+  const followingIds = new Set(
+    follows
+      .filter((follow) => follow.followerId === currentAccount.id)
+      .map((follow) => follow.followingId),
+  );
+  const followers = accounts.filter((account) => followerIds.has(account.id));
+  const followingAccounts = accounts.filter((account) =>
+    followingIds.has(account.id),
+  );
+
+  elements.followerGrid.innerHTML = followers.map(renderReaderCard).join("");
+  elements.followingGrid.innerHTML = followingAccounts
+    .map(renderReaderCard)
+    .join("");
+  elements.followerGrid.hidden = followers.length === 0;
+  elements.followingGrid.hidden = followingAccounts.length === 0;
+  elements.followerEmptyState.hidden = followers.length > 0;
+  elements.followingEmptyState.hidden = followingAccounts.length > 0;
+  elements.followersTabCount.textContent = followerIds.size;
+  elements.followingTabCount.textContent = followingIds.size;
+}
+
 function journalDateLabel(value) {
   const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
   return Number.isNaN(date.getTime())
@@ -3400,6 +3437,8 @@ async function resolveQuandary(id, adminNote) {
 function setCommunityView(view) {
   if (view === "admin" && currentAccount?.role !== "admin") return;
   elements.communityReadersView.hidden = view !== "readers";
+  elements.communityFollowersView.hidden = view !== "followers";
+  elements.communityFollowingView.hidden = view !== "following";
   elements.communityFeedView.hidden = view !== "feed";
   elements.communityJournalsView.hidden = view !== "journals";
   elements.communityMarketplaceView.hidden = view !== "marketplace";
@@ -3424,6 +3463,7 @@ function renderCommunity() {
     setCommunityView("readers");
   }
   renderReaders();
+  renderFollowLists();
   renderShareFeed();
   renderSharedJournals();
   renderMarketplace();
@@ -3979,7 +4019,7 @@ elements.journalGrid.addEventListener("click", (event) => {
   }
 });
 
-elements.readerGrid.addEventListener("click", (event) => {
+function handleReaderAction(event) {
   const button = event.target.closest("button[data-community-action]");
   if (!button) return;
   if (button.dataset.communityAction === "follow") {
@@ -3991,7 +4031,13 @@ elements.readerGrid.addEventListener("click", (event) => {
   if (button.dataset.communityAction === "debate") {
     openDebateInvite(button.dataset.id);
   }
-});
+}
+
+[
+  elements.readerGrid,
+  elements.followerGrid,
+  elements.followingGrid,
+].forEach((grid) => grid.addEventListener("click", handleReaderAction));
 
 elements.readerCatalogueSearch.addEventListener("input", () => {
   readerCatalogueExpanded = false;
