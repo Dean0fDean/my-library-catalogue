@@ -196,6 +196,26 @@
               <a class="primary-button" href="#collection">Open my collection</a>
               <a class="home-menu-link" href="#reading-log">Log today's reading</a>
             </div>
+            <div class="home-owl-trio" aria-label="Three dancing owls">
+              <svg class="home-dancing-owl" viewBox="0 0 64 64" aria-hidden="true">
+                <path d="M14 21 9 8l18 9a24 24 0 0 1 10 0L55 8l-5 13a23 23 0 1 1-36 0Z"></path>
+                <circle cx="23" cy="30" r="7"></circle>
+                <circle cx="41" cy="30" r="7"></circle>
+                <path d="m28 39 4 5 4-5M20 52h24"></path>
+              </svg>
+              <svg class="home-dancing-owl" viewBox="0 0 64 64" aria-hidden="true">
+                <path d="M14 21 9 8l18 9a24 24 0 0 1 10 0L55 8l-5 13a23 23 0 1 1-36 0Z"></path>
+                <circle cx="23" cy="30" r="7"></circle>
+                <circle cx="41" cy="30" r="7"></circle>
+                <path d="m28 39 4 5 4-5M20 52h24"></path>
+              </svg>
+              <svg class="home-dancing-owl" viewBox="0 0 64 64" aria-hidden="true">
+                <path d="M14 21 9 8l18 9a24 24 0 0 1 10 0L55 8l-5 13a23 23 0 1 1-36 0Z"></path>
+                <circle cx="23" cy="30" r="7"></circle>
+                <circle cx="41" cy="30" r="7"></circle>
+                <path d="m28 39 4 5 4-5M20 52h24"></path>
+              </svg>
+            </div>
           </div>
 
           <aside class="stats-card" aria-label="Library statistics">
@@ -743,6 +763,22 @@
             <button
               class="community-tab"
               type="button"
+              data-community-view="followers"
+              aria-selected="false"
+            >
+              Followers <span id="followers-tab-count">0</span>
+            </button>
+            <button
+              class="community-tab"
+              type="button"
+              data-community-view="following"
+              aria-selected="false"
+            >
+              Following <span id="following-tab-count">0</span>
+            </button>
+            <button
+              class="community-tab"
+              type="button"
               data-community-view="feed"
               aria-selected="false"
             >
@@ -795,6 +831,34 @@
             <div id="reader-grid" class="reader-grid" aria-live="polite"></div>
             <div id="reader-empty-state" class="community-empty">
               <p>No other readers have created an account on this device yet.</p>
+            </div>
+          </div>
+
+          <div id="community-followers-view" hidden>
+            <div class="community-list-heading">
+              <div>
+                <p class="eyebrow">YOUR READERS</p>
+                <h3>Followers</h3>
+              </div>
+              <p>People who follow your reading journey.</p>
+            </div>
+            <div id="follower-grid" class="reader-grid" aria-live="polite"></div>
+            <div id="follower-empty-state" class="community-empty">
+              <p>You do not have any followers yet.</p>
+            </div>
+          </div>
+
+          <div id="community-following-view" hidden>
+            <div class="community-list-heading">
+              <div>
+                <p class="eyebrow">YOUR READING CIRCLE</p>
+                <h3>Following</h3>
+              </div>
+              <p>People whose reading journeys you follow.</p>
+            </div>
+            <div id="following-grid" class="reader-grid" aria-live="polite"></div>
+            <div id="following-empty-state" class="community-empty">
+              <p>You are not following anyone yet. Visit Readers to discover someone new.</p>
             </div>
           </div>
 
