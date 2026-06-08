@@ -219,7 +219,7 @@ h1 {
 
 .stats-card {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   align-self: end;
   margin-bottom: 4.6rem;
   border-top: 1px solid var(--line);
@@ -391,6 +391,14 @@ h2 {
     box-shadow 180ms ease;
 }
 
+.book-card {
+  cursor: zoom-in;
+}
+
+.book-card button {
+  cursor: pointer;
+}
+
 .book-card::before {
   content: "";
   position: absolute;
@@ -453,32 +461,136 @@ h2 {
   line-height: 1.45;
 }
 
+.book-status-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
 .status-button {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
-  padding: 0.45rem 0.75rem;
-  border: 1px solid rgba(23, 42, 34, 0.18);
-  border-radius: 99px;
-  color: var(--forest);
+  min-width: 0;
+  min-height: 38px;
+  padding: 0.55rem 0.35rem;
+  border: 1px solid var(--line);
+  color: rgba(23, 42, 34, 0.68);
   background: transparent;
-  font: 700 0.62rem/1 Arial, sans-serif;
-  letter-spacing: 0.07em;
+  font: 700 0.56rem/1.2 Arial, sans-serif;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.status-button::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--gold);
+.status-button.active {
+  color: #fff;
+  background: var(--forest);
+  border-color: var(--forest);
 }
 
-.status-button.read::before {
-  background: var(--forest-light);
+.status-button.read.active {
+  background: var(--forest);
+}
+
+.status-button.reading.active {
+  color: var(--ink);
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.status-button.unread.active {
+  color: var(--ink);
+  background: var(--sage);
+  border-color: var(--sage);
+}
+
+.reading-fact-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem clamp(1.25rem, 6vw, 6rem);
+  color: var(--ink);
+  background: rgba(235, 228, 214, 0.96);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.reading-fact-banner[hidden] {
+  display: none;
+}
+
+.reading-fact-label {
+  color: var(--terracotta);
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.reading-fact-banner p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: rgba(23, 42, 34, 0.72);
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.reading-fact-banner button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: rgba(23, 42, 34, 0.55);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font: 700 0.65rem/1 Arial, sans-serif;
+}
+
+.cover-view-dialog {
+  width: min(92vw, 860px);
+  max-height: 92vh;
+  padding: 0;
+  overflow: hidden;
+  background: #151b18;
+  border: 0;
+}
+
+.cover-view-content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: min(82vh, 850px);
+  position: relative;
+}
+
+.cover-view-content img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.cover-view-content > div:last-child {
+  padding: 1.1rem 1.4rem;
+  color: var(--paper);
+  background: rgba(10, 15, 12, 0.94);
+}
+
+.cover-view-content h2 {
+  font-size: 1.5rem;
+}
+
+.cover-view-content p {
+  margin: 0.3rem 0 0;
+  color: rgba(244, 240, 231, 0.65);
+}
+
+.cover-view-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1;
+  color: #fff;
+  background: rgba(10, 15, 12, 0.72);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .delete-button {
@@ -772,6 +884,38 @@ fieldset {
 @media (max-width: 540px) {
   .site-header {
     min-height: 70px;
+  }
+
+  .stats-card,
+  .reader-profile-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stat:nth-child(3),
+  .reader-profile-stats .reader-stat:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .stat:nth-child(4),
+  .reader-profile-stats .reader-stat:nth-child(4) {
+    border-top: 1px solid var(--line);
+  }
+
+  .reading-fact-banner {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .reading-fact-label {
+    display: none;
+  }
+
+  .admin-fact-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-fact-list {
+    grid-column: auto;
   }
 
   .header-note {
@@ -1135,6 +1279,79 @@ fieldset {
   gap: 0.7rem;
 }
 
+.admin-fact-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.65fr) minmax(280px, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  color: var(--paper);
+  background: rgba(244, 240, 231, 0.07);
+  border: 1px solid rgba(244, 240, 231, 0.15);
+}
+
+.admin-fact-panel h3 {
+  margin-bottom: 0.6rem;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+.admin-fact-panel p {
+  color: rgba(244, 240, 231, 0.64);
+  line-height: 1.5;
+}
+
+#admin-fact-form label > span {
+  display: block;
+  margin-bottom: 0.45rem;
+  font: 700 0.62rem/1 Arial, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+#admin-fact-input {
+  width: 100%;
+  padding: 0.8rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0;
+  resize: vertical;
+}
+
+.admin-fact-list {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-fact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(244, 240, 231, 0.06);
+  border: 1px solid rgba(244, 240, 231, 0.12);
+}
+
+.admin-fact-row p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-fact-row button {
+  padding: 0.5rem 0.7rem;
+  color: var(--paper);
+  background: transparent;
+  border: 1px solid rgba(244, 240, 231, 0.25);
+}
+
+.admin-fact-row span {
+  color: rgba(244, 240, 231, 0.45);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
 .admin-account-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
@@ -1200,7 +1417,7 @@ fieldset {
 .reader-profile-stats {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--line);
 }
 
@@ -1290,6 +1507,11 @@ fieldset {
 .reader-profile-book-meta .reader-book-status.read {
   color: #fff;
   background: var(--forest);
+}
+
+.reader-profile-book-meta .reader-book-status.reading {
+  color: var(--ink);
+  background: var(--gold);
 }
 
 .reader-profile-book-meta .reader-book-rating {
@@ -1868,7 +2090,7 @@ fieldset {
 }
 
 .book-card .status-button {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .wishlist-section {
