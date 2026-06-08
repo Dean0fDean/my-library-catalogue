@@ -323,6 +323,35 @@ async function ensureSchema() {
           PRIMARY KEY (user_id, task_key)
         )
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_debates (
+          id UUID PRIMARY KEY,
+          inviter_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          invitee_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          topic TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          responded_at TIMESTAMPTZ
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_debate_messages (
+          id UUID PRIMARY KEY,
+          debate_id UUID NOT NULL REFERENCES library_debates(id) ON DELETE CASCADE,
+          author_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          message TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_announcements (
+          id UUID PRIMARY KEY,
+          author_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
     })();
   }
   return schemaReady;
@@ -1056,6 +1085,226 @@ export default async function handler(request, response) {
       return json(response, 201, { ok: true, runesAwarded: task.runes });
     }
 
+    if (action === "debates" && request.method === "GET") {
+      const debates = await sql`
+        SELECT
+          d.id, d.inviter_id, d.invitee_id, d.topic, d.status,
+          d.created_at, d.responded_at,
+          inviter.username AS inviter_name,
+          inviter.profile_image AS inviter_image,
+          invitee.username AS invitee_name,
+          invitee.profile_image AS invitee_image
+        FROM library_debates d
+        JOIN library_users inviter ON inviter.id = d.inviter_id
+        JOIN library_users invitee ON invitee.id = d.invitee_id
+        WHERE d.status = 'accepted'
+          OR (
+            d.status = 'pending'
+            AND (${user.id} = d.inviter_id OR ${user.id} = d.invitee_id)
+          )
+        ORDER BY d.created_at DESC
+        LIMIT 100
+      `;
+      const messages = debates.length
+        ? await sql`
+            SELECT
+              m.id, m.debate_id, m.author_id, m.message, m.created_at,
+              u.username AS author_name
+            FROM library_debate_messages m
+            JOIN library_users u ON u.id = m.author_id
+            JOIN library_debates d ON d.id = m.debate_id
+            WHERE d.status = 'accepted'
+            ORDER BY m.created_at
+          `
+        : [];
+      return json(response, 200, {
+        debates: debates.map((item) => ({
+          id: item.id,
+          inviterId: item.inviter_id,
+          inviteeId: item.invitee_id,
+          inviter: item.inviter_name,
+          inviterImage: item.inviter_image || "",
+          invitee: item.invitee_name,
+          inviteeImage: item.invitee_image || "",
+          topic: item.topic,
+          status: item.status,
+          createdAt: item.created_at,
+          respondedAt: item.responded_at,
+          messages: messages
+            .filter((message) => message.debate_id === item.id)
+            .map((message) => ({
+              id: message.id,
+              authorId: message.author_id,
+              author: message.author_name,
+              message: message.message,
+              createdAt: message.created_at,
+            })),
+        })),
+      });
+    }
+
+    if (action === "debate-invite" && request.method === "POST") {
+      const inviteeId = String(body.inviteeId || "");
+      const topic = String(body.topic || "").trim().slice(0, 300);
+      if (inviteeId === user.id) {
+        return json(response, 400, { error: "You cannot invite yourself to a debate." });
+      }
+      if (topic.length < 5) {
+        return json(response, 400, { error: "Add a clear debate topic." });
+      }
+      const invitees = await sql`
+        SELECT id, username FROM library_users WHERE id = ${inviteeId} LIMIT 1
+      `;
+      if (!invitees.length) {
+        return json(response, 404, { error: "That reader could not be found." });
+      }
+      const id = crypto.randomUUID();
+      await sql`
+        INSERT INTO library_debates (id, inviter_id, invitee_id, topic)
+        VALUES (${id}, ${user.id}, ${inviteeId}, ${topic})
+      `;
+      await addNotification(
+        inviteeId,
+        "debate",
+        "Debate invitation",
+        `${user.username} invited you to debate: ${topic}`,
+        `debate-invite:${id}`,
+      );
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "debate-respond" && request.method === "POST") {
+      const debateId = String(body.debateId || "");
+      const decision = String(body.decision || "");
+      if (!["accepted", "declined"].includes(decision)) {
+        return json(response, 400, { error: "Choose whether to accept or decline." });
+      }
+      const debates = await sql`
+        SELECT id, inviter_id, topic
+        FROM library_debates
+        WHERE id = ${debateId}
+          AND invitee_id = ${user.id}
+          AND status = 'pending'
+        LIMIT 1
+      `;
+      if (!debates.length) {
+        return json(response, 404, { error: "That invitation is no longer available." });
+      }
+      await sql`
+        UPDATE library_debates
+        SET status = ${decision}, responded_at = NOW()
+        WHERE id = ${debateId}
+      `;
+      await addNotification(
+        debates[0].inviter_id,
+        "debate",
+        decision === "accepted" ? "Debate accepted" : "Debate declined",
+        `${user.username} ${decision === "accepted" ? "accepted" : "declined"} your invitation about ${debates[0].topic}.`,
+        `debate-response:${debateId}`,
+      );
+      return json(response, 200, { ok: true });
+    }
+
+    if (action === "debate-message" && request.method === "POST") {
+      const debateId = String(body.debateId || "");
+      const message = String(body.message || "").trim().slice(0, 3000);
+      if (!message) {
+        return json(response, 400, { error: "Write a message before sending it." });
+      }
+      const debates = await sql`
+        SELECT id, inviter_id, invitee_id, topic
+        FROM library_debates
+        WHERE id = ${debateId}
+          AND status = 'accepted'
+          AND (${user.id} = inviter_id OR ${user.id} = invitee_id)
+        LIMIT 1
+      `;
+      if (!debates.length) {
+        return json(response, 403, { error: "Only the two debate participants can post." });
+      }
+      await sql`
+        INSERT INTO library_debate_messages (
+          id, debate_id, author_id, message
+        )
+        VALUES (${crypto.randomUUID()}, ${debateId}, ${user.id}, ${message})
+      `;
+      const otherUserId =
+        debates[0].inviter_id === user.id
+          ? debates[0].invitee_id
+          : debates[0].inviter_id;
+      await addNotification(
+        otherUserId,
+        "debate",
+        "New debate message",
+        `${user.username} responded in the debate about ${debates[0].topic}.`,
+        null,
+      );
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "announcements" && request.method === "GET") {
+      const announcements = await sql`
+        SELECT a.id, a.title, a.message, a.created_at, u.username
+        FROM library_announcements a
+        JOIN library_users u ON u.id = a.author_id
+        ORDER BY a.created_at DESC
+        LIMIT 100
+      `;
+      return json(response, 200, {
+        announcements: announcements.map((item) => ({
+          id: item.id,
+          title: item.title,
+          message: item.message,
+          author: item.username,
+          createdAt: item.created_at,
+        })),
+      });
+    }
+
+    if (action === "announcement-save" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      const title = String(body.title || "").trim().slice(0, 160);
+      const message = String(body.message || "").trim().slice(0, 5000);
+      if (title.length < 3 || message.length < 3) {
+        return json(response, 400, { error: "Add both a title and an announcement." });
+      }
+      const id = crypto.randomUUID();
+      await sql`
+        INSERT INTO library_announcements (
+          id, author_id, title, message
+        )
+        VALUES (${id}, ${user.id}, ${title}, ${message})
+      `;
+      const recipients = await sql`
+        SELECT id FROM library_users WHERE id <> ${user.id}
+      `;
+      await Promise.all(
+        recipients.map((recipient) =>
+          addNotification(
+            recipient.id,
+            "announcement",
+            title,
+            message.slice(0, 500),
+            `announcement:${id}`,
+          ),
+        ),
+      );
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "announcement-delete" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      await sql`
+        DELETE FROM library_announcements
+        WHERE id = ${String(body.id || "")}
+      `;
+      return json(response, 200, { ok: true });
+    }
+
     if (action === "notification-read" && request.method === "POST") {
       if (body.all) {
         await sql`
@@ -1153,6 +1402,11 @@ export default async function handler(request, response) {
           COALESCE(s.read_count, 0)::int AS read_count,
           COALESCE(s.reading_count, 0)::int AS reading_count,
           COALESCE(s.unread, 0)::int AS unread,
+          COALESCE((
+            SELECT SUM(lp.runes_awarded)
+            FROM library_learning_progress lp
+            WHERE lp.user_id = u.id
+          ), 0)::int AS runes,
           COALESCE(s.recent_books, '[]'::jsonb) AS recent_books
         FROM library_users u
         LEFT JOIN library_stats s ON s.user_id = u.id
@@ -1194,6 +1448,7 @@ export default async function handler(request, response) {
             reading: item.reading_count,
             unread: item.unread,
           },
+          runes: item.runes,
           recentBooks: item.recent_books,
         })),
         follows: follows.map((item) => ({
