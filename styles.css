@@ -3482,7 +3482,14 @@ fieldset {
   line-height: 1.65;
 }
 
-.runes-balance {
+.learning-rewards {
+  display: flex;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.runes-balance,
+.streak-balance {
   min-width: 165px;
   display: flex;
   align-items: center;
@@ -3492,7 +3499,8 @@ fieldset {
   border: 1px solid rgba(201, 137, 69, 0.45);
 }
 
-.runes-balance > span {
+.runes-balance > span,
+.streak-balance > span {
   width: 42px;
   height: 42px;
   display: grid;
@@ -3505,20 +3513,39 @@ fieldset {
 }
 
 .runes-balance strong,
-.runes-balance small {
+.runes-balance small,
+.streak-balance strong,
+.streak-balance small {
   display: block;
 }
 
-.runes-balance strong {
+.runes-balance strong,
+.streak-balance strong {
   color: var(--paper);
   font-size: 1.8rem;
   font-weight: 400;
 }
 
-.runes-balance small {
+.runes-balance small,
+.streak-balance small {
   color: rgba(244, 240, 231, 0.58);
   font: 700 0.58rem/1 Arial, sans-serif;
   letter-spacing: 0.13em;
+}
+
+.streak-balance {
+  background: rgba(201, 137, 69, 0.12);
+}
+
+.quandary-button {
+  margin-top: 1rem;
+  padding: 0.65rem 0.8rem;
+  color: var(--gold);
+  background: transparent;
+  border: 1px solid rgba(201, 137, 69, 0.45);
+  font: 700 0.6rem/1 Arial, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .owl-parliament {
@@ -3687,6 +3714,109 @@ fieldset {
   border: 1px solid rgba(201, 137, 69, 0.3);
   font: 700 0.68rem/1 Arial, sans-serif;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-streak {
+  width: fit-content;
+  margin-top: -0.4rem;
+  color: var(--forest);
+  font: 700 0.68rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.profile-streak span {
+  margin-left: 0.3rem;
+  color: rgba(23, 42, 34, 0.48);
+  font-weight: 400;
+}
+
+.admin-quandary-panel {
+  margin: 1.5rem 0;
+  padding: clamp(1.2rem, 3vw, 1.8rem);
+  background: rgba(244, 240, 231, 0.07);
+  border: 1px solid rgba(244, 240, 231, 0.16);
+}
+
+.admin-quandary-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.admin-quandary {
+  min-width: 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.13);
+  border-left: 3px solid var(--gold);
+}
+
+.admin-quandary.resolved {
+  opacity: 0.68;
+  border-left-color: var(--sage);
+}
+
+.admin-quandary-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-quandary-heading span,
+.admin-quandary-heading > strong {
+  color: var(--gold);
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.admin-quandary-heading h4 {
+  margin: 0.3rem 0;
+  font-size: 1.15rem;
+  font-weight: 400;
+}
+
+.admin-quandary-heading p,
+.admin-quandary-note {
+  margin: 0;
+  color: rgba(244, 240, 231, 0.5);
+  font-size: 0.78rem;
+}
+
+.admin-quandary-details {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.quandary-resolve-form {
+  display: flex;
+  align-items: end;
+  gap: 0.65rem;
+}
+
+.quandary-resolve-form label {
+  flex: 1;
+}
+
+.quandary-resolve-form textarea {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.7rem;
+  color: var(--paper);
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(244, 240, 231, 0.2);
+  resize: vertical;
+}
+
+.quandary-resolve-form button {
+  padding: 0.75rem 0.85rem;
+  color: var(--forest);
+  background: var(--gold);
+  border: 0;
+  font: 700 0.58rem/1 Arial, sans-serif;
   text-transform: uppercase;
 }
 
@@ -3920,6 +4050,19 @@ fieldset {
   .learning-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .learning-rewards,
+  .quandary-resolve-form,
+  .admin-quandary-heading {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runes-balance,
+  .streak-balance {
+    min-width: 0;
   }
 
   .learning-task-grid {
