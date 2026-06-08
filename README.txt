@@ -76,6 +76,12 @@ Quandaries can concern assignments, accounts, community activity, catalogues,
 or technical problems. The administrator can review and resolve them from the
 private Admin panel, optionally sending a response to the reporting reader.
 
+The Chippings is an in-app store where readers spend synchronized Runes. Its
+initial collection includes four complete interface themes and five profile
+picture frames. Purchases remain attached to the account across devices.
+Owned cosmetics can be equipped, switched, or reset to the classic appearance
+without paying again. Equipped profile frames are visible to other readers.
+
 The Debate Club lets a reader invite another reader to discuss a topic. The
 invitation must be accepted or declined before messages can be sent. Accepted
 debates are public to read, while only the two invited participants can post.
