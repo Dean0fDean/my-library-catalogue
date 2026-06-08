@@ -96,7 +96,306 @@ const LEARNING_TASKS = [
     minimumLength: 140,
     runes: 35,
   },
+  {
+    key: "english-simile",
+    type: "choice",
+    title: "The Simile Branch",
+    prompt: "Which sentence contains a simile?",
+    options: [
+      "Her voice was as calm as still water.",
+      "Her calm voice filled the room.",
+      "Her voice became quieter.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "english-apostrophe",
+    type: "choice",
+    title: "The Apostrophe Eyrie",
+    prompt: "Which sentence uses the apostrophe correctly?",
+    options: [
+      "The readers notes were detailed.",
+      "The reader's notes were detailed.",
+      "The readers' was taking notes.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "english-its",
+    type: "choice",
+    title: "The Its and It's Roost",
+    prompt: "Which sentence is correct?",
+    options: [
+      "The book lost it's cover.",
+      "Its going to be discussed tomorrow.",
+      "The book lost its cover.",
+    ],
+    answer: 2,
+    runes: 15,
+  },
+  {
+    key: "english-subject-verb",
+    type: "choice",
+    title: "The Agreement Gallery",
+    prompt: "Which sentence has correct subject-verb agreement?",
+    options: [
+      "The collection of essays is fascinating.",
+      "The collection of essays are fascinating.",
+      "The essays collection are fascinating.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "english-comma-intro",
+    type: "choice",
+    title: "The Opening Comma",
+    prompt: "Which sentence correctly punctuates an introductory phrase?",
+    options: [
+      "After finishing the chapter Lena made tea.",
+      "After finishing the chapter, Lena made tea.",
+      "After, finishing the chapter Lena made tea.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "english-parallel",
+    type: "choice",
+    title: "The Parallel Perch",
+    prompt: "Which sentence uses parallel structure?",
+    options: [
+      "He enjoys reading, writing, and to debate.",
+      "He enjoys reading, writing, and debating.",
+      "He enjoys to read, writing, and debates.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "english-pronoun",
+    type: "choice",
+    title: "The Pronoun Watch",
+    prompt: "Which sentence has a clear pronoun reference?",
+    options: [
+      "When Mia spoke to Ava, she was nervous.",
+      "Mia was nervous when she spoke to Ava.",
+      "She spoke to Ava because Mia was nervous.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "english-colon",
+    type: "choice",
+    title: "The Colon Chamber",
+    prompt: "Which sentence uses a colon correctly?",
+    options: [
+      "She packed: a novel, a notebook, and a pen.",
+      "She packed three things: a novel, a notebook, and a pen.",
+      "She: packed three things for the trip.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "english-em-dash",
+    type: "choice",
+    title: "The Interruption Loft",
+    prompt: "Which sentence uses dashes to mark an interruption?",
+    options: [
+      "The ending which surprised everyone changed the discussion.",
+      "The ending - which surprised everyone - changed the discussion.",
+      "The ending, which surprised everyone changed, the discussion.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "english-concise",
+    type: "choice",
+    title: "The Concision Nest",
+    prompt: "Which sentence is the most concise?",
+    options: [
+      "The reason she reread the book was because she liked it.",
+      "She reread the book because she liked it.",
+      "Because of the fact that she liked it, she reread the book.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "literary-irony",
+    type: "choice",
+    title: "The Irony Observatory",
+    prompt: "Which situation is an example of dramatic irony?",
+    options: [
+      "A character makes a joke.",
+      "The reader knows the door is trapped, but the character does not.",
+      "A storm begins unexpectedly.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "literary-foreshadowing",
+    type: "choice",
+    title: "The Foreshadowing Tower",
+    prompt: "What is the main purpose of foreshadowing?",
+    options: [
+      "To hint at events that may happen later.",
+      "To explain every character's history.",
+      "To summarize the previous chapter.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "literary-narrator",
+    type: "choice",
+    title: "The Narrator's Window",
+    prompt: "Which description best fits a first-person narrator?",
+    options: [
+      "A narrator who uses I and participates in the story.",
+      "A narrator who knows every character's thoughts.",
+      "A narrator who only describes stage directions.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "literary-theme",
+    type: "choice",
+    title: "The Theme Archive",
+    prompt: "Which statement best describes a literary theme?",
+    options: [
+      "The sequence of events in a story.",
+      "A central idea explored through the story.",
+      "The location where the story takes place.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "literary-motif",
+    type: "choice",
+    title: "The Motif Hall",
+    prompt: "What is a motif?",
+    options: [
+      "A recurring image, phrase, or idea that develops meaning.",
+      "The final sentence of every chapter.",
+      "A list of all characters in a novel.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "literary-conflict",
+    type: "choice",
+    title: "The Conflict Roost",
+    prompt: "A character struggling with guilt is an example of which conflict?",
+    options: [
+      "Character versus nature.",
+      "Character versus society.",
+      "Character versus self.",
+    ],
+    answer: 2,
+    runes: 15,
+  },
+  {
+    key: "literary-tone",
+    type: "choice",
+    title: "The Tone Chamber",
+    prompt: "What does tone describe?",
+    options: [
+      "The author's attitude toward the subject.",
+      "The number of chapters in the book.",
+      "The speed at which a reader finishes.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "vocabulary-context",
+    type: "choice",
+    title: "The Context Clue Perch",
+    prompt: 'In "The path was arduous, leaving the hikers exhausted," what does arduous mean?',
+    options: ["Easy", "Difficult", "Hidden"],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "vocabulary-ambiguous",
+    type: "choice",
+    title: "The Ambiguity Alcove",
+    prompt: "What does ambiguous mean?",
+    options: [
+      "Open to more than one interpretation.",
+      "Written in alphabetical order.",
+      "Completely without emotion.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "vocabulary-benevolent",
+    type: "choice",
+    title: "The Benevolent Branch",
+    prompt: "Which word is closest in meaning to benevolent?",
+    options: ["Kind", "Noisy", "Uncertain"],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "review-evidence",
+    type: "writing",
+    title: "The Evidence Desk",
+    prompt:
+      "Make one clear claim about a book and support it with a specific event, detail, or brief paraphrase from the text.",
+    minimumLength: 130,
+    runes: 30,
+  },
+  {
+    key: "setting-analysis",
+    type: "writing",
+    title: "The Setting Observatory",
+    prompt:
+      "Explain how the setting of a book affects its characters, conflict, or mood. Use at least one specific example.",
+    minimumLength: 140,
+    runes: 35,
+  },
+  {
+    key: "compare-characters",
+    type: "writing",
+    title: "The Character Council",
+    prompt:
+      "Compare two characters from the same or different books. Identify one meaningful similarity and one meaningful difference.",
+    minimumLength: 160,
+    runes: 35,
+  },
+  {
+    key: "ending-evaluation",
+    type: "writing",
+    title: "The Final Page Tribunal",
+    prompt:
+      "Evaluate a book's ending. Explain whether it follows convincingly from what came before, without merely summarizing it.",
+    minimumLength: 150,
+    runes: 35,
+  },
+  {
+    key: "recommendation-pitch",
+    type: "writing",
+    title: "The Recommendation Flight",
+    prompt:
+      "Write a spoiler-free recommendation for a specific reader. Explain what kind of reader would value the book and why.",
+    minimumLength: 130,
+    runes: 30,
+  },
 ];
+
+const ACTIVE_LEARNING_TASKS = 6;
 
 async function addNotification(userId, type, title, message, dedupeKey = null) {
   await sql`
@@ -321,6 +620,29 @@ async function ensureSchema() {
           runes_awarded INTEGER NOT NULL,
           completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           PRIMARY KEY (user_id, task_key)
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_daily_streaks (
+          user_id UUID PRIMARY KEY REFERENCES library_users(id) ON DELETE CASCADE,
+          current_streak INTEGER NOT NULL DEFAULT 0,
+          longest_streak INTEGER NOT NULL DEFAULT 0,
+          last_claim_date DATE,
+          runes_awarded INTEGER NOT NULL DEFAULT 0,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_quandaries (
+          id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          category TEXT NOT NULL,
+          title TEXT NOT NULL,
+          details TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'open',
+          admin_note TEXT NOT NULL DEFAULT '',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          resolved_at TIMESTAMPTZ
         )
       `;
       await sql`
@@ -1008,22 +1330,82 @@ export default async function handler(request, response) {
     }
 
     if (action === "learning" && request.method === "GET") {
+      const previousStreak = await sql`
+        SELECT last_claim_date, last_claim_date = CURRENT_DATE AS claimed_today
+        FROM library_daily_streaks
+        WHERE user_id = ${user.id}
+        LIMIT 1
+      `;
+      const earnedDailyReward =
+        !previousStreak.length || !previousStreak[0].claimed_today;
+      const streakRows = await sql`
+        INSERT INTO library_daily_streaks (
+          user_id, current_streak, longest_streak, last_claim_date,
+          runes_awarded, updated_at
+        )
+        VALUES (${user.id}, 1, 1, CURRENT_DATE, 5, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+          current_streak = CASE
+            WHEN library_daily_streaks.last_claim_date = CURRENT_DATE
+              THEN library_daily_streaks.current_streak
+            WHEN library_daily_streaks.last_claim_date = CURRENT_DATE - 1
+              THEN library_daily_streaks.current_streak + 1
+            ELSE 1
+          END,
+          longest_streak = GREATEST(
+            library_daily_streaks.longest_streak,
+            CASE
+              WHEN library_daily_streaks.last_claim_date = CURRENT_DATE
+                THEN library_daily_streaks.current_streak
+              WHEN library_daily_streaks.last_claim_date = CURRENT_DATE - 1
+                THEN library_daily_streaks.current_streak + 1
+              ELSE 1
+            END
+          ),
+          runes_awarded = library_daily_streaks.runes_awarded + CASE
+            WHEN library_daily_streaks.last_claim_date = CURRENT_DATE THEN 0
+            ELSE 5
+          END,
+          last_claim_date = CURRENT_DATE,
+          updated_at = NOW()
+        RETURNING current_streak, longest_streak, last_claim_date,
+                  runes_awarded
+      `;
       const progress = await sql`
         SELECT task_key, response, runes_awarded, completed_at
         FROM library_learning_progress
         WHERE user_id = ${user.id}
       `;
-      const runes = progress.reduce(
+      const learningRunes = progress.reduce(
         (total, item) => total + Number(item.runes_awarded || 0),
         0,
       );
+      const completedKeys = new Set(progress.map((item) => item.task_key));
+      const availableTasks = LEARNING_TASKS.filter(
+        (task) => !completedKeys.has(task.key),
+      ).slice(0, ACTIVE_LEARNING_TASKS);
+      const streak = streakRows[0];
+      if (earnedDailyReward) {
+        await addNotification(
+          user.id,
+          "streak",
+          "Daily streak reward",
+          `Day ${streak.current_streak}: you earned 5 Runes for continuing your daily streak.`,
+          `streak:${String(streak.last_claim_date).slice(0, 10)}`,
+        );
+      }
       return json(response, 200, {
-        runes,
-        tasks: LEARNING_TASKS.map((task) => {
-          const completion = progress.find(
-            (item) => item.task_key === task.key,
-          );
-          return {
+        runes: learningRunes + Number(streak.runes_awarded || 0),
+        streak: {
+          current: streak.current_streak,
+          longest: streak.longest_streak,
+          lastClaimDate: streak.last_claim_date,
+          dailyReward: 5,
+          earnedDailyReward,
+        },
+        completedTasks: progress.length,
+        remainingTasks: Math.max(0, LEARNING_TASKS.length - progress.length),
+        tasks: availableTasks.map((task) => ({
             key: task.key,
             type: task.type,
             title: task.title,
@@ -1031,10 +1413,7 @@ export default async function handler(request, response) {
             options: task.options || [],
             minimumLength: task.minimumLength || 0,
             runes: task.runes,
-            completed: Boolean(completion),
-            completedAt: completion?.completed_at || null,
-          };
-        }),
+          })),
       });
     }
 
@@ -1057,7 +1436,7 @@ export default async function handler(request, response) {
         const answer = Number(body.answer);
         if (answer !== task.answer) {
           return json(response, 400, {
-            error: "The Parliament asks you to consider that answer again.",
+            error: "The Parliament of Owls asks you to consider that answer again.",
           });
         }
         responseText = String(answer);
@@ -1079,10 +1458,105 @@ export default async function handler(request, response) {
         user.id,
         "learning",
         "Runes earned",
-        `The Parliament awarded you ${task.runes} Runes for completing ${task.title}.`,
+        `The Parliament of Owls awarded you ${task.runes} Runes for completing ${task.title}.`,
         `learning:${task.key}`,
       );
       return json(response, 201, { ok: true, runesAwarded: task.runes });
+    }
+
+    if (action === "quandaries" && request.method === "GET") {
+      const quandaries =
+        user.role === "admin"
+          ? await sql`
+              SELECT q.*, u.username
+              FROM library_quandaries q
+              JOIN library_users u ON u.id = q.user_id
+              ORDER BY
+                CASE WHEN q.status = 'open' THEN 0 ELSE 1 END,
+                q.created_at DESC
+              LIMIT 250
+            `
+          : await sql`
+              SELECT q.*, u.username
+              FROM library_quandaries q
+              JOIN library_users u ON u.id = q.user_id
+              WHERE q.user_id = ${user.id}
+              ORDER BY q.created_at DESC
+              LIMIT 50
+            `;
+      return json(response, 200, {
+        quandaries: quandaries.map((item) => ({
+          id: item.id,
+          userId: item.user_id,
+          username: item.username,
+          category: item.category,
+          title: item.title,
+          details: item.details,
+          status: item.status,
+          adminNote: item.admin_note,
+          createdAt: item.created_at,
+          resolvedAt: item.resolved_at,
+        })),
+      });
+    }
+
+    if (action === "quandary-save" && request.method === "POST") {
+      const category = String(body.category || "Other").trim().slice(0, 60);
+      const title = String(body.title || "").trim().slice(0, 160);
+      const details = String(body.details || "").trim().slice(0, 5000);
+      if (title.length < 4 || details.length < 10) {
+        return json(response, 400, {
+          error: "Give the quandary a clear title and a little more detail.",
+        });
+      }
+      const id = crypto.randomUUID();
+      await sql`
+        INSERT INTO library_quandaries (
+          id, user_id, category, title, details
+        )
+        VALUES (${id}, ${user.id}, ${category}, ${title}, ${details})
+      `;
+      const admins = await sql`
+        SELECT id FROM library_users WHERE role = 'admin'
+      `;
+      await Promise.all(
+        admins.map((admin) =>
+          addNotification(
+            admin.id,
+            "quandary",
+            "New quandary reported",
+            `${user.username} reported: ${title}`,
+            `quandary:${id}`,
+          ),
+        ),
+      );
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "quandary-resolve" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      const id = String(body.id || "");
+      const adminNote = String(body.adminNote || "").trim().slice(0, 2000);
+      const rows = await sql`
+        UPDATE library_quandaries
+        SET status = 'resolved', admin_note = ${adminNote},
+            resolved_at = NOW()
+        WHERE id = ${id} AND status = 'open'
+        RETURNING user_id, title
+      `;
+      if (!rows.length) {
+        return json(response, 404, { error: "That quandary is no longer open." });
+      }
+      await addNotification(
+        rows[0].user_id,
+        "quandary",
+        "Quandary reviewed",
+        adminNote || `The administrator reviewed your quandary: ${rows[0].title}`,
+        `quandary-resolved:${id}`,
+      );
+      return json(response, 200, { ok: true });
     }
 
     if (action === "debates" && request.method === "GET") {
@@ -1406,6 +1880,11 @@ export default async function handler(request, response) {
             SELECT SUM(lp.runes_awarded)
             FROM library_learning_progress lp
             WHERE lp.user_id = u.id
+          ), 0)::int
+          + COALESCE((
+            SELECT ds.runes_awarded
+            FROM library_daily_streaks ds
+            WHERE ds.user_id = u.id
           ), 0)::int AS runes,
           COALESCE(s.recent_books, '[]'::jsonb) AS recent_books
         FROM library_users u
