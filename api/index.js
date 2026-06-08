@@ -222,6 +222,37 @@ async function ensureSchema() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_market_listings (
+          id UUID PRIMARY KEY,
+          seller_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          book_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          author TEXT NOT NULL,
+          genre TEXT NOT NULL DEFAULT '',
+          price NUMERIC(12, 2) NOT NULL,
+          currency TEXT NOT NULL,
+          note TEXT NOT NULL DEFAULT '',
+          is_active BOOLEAN NOT NULL DEFAULT TRUE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS library_market_active_book
+        ON library_market_listings (seller_id, book_id)
+        WHERE is_active = TRUE
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_market_messages (
+          id UUID PRIMARY KEY,
+          listing_id UUID NOT NULL REFERENCES library_market_listings(id) ON DELETE CASCADE,
+          author_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          message TEXT NOT NULL,
+          offer_price NUMERIC(12, 2),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
     })();
   }
   return schemaReady;
@@ -702,6 +733,146 @@ export default async function handler(request, response) {
         WHERE id = ${String(body.id || "")}
       `;
       return json(response, 200, { ok: true });
+    }
+
+    if (action === "marketplace" && request.method === "GET") {
+      const listings = await sql`
+        SELECT l.id, l.seller_id, l.book_id, l.title, l.author, l.genre,
+               l.price, l.currency, l.note, l.created_at,
+               u.username, u.profile_image
+        FROM library_market_listings l
+        JOIN library_users u ON u.id = l.seller_id
+        WHERE l.is_active = TRUE
+        ORDER BY l.created_at DESC
+        LIMIT 300
+      `;
+      const messages = await sql`
+        SELECT m.id, m.listing_id, m.author_id, m.message, m.offer_price,
+               m.created_at, u.username
+        FROM library_market_messages m
+        JOIN library_users u ON u.id = m.author_id
+        JOIN library_market_listings l ON l.id = m.listing_id
+        WHERE l.is_active = TRUE
+        ORDER BY m.created_at
+        LIMIT 3000
+      `;
+      return json(response, 200, {
+        listings: listings.map((item) => ({
+          id: item.id,
+          sellerId: item.seller_id,
+          seller: item.username,
+          sellerImage: item.profile_image || "",
+          bookId: item.book_id,
+          title: item.title,
+          author: item.author,
+          genre: item.genre,
+          price: Number(item.price),
+          currency: item.currency,
+          note: item.note,
+          createdAt: item.created_at,
+          messages: messages
+            .filter((message) => message.listing_id === item.id)
+            .map((message) => ({
+              id: message.id,
+              authorId: message.author_id,
+              author: message.username,
+              message: message.message,
+              offerPrice:
+                message.offer_price === null
+                  ? null
+                  : Number(message.offer_price),
+              createdAt: message.created_at,
+            })),
+        })),
+      });
+    }
+
+    if (action === "market-list" && request.method === "POST") {
+      const price = Number(body.price);
+      const currency = String(body.currency || "").toUpperCase();
+      if (!Number.isFinite(price) || price <= 0 || price > 1_000_000) {
+        return json(response, 400, { error: "Enter a valid asking price." });
+      }
+      if (!["ZAR", "USD", "EUR", "GBP"].includes(currency)) {
+        return json(response, 400, { error: "Choose a supported currency." });
+      }
+      const listingId = crypto.randomUUID();
+      try {
+        await sql`
+          INSERT INTO library_market_listings (
+            id, seller_id, book_id, title, author, genre, price, currency, note
+          )
+          VALUES (
+            ${listingId}, ${user.id}, ${String(body.bookId || "")},
+            ${String(body.title || "Untitled").slice(0, 300)},
+            ${String(body.author || "Unknown author").slice(0, 300)},
+            ${String(body.genre || "").slice(0, 120)}, ${price}, ${currency},
+            ${String(body.note || "").trim().slice(0, 800)}
+          )
+        `;
+      } catch (error) {
+        if (String(error.message || "").includes("library_market_active_book")) {
+          return json(response, 409, { error: "That book is already listed for sale." });
+        }
+        throw error;
+      }
+      return json(response, 201, { ok: true, id: listingId });
+    }
+
+    if (action === "market-withdraw" && request.method === "POST") {
+      await sql`
+        UPDATE library_market_listings
+        SET is_active = FALSE, updated_at = NOW()
+        WHERE id = ${String(body.listingId || "")} AND seller_id = ${user.id}
+      `;
+      return json(response, 200, { ok: true });
+    }
+
+    if (action === "market-message" && request.method === "POST") {
+      const listingId = String(body.listingId || "");
+      const message = String(body.message || "").trim().slice(0, 1000);
+      const rawOffer = body.offerPrice;
+      const offerPrice =
+        rawOffer === "" || rawOffer === null || rawOffer === undefined
+          ? null
+          : Number(rawOffer);
+      if (!message && offerPrice === null) {
+        return json(response, 400, { error: "Add a comment or price offer." });
+      }
+      if (
+        offerPrice !== null &&
+        (!Number.isFinite(offerPrice) || offerPrice <= 0 || offerPrice > 1_000_000)
+      ) {
+        return json(response, 400, { error: "Enter a valid offer price." });
+      }
+      const listing = await sql`
+        SELECT seller_id, title
+        FROM library_market_listings
+        WHERE id = ${listingId} AND is_active = TRUE
+        LIMIT 1
+      `;
+      if (!listing.length) {
+        return json(response, 404, { error: "That listing is no longer available." });
+      }
+      await sql`
+        INSERT INTO library_market_messages (
+          id, listing_id, author_id, message, offer_price
+        )
+        VALUES (
+          ${crypto.randomUUID()}, ${listingId}, ${user.id}, ${message},
+          ${offerPrice}
+        )
+      `;
+      if (listing[0].seller_id !== user.id) {
+        await addNotification(
+          listing[0].seller_id,
+          "marketplace",
+          offerPrice === null ? "Marketplace comment" : "New price offer",
+          `${user.username} responded to your listing for ${listing[0].title}.`,
+          null,
+        );
+      }
+      return json(response, 201, { ok: true });
     }
 
     if (action === "profile-activity" && request.method === "GET") {
