@@ -38,6 +38,66 @@ const DEFAULT_READING_FACTS = [
   "Alternating demanding books with lighter ones can help sustain a regular reading habit.",
 ];
 
+const LEARNING_TASKS = [
+  {
+    key: "english-metaphor",
+    type: "choice",
+    title: "The Metaphor Chamber",
+    prompt: 'Which sentence contains a metaphor?',
+    options: [
+      "The moon was a silver coin above the trees.",
+      "The moon shone brightly above the trees.",
+      "The moon appeared after sunset.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "english-semicolon",
+    type: "choice",
+    title: "The Semicolon Perch",
+    prompt: "Which sentence uses a semicolon correctly?",
+    options: [
+      "The library was closing; we borrowed our books quickly.",
+      "The library; was closing, so we hurried.",
+      "We borrowed; three books from the library.",
+    ],
+    answer: 0,
+    runes: 15,
+  },
+  {
+    key: "english-active-voice",
+    type: "choice",
+    title: "The Active Voice Roost",
+    prompt: "Which sentence is written in active voice?",
+    options: [
+      "The final chapter was read by Amara.",
+      "Amara read the final chapter.",
+      "The final chapter had been read.",
+    ],
+    answer: 1,
+    runes: 15,
+  },
+  {
+    key: "review-opening",
+    type: "writing",
+    title: "The Reviewer's First Flight",
+    prompt:
+      "Write the opening of a book review. Name the book and author, identify its central subject or conflict, and give your initial judgment without revealing the ending.",
+    minimumLength: 120,
+    runes: 30,
+  },
+  {
+    key: "character-reflection",
+    type: "writing",
+    title: "The Character Observatory",
+    prompt:
+      "Choose a character from a book you have read. Explain one important decision they made and whether the text persuaded you that the decision was believable.",
+    minimumLength: 140,
+    runes: 35,
+  },
+];
+
 async function addNotification(userId, type, title, message, dedupeKey = null) {
   await sql`
     INSERT INTO library_notifications (
@@ -251,6 +311,16 @@ async function ensureSchema() {
           message TEXT NOT NULL,
           offer_price NUMERIC(12, 2),
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_learning_progress (
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          task_key TEXT NOT NULL,
+          response TEXT NOT NULL DEFAULT '',
+          runes_awarded INTEGER NOT NULL,
+          completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (user_id, task_key)
         )
       `;
     })();
@@ -906,6 +976,84 @@ export default async function handler(request, response) {
           unlockedAt: item.unlocked_at,
         })),
       });
+    }
+
+    if (action === "learning" && request.method === "GET") {
+      const progress = await sql`
+        SELECT task_key, response, runes_awarded, completed_at
+        FROM library_learning_progress
+        WHERE user_id = ${user.id}
+      `;
+      const runes = progress.reduce(
+        (total, item) => total + Number(item.runes_awarded || 0),
+        0,
+      );
+      return json(response, 200, {
+        runes,
+        tasks: LEARNING_TASKS.map((task) => {
+          const completion = progress.find(
+            (item) => item.task_key === task.key,
+          );
+          return {
+            key: task.key,
+            type: task.type,
+            title: task.title,
+            prompt: task.prompt,
+            options: task.options || [],
+            minimumLength: task.minimumLength || 0,
+            runes: task.runes,
+            completed: Boolean(completion),
+            completedAt: completion?.completed_at || null,
+          };
+        }),
+      });
+    }
+
+    if (action === "learning-complete" && request.method === "POST") {
+      const task = LEARNING_TASKS.find(
+        (item) => item.key === String(body.taskKey || ""),
+      );
+      if (!task) {
+        return json(response, 404, { error: "That assignment was not found." });
+      }
+      const existing = await sql`
+        SELECT 1 FROM library_learning_progress
+        WHERE user_id = ${user.id} AND task_key = ${task.key}
+      `;
+      if (existing.length) {
+        return json(response, 409, { error: "You have already completed this assignment." });
+      }
+      let responseText = "";
+      if (task.type === "choice") {
+        const answer = Number(body.answer);
+        if (answer !== task.answer) {
+          return json(response, 400, {
+            error: "The Parliament asks you to consider that answer again.",
+          });
+        }
+        responseText = String(answer);
+      } else {
+        responseText = String(body.response || "").trim().slice(0, 5000);
+        if (responseText.length < task.minimumLength) {
+          return json(response, 400, {
+            error: `Write at least ${task.minimumLength} characters for this assignment.`,
+          });
+        }
+      }
+      await sql`
+        INSERT INTO library_learning_progress (
+          user_id, task_key, response, runes_awarded
+        )
+        VALUES (${user.id}, ${task.key}, ${responseText}, ${task.runes})
+      `;
+      await addNotification(
+        user.id,
+        "learning",
+        "Runes earned",
+        `The Parliament awarded you ${task.runes} Runes for completing ${task.title}.`,
+        `learning:${task.key}`,
+      );
+      return json(response, 201, { ok: true, runesAwarded: task.runes });
     }
 
     if (action === "notification-read" && request.method === "POST") {
