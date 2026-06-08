@@ -190,6 +190,18 @@ async function ensureSchema() {
           PRIMARY KEY (user_id, book_id)
         )
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_journals (
+          id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          reflection TEXT NOT NULL,
+          book_tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+          entry_date DATE NOT NULL,
+          is_shared BOOLEAN NOT NULL DEFAULT FALSE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
     })();
   }
   return schemaReady;
@@ -510,6 +522,94 @@ export default async function handler(request, response) {
       return json(response, 200, { ok: true });
     }
 
+    if (action === "journals" && request.method === "GET") {
+      const rows = await sql`
+        SELECT id, reflection, book_tags, entry_date, is_shared, created_at, updated_at
+        FROM library_journals
+        WHERE user_id = ${user.id}
+        ORDER BY entry_date DESC, created_at DESC
+      `;
+      return json(response, 200, {
+        journals: rows.map((item) => ({
+          id: item.id,
+          reflection: item.reflection,
+          books: item.book_tags || [],
+          entryDate: item.entry_date,
+          isShared: item.is_shared,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        })),
+      });
+    }
+
+    if (action === "journal-save" && request.method === "POST") {
+      const id = String(body.id || crypto.randomUUID());
+      const reflection = String(body.reflection || "").trim().slice(0, 10000);
+      const entryDate = String(body.entryDate || "").slice(0, 10);
+      const isShared = Boolean(body.isShared);
+      const books = Array.isArray(body.books)
+        ? body.books.slice(0, 50).map((book) => ({
+            id: String(book.id || ""),
+            title: String(book.title || "Untitled").slice(0, 300),
+            author: String(book.author || "Unknown author").slice(0, 300),
+          }))
+        : [];
+      if (!reflection || !/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
+        return json(response, 400, { error: "Add a date and reflection." });
+      }
+      const previous = await sql`
+        SELECT is_shared FROM library_journals
+        WHERE id = ${id} AND user_id = ${user.id}
+      `;
+      await sql`
+        INSERT INTO library_journals (
+          id, user_id, reflection, book_tags, entry_date, is_shared
+        )
+        VALUES (
+          ${id}, ${user.id}, ${reflection}, ${JSON.stringify(books)}::jsonb,
+          ${entryDate}, ${isShared}
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          reflection = EXCLUDED.reflection,
+          book_tags = EXCLUDED.book_tags,
+          entry_date = EXCLUDED.entry_date,
+          is_shared = EXCLUDED.is_shared,
+          updated_at = NOW()
+        WHERE library_journals.user_id = ${user.id}
+      `;
+      await unlockAchievement(
+        user.id,
+        "first-journal",
+        "Reflective reader",
+        "Wrote your first reading journal entry.",
+      );
+      if (isShared && !previous[0]?.is_shared) {
+        const followers = await sql`
+          SELECT follower_id FROM library_follows WHERE following_id = ${user.id}
+        `;
+        await Promise.all(
+          followers.map((follower) =>
+            addNotification(
+              follower.follower_id,
+              "journal",
+              "New shared reflection",
+              `${user.username} shared a new reading journal entry.`,
+              `journal:${id}:${follower.follower_id}`,
+            ),
+          ),
+        );
+      }
+      return json(response, 200, { ok: true, id });
+    }
+
+    if (action === "journal-delete" && request.method === "POST") {
+      await sql`
+        DELETE FROM library_journals
+        WHERE id = ${String(body.id || "")} AND user_id = ${user.id}
+      `;
+      return json(response, 200, { ok: true });
+    }
+
     if (action === "profile" && request.method === "POST") {
       const username = String(body.username || "").trim();
       const normalized = normalize(username);
@@ -586,6 +686,7 @@ export default async function handler(request, response) {
       const sessions = Math.max(0, Number(body.sessions) || 0);
       const pages = Math.max(0, Number(body.pages) || 0);
       const minutes = Math.max(0, Number(body.minutes) || 0);
+      const journals = Math.max(0, Number(body.journals) || 0);
       if (readBooks >= 1) {
         await unlockAchievement(user.id, "first-finish", "First finish", "Finished your first book.");
       }
@@ -615,6 +716,14 @@ export default async function handler(request, response) {
           user.id, "insight", "Time well read",
           `Your reading log now contains ${minutes} minutes of focused reading.`,
           "insight:minutes-60",
+        );
+      }
+      if (journals >= 5) {
+        await unlockAchievement(
+          user.id,
+          "five-journals",
+          "Thoughtful reader",
+          "Wrote five reading journal entries.",
         );
       }
       return json(response, 200, { ok: true });
@@ -672,6 +781,15 @@ export default async function handler(request, response) {
         WHERE s.recipient_id = ${user.id} OR s.sender_id = ${user.id}
         ORDER BY c.created_at
       `;
+      const journals = await sql`
+        SELECT j.id, j.user_id, j.reflection, j.book_tags, j.entry_date,
+               j.created_at, u.username, u.profile_image
+        FROM library_journals j
+        JOIN library_users u ON u.id = j.user_id
+        WHERE j.is_shared = TRUE
+        ORDER BY j.entry_date DESC, j.created_at DESC
+        LIMIT 100
+      `;
       return json(response, 200, {
         accounts: users.map((item) => ({
           ...publicUser(item),
@@ -685,6 +803,16 @@ export default async function handler(request, response) {
         follows: follows.map((item) => ({
           followerId: item.follower_id,
           followingId: item.following_id,
+          createdAt: item.created_at,
+        })),
+        journals: journals.map((item) => ({
+          id: item.id,
+          authorId: item.user_id,
+          author: item.username,
+          profileImage: item.profile_image || "",
+          reflection: item.reflection,
+          books: item.book_tags || [],
+          entryDate: item.entry_date,
           createdAt: item.created_at,
         })),
         shares: shares.map((item) => {
