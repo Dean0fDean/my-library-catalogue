@@ -143,6 +143,19 @@
         </nav>
       </header>
 
+      <aside
+        id="reading-fact-banner"
+        class="reading-fact-banner"
+        role="button"
+        tabindex="0"
+        aria-label="Reading fact. Click to dismiss."
+        hidden
+      >
+        <span class="reading-fact-label">A READING NOTE</span>
+        <p id="reading-fact-text"></p>
+        <button id="dismiss-reading-fact" type="button" aria-label="Dismiss reading fact">X</button>
+      </aside>
+
       <main>
         <section class="hero">
           <div class="hero-copy">
@@ -162,6 +175,10 @@
             <div class="stat">
               <strong id="read-count">0</strong>
               <span>READ</span>
+            </div>
+            <div class="stat">
+              <strong id="reading-count">0</strong>
+              <span>BUSY READING</span>
             </div>
             <div class="stat">
               <strong id="unread-count">0</strong>
@@ -207,6 +224,7 @@
               <select id="status-filter">
                 <option value="all">All books</option>
                 <option value="read">Read</option>
+                <option value="reading">Busy reading</option>
                 <option value="unread">To be read</option>
               </select>
             </label>
@@ -612,6 +630,29 @@
               </div>
               <span class="admin-badge">Admin only</span>
             </div>
+            <section class="admin-fact-panel" aria-labelledby="admin-fact-title">
+              <div>
+                <p class="eyebrow">COMMUNITY READING NOTES</p>
+                <h3 id="admin-fact-title">Reading facts</h3>
+                <p>Add short facts that may appear at the top of every reader's page.</p>
+              </div>
+              <form id="admin-fact-form">
+                <label>
+                  <span>New fact</span>
+                  <textarea
+                    id="admin-fact-input"
+                    name="fact"
+                    rows="3"
+                    maxlength="320"
+                    placeholder="For example: Reading fiction can strengthen perspective-taking."
+                    required
+                  ></textarea>
+                </label>
+                <p class="form-error" id="admin-fact-error" role="alert"></p>
+                <button class="primary-button" type="submit">Add fact</button>
+              </form>
+              <div id="admin-fact-list" class="admin-fact-list"></div>
+            </section>
             <div id="admin-account-list" class="admin-account-list"></div>
           </div>
         </section>
@@ -760,6 +801,7 @@
                 <select id="reader-catalogue-status">
                   <option value="all">All books</option>
                   <option value="read">Read</option>
+                  <option value="reading">Busy reading</option>
                   <option value="unread">To be read</option>
                 </select>
               </label>
@@ -815,6 +857,24 @@
           Share
         </button>
       </form>
+    </dialog>
+
+    <dialog id="cover-view-dialog" class="cover-view-dialog">
+      <div class="cover-view-content">
+        <button
+          class="icon-button cover-view-close"
+          id="close-cover-view-button"
+          type="button"
+          aria-label="Close full book picture"
+        >
+          X
+        </button>
+        <img id="cover-view-image" alt="" />
+        <div>
+          <h2 id="cover-view-title"></h2>
+          <p id="cover-view-author"></p>
+        </div>
+      </div>
     </dialog>
 
     <dialog id="book-dialog">
@@ -906,6 +966,14 @@
             <span>
               <strong>I've read it</strong>
               <small>Finished and fondly remembered.</small>
+            </span>
+          </label>
+          <label class="radio-card">
+            <input type="radio" name="status" value="reading" />
+            <span class="radio-dot"></span>
+            <span>
+              <strong>Busy reading</strong>
+              <small>Currently in progress.</small>
             </span>
           </label>
           <label class="radio-card">
