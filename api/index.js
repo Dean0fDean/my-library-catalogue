@@ -397,6 +397,85 @@ const LEARNING_TASKS = [
 
 const ACTIVE_LEARNING_TASKS = 6;
 
+const CHIPPINGS_ITEMS = [
+  {
+    key: "theme-midnight",
+    type: "theme",
+    name: "Midnight Athenaeum",
+    description: "Deep navy shelves, moonlit paper, and silver-blue accents.",
+    price: 80,
+    preview: ["#101827", "#dbe4ef", "#7393b3"],
+  },
+  {
+    key: "theme-rosewood",
+    type: "theme",
+    name: "Rosewood Reading Room",
+    description: "Warm burgundy, parchment, and burnished copper tones.",
+    price: 90,
+    preview: ["#4b2028", "#f3e7d5", "#b86f52"],
+  },
+  {
+    key: "theme-scriptorium",
+    type: "theme",
+    name: "Golden Scriptorium",
+    description: "Ink-black panels with illuminated gold and vellum.",
+    price: 110,
+    preview: ["#201c17", "#f2e4bd", "#d5a744"],
+  },
+  {
+    key: "theme-moss",
+    type: "theme",
+    name: "Mossbound Archive",
+    description: "A softer woodland palette of moss, fern, and old paper.",
+    price: 70,
+    preview: ["#26382c", "#e9e2ca", "#8da071"],
+  },
+  {
+    key: "frame-laurel",
+    type: "frame",
+    name: "Laurel Reader",
+    description: "A classical green and gold ring for a thoughtful reader.",
+    price: 45,
+    preview: ["#173a2d", "#c98945"],
+  },
+  {
+    key: "frame-moon",
+    type: "frame",
+    name: "Moonlit Scholar",
+    description: "A silver-blue halo with a quiet midnight glow.",
+    price: 55,
+    preview: ["#b8c9dc", "#334b68"],
+  },
+  {
+    key: "frame-ember",
+    type: "frame",
+    name: "Ember Quill",
+    description: "Copper and crimson edging for spirited commentary.",
+    price: 60,
+    preview: ["#d1764f", "#6f2631"],
+  },
+  {
+    key: "frame-owl",
+    type: "frame",
+    name: "Parliament Crest",
+    description: "A distinguished gold frame inspired by the Parliament of Owls.",
+    price: 75,
+    preview: ["#d5a744", "#f2e4bd"],
+  },
+  {
+    key: "frame-runes",
+    type: "frame",
+    name: "Runekeeper",
+    description: "A violet ring marked by the glow of earned Runes.",
+    price: 85,
+    preview: ["#8066a5", "#d8c7ee"],
+  },
+];
+
+function storeItem(key) {
+  return CHIPPINGS_ITEMS.find((item) => item.key === key);
+}
+
 async function addNotification(userId, type, title, message, dedupeKey = null) {
   await sql`
     INSERT INTO library_notifications (
@@ -643,6 +722,23 @@ async function ensureSchema() {
           admin_note TEXT NOT NULL DEFAULT '',
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           resolved_at TIMESTAMPTZ
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_store_purchases (
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          item_key TEXT NOT NULL,
+          price_paid INTEGER NOT NULL,
+          purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (user_id, item_key)
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_cosmetics (
+          user_id UUID PRIMARY KEY REFERENCES library_users(id) ON DELETE CASCADE,
+          equipped_theme TEXT NOT NULL DEFAULT '',
+          equipped_frame TEXT NOT NULL DEFAULT '',
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
       await sql`
@@ -1380,6 +1476,11 @@ export default async function handler(request, response) {
         (total, item) => total + Number(item.runes_awarded || 0),
         0,
       );
+      const spendingRows = await sql`
+        SELECT COALESCE(SUM(price_paid), 0)::int AS spent
+        FROM library_store_purchases
+        WHERE user_id = ${user.id}
+      `;
       const completedKeys = new Set(progress.map((item) => item.task_key));
       const availableTasks = LEARNING_TASKS.filter(
         (task) => !completedKeys.has(task.key),
@@ -1395,7 +1496,12 @@ export default async function handler(request, response) {
         );
       }
       return json(response, 200, {
-        runes: learningRunes + Number(streak.runes_awarded || 0),
+        runes: Math.max(
+          0,
+          learningRunes +
+            Number(streak.runes_awarded || 0) -
+            Number(spendingRows[0].spent || 0),
+        ),
         streak: {
           current: streak.current_streak,
           longest: streak.longest_streak,
@@ -1462,6 +1568,151 @@ export default async function handler(request, response) {
         `learning:${task.key}`,
       );
       return json(response, 201, { ok: true, runesAwarded: task.runes });
+    }
+
+    if (action === "store" && request.method === "GET") {
+      const purchases = await sql`
+        SELECT item_key, price_paid, purchased_at
+        FROM library_store_purchases
+        WHERE user_id = ${user.id}
+        ORDER BY purchased_at
+      `;
+      const cosmetics = await sql`
+        SELECT equipped_theme, equipped_frame
+        FROM library_cosmetics
+        WHERE user_id = ${user.id}
+        LIMIT 1
+      `;
+      const balanceRows = await sql`
+        SELECT
+          COALESCE((
+            SELECT SUM(runes_awarded)
+            FROM library_learning_progress
+            WHERE user_id = ${user.id}
+          ), 0)::int
+          + COALESCE((
+            SELECT runes_awarded
+            FROM library_daily_streaks
+            WHERE user_id = ${user.id}
+          ), 0)::int
+          - COALESCE((
+            SELECT SUM(price_paid)
+            FROM library_store_purchases
+            WHERE user_id = ${user.id}
+          ), 0)::int AS balance
+      `;
+      const owned = new Set(purchases.map((item) => item.item_key));
+      return json(response, 200, {
+        balance: Math.max(0, Number(balanceRows[0].balance || 0)),
+        equipped: {
+          theme: cosmetics[0]?.equipped_theme || "",
+          frame: cosmetics[0]?.equipped_frame || "",
+        },
+        items: CHIPPINGS_ITEMS.map((item) => ({
+          ...item,
+          owned: owned.has(item.key),
+          purchasedAt:
+            purchases.find((purchase) => purchase.item_key === item.key)
+              ?.purchased_at || null,
+        })),
+      });
+    }
+
+    if (action === "store-purchase" && request.method === "POST") {
+      const item = storeItem(String(body.itemKey || ""));
+      if (!item) {
+        return json(response, 404, { error: "That item is not available in The Chippings." });
+      }
+      const rows = await sql`
+        INSERT INTO library_store_purchases (
+          user_id, item_key, price_paid
+        )
+        SELECT ${user.id}, ${item.key}, ${item.price}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM library_store_purchases
+          WHERE user_id = ${user.id} AND item_key = ${item.key}
+        )
+        AND (
+          COALESCE((
+            SELECT SUM(runes_awarded)
+            FROM library_learning_progress
+            WHERE user_id = ${user.id}
+          ), 0)
+          + COALESCE((
+            SELECT runes_awarded
+            FROM library_daily_streaks
+            WHERE user_id = ${user.id}
+          ), 0)
+          - COALESCE((
+            SELECT SUM(price_paid)
+            FROM library_store_purchases
+            WHERE user_id = ${user.id}
+          ), 0)
+        ) >= ${item.price}
+        RETURNING item_key
+      `;
+      if (!rows.length) {
+        const owned = await sql`
+          SELECT 1 FROM library_store_purchases
+          WHERE user_id = ${user.id} AND item_key = ${item.key}
+        `;
+        return json(response, 409, {
+          error: owned.length
+            ? "You already own that item."
+            : "You do not have enough Runes for that item yet.",
+        });
+      }
+      await addNotification(
+        user.id,
+        "store",
+        "Purchase complete",
+        `${item.name} is now in your Chippings collection.`,
+        `store:${item.key}`,
+      );
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "store-equip" && request.method === "POST") {
+      const type = String(body.type || "");
+      const itemKey = String(body.itemKey || "");
+      if (!["theme", "frame"].includes(type)) {
+        return json(response, 400, { error: "Choose a valid cosmetic type." });
+      }
+      if (itemKey) {
+        const item = storeItem(itemKey);
+        if (!item || item.type !== type) {
+          return json(response, 400, { error: "That cosmetic cannot be equipped there." });
+        }
+        const owned = await sql`
+          SELECT 1 FROM library_store_purchases
+          WHERE user_id = ${user.id} AND item_key = ${itemKey}
+        `;
+        if (!owned.length) {
+          return json(response, 403, { error: "Purchase that item before equipping it." });
+        }
+      }
+      await sql`
+        INSERT INTO library_cosmetics (
+          user_id, equipped_theme, equipped_frame, updated_at
+        )
+        VALUES (
+          ${user.id},
+          ${type === "theme" ? itemKey : ""},
+          ${type === "frame" ? itemKey : ""},
+          NOW()
+        )
+        ON CONFLICT (user_id) DO UPDATE SET
+          equipped_theme = CASE
+            WHEN ${type} = 'theme' THEN ${itemKey}
+            ELSE library_cosmetics.equipped_theme
+          END,
+          equipped_frame = CASE
+            WHEN ${type} = 'frame' THEN ${itemKey}
+            ELSE library_cosmetics.equipped_frame
+          END,
+          updated_at = NOW()
+      `;
+      return json(response, 200, { ok: true });
     }
 
     if (action === "quandaries" && request.method === "GET") {
@@ -1885,7 +2136,17 @@ export default async function handler(request, response) {
             SELECT ds.runes_awarded
             FROM library_daily_streaks ds
             WHERE ds.user_id = u.id
+          ), 0)::int
+          - COALESCE((
+            SELECT SUM(sp.price_paid)
+            FROM library_store_purchases sp
+            WHERE sp.user_id = u.id
           ), 0)::int AS runes,
+          COALESCE((
+            SELECT c.equipped_frame
+            FROM library_cosmetics c
+            WHERE c.user_id = u.id
+          ), '') AS equipped_frame,
           COALESCE(s.recent_books, '[]'::jsonb) AS recent_books
         FROM library_users u
         LEFT JOIN library_stats s ON s.user_id = u.id
@@ -1927,7 +2188,8 @@ export default async function handler(request, response) {
             reading: item.reading_count,
             unread: item.unread,
           },
-          runes: item.runes,
+          runes: Math.max(0, item.runes),
+          equippedFrame: item.equipped_frame,
           recentBooks: item.recent_books,
         })),
         follows: follows.map((item) => ({
