@@ -55,3 +55,14 @@ devices.
 
 The interface uses a paper-and-ink theme with gently turning page shapes in
 the background. Devices that request reduced motion do not play the animation.
+
+Previously used author names are offered when adding another book, while the
+author field still accepts new names.
+
+The Learning Nook contains assignments from the Parliament of Owls, including
+English-language questions and guided book-review or reflection exercises.
+Completing each assignment once earns synchronized in-app Runes.
+
+New notifications are checked periodically and announced with a short musical
+chime after the reader has interacted with the page. Existing notifications do
+not trigger a sound when an account first signs in.
