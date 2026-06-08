@@ -78,7 +78,19 @@ textarea:focus-visible {
   border-radius: 0 12px 12px 0;
   box-shadow: -24px 26px 55px rgba(34, 45, 38, 0.12);
   transform-origin: left center;
-  animation: background-page-turn 14s ease-in-out infinite;
+  background:
+    linear-gradient(90deg, rgba(23, 42, 34, 0.13), transparent 7%),
+    radial-gradient(ellipse at 0 50%, rgba(23, 42, 34, 0.08), transparent 38%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(23, 42, 34, 0.026) 0,
+      rgba(23, 42, 34, 0.026) 1px,
+      transparent 1px,
+      transparent 28px
+    ),
+    #fbf8f0;
+  clip-path: polygon(0 2%, 92% 0, 100% 5%, 98% 96%, 88% 100%, 0 98%);
+  animation: background-page-turn 11s ease-in-out infinite;
 }
 
 .page-shell::after {
@@ -93,13 +105,18 @@ textarea:focus-visible {
 @keyframes background-page-turn {
   0%,
   100% {
-    transform: perspective(1200px) rotateY(-7deg) rotateZ(1deg);
-    opacity: 0.46;
+    transform: perspective(1200px) rotateY(-5deg) rotateZ(0.5deg);
+    opacity: 0.32;
   }
-  50% {
-    transform: perspective(1200px) rotateY(-22deg) rotateZ(-1deg)
-      translateX(-18px);
-    opacity: 0.72;
+  45% {
+    transform: perspective(1200px) rotateY(-28deg) rotateZ(-0.8deg)
+      translateX(-24px) skewY(0.6deg);
+    opacity: 0.52;
+  }
+  55% {
+    transform: perspective(1200px) rotateY(-14deg) rotateZ(-0.4deg)
+      translateX(-10px);
+    opacity: 0.4;
   }
 }
 
@@ -532,6 +549,11 @@ h2 {
   font-size: 0.9rem;
   font-style: italic;
   line-height: 1.45;
+  transition: opacity 180ms ease;
+}
+
+.reading-fact-banner p.changing {
+  opacity: 0;
 }
 
 .reading-fact-banner button {
@@ -547,7 +569,8 @@ h2 {
 
 .cover-view-dialog {
   width: min(92vw, 860px);
-  max-height: 92vh;
+  height: min(92vh, 900px);
+  max-height: none;
   padding: 0;
   overflow: hidden;
   background: #151b18;
@@ -557,14 +580,19 @@ h2 {
 .cover-view-content {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  min-height: min(82vh, 850px);
+  height: 100%;
+  min-height: 0;
   position: relative;
 }
 
 .cover-view-content img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(min(92vh, 900px) - 92px);
   min-height: 0;
+  align-self: center;
+  justify-self: center;
   object-fit: contain;
 }
 
@@ -918,6 +946,20 @@ fieldset {
     grid-column: auto;
   }
 
+  .marketplace-card-heading,
+  .marketplace-message-form {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplace-card-heading .mini-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .marketplace-price {
+    justify-self: start;
+  }
+
   .header-note {
     display: none;
   }
@@ -1249,6 +1291,212 @@ fieldset {
 
 .community-empty[hidden] {
   display: none;
+}
+
+.marketplace-heading {
+  margin-bottom: 1rem;
+}
+
+.marketplace-heading h3 {
+  margin-bottom: 0.45rem;
+  color: var(--paper);
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.marketplace-heading p:last-child {
+  color: rgba(244, 240, 231, 0.64);
+}
+
+.marketplace-disclaimer {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.15rem;
+  color: rgba(244, 240, 231, 0.78);
+  background: rgba(201, 137, 69, 0.12);
+  border: 1px solid rgba(201, 137, 69, 0.35);
+  line-height: 1.55;
+}
+
+.marketplace-disclaimer.compact {
+  color: rgba(23, 42, 34, 0.72);
+  background: rgba(201, 137, 69, 0.1);
+  border-color: rgba(201, 137, 69, 0.3);
+  font-size: 0.88rem;
+}
+
+.marketplace-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.marketplace-card {
+  min-width: 0;
+  padding: 1.35rem;
+  color: var(--paper);
+  background: rgba(244, 240, 231, 0.07);
+  border: 1px solid rgba(244, 240, 231, 0.15);
+}
+
+.marketplace-card-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.marketplace-card-heading h3 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 400;
+}
+
+.marketplace-card-heading p {
+  margin: 0.25rem 0 0;
+  color: rgba(244, 240, 231, 0.58);
+  font-style: italic;
+}
+
+.marketplace-price {
+  color: var(--gold);
+  font-size: 1.25rem;
+  white-space: nowrap;
+}
+
+.marketplace-genre {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.35rem 0.55rem;
+  color: var(--forest);
+  background: var(--sage);
+  font: 700 0.57rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.marketplace-note {
+  margin: 1rem 0 0;
+  color: rgba(244, 240, 231, 0.78);
+  line-height: 1.6;
+}
+
+.marketplace-thread {
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(244, 240, 231, 0.15);
+}
+
+.marketplace-thread h4 {
+  margin: 0 0 0.8rem;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.marketplace-messages {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.marketplace-message {
+  padding: 0.75rem 0.85rem;
+  background: rgba(0, 0, 0, 0.11);
+}
+
+.marketplace-message strong,
+.marketplace-message time {
+  display: block;
+}
+
+.marketplace-message p {
+  margin: 0.35rem 0;
+  overflow-wrap: anywhere;
+}
+
+.marketplace-message time,
+.marketplace-no-messages {
+  color: rgba(244, 240, 231, 0.48);
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+.marketplace-offer {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.28rem 0.45rem;
+  color: var(--forest);
+  background: var(--gold);
+  font: 700 0.58rem/1 Arial, sans-serif;
+}
+
+.marketplace-message-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(130px, 0.3fr) auto;
+  align-items: end;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.marketplace-message-form label > span:not(.sr-only) {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: rgba(244, 240, 231, 0.58);
+  font: 700 0.56rem/1 Arial, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.marketplace-message-form input {
+  width: 100%;
+  height: 42px;
+  padding: 0 0.7rem;
+  color: var(--paper);
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(244, 240, 231, 0.22);
+}
+
+.marketplace-message-form button,
+.marketplace-withdraw {
+  min-height: 42px;
+  padding: 0.65rem 0.8rem;
+  color: var(--forest);
+  background: var(--gold);
+  border: 0;
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.marketplace-withdraw {
+  margin-top: 1rem;
+  color: #ffd4c8;
+  background: transparent;
+  border: 1px solid rgba(244, 240, 231, 0.22);
+}
+
+#market-listing-form {
+  padding: clamp(1.5rem, 5vw, 2.75rem);
+}
+
+#market-listing-form > label {
+  display: block;
+  margin-bottom: 1.1rem;
+}
+
+#market-listing-form label > span {
+  display: block;
+  margin-bottom: 0.45rem;
+  font: 700 0.64rem/1 Arial, sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+#market-listing-form input,
+#market-listing-form select,
+#market-listing-form textarea {
+  width: 100%;
+  padding: 0.8rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--line);
 }
 
 .admin-heading {
@@ -3427,5 +3675,21 @@ fieldset {
 
   .journal-section::after {
     display: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .marketplace-card-heading,
+  .marketplace-message-form {
+    grid-template-columns: 1fr;
+  }
+
+  .marketplace-card-heading .mini-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .marketplace-price {
+    justify-self: start;
   }
 }
