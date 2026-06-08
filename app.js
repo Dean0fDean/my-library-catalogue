@@ -152,6 +152,17 @@ const elements = {
   communityJournalsView: document.querySelector("#community-journals-view"),
   communityJournalFeed: document.querySelector("#community-journal-feed"),
   communityJournalEmpty: document.querySelector("#community-journal-empty"),
+  communityMarketplaceView: document.querySelector(
+    "#community-marketplace-view",
+  ),
+  marketplaceGrid: document.querySelector("#marketplace-grid"),
+  marketplaceEmpty: document.querySelector("#marketplace-empty"),
+  marketListingDialog: document.querySelector("#market-listing-dialog"),
+  marketListingForm: document.querySelector("#market-listing-form"),
+  marketBookIdInput: document.querySelector("#market-book-id-input"),
+  marketBookSummary: document.querySelector("#market-book-summary"),
+  marketPriceInput: document.querySelector("#market-price-input"),
+  marketListingError: document.querySelector("#market-listing-error"),
   communityAdminView: document.querySelector("#community-admin-view"),
 };
 
@@ -166,6 +177,9 @@ let shares = loadArray(SHARES_STORAGE_KEY);
 let journals = [];
 let sharedJournals = [];
 let readingFacts = [];
+let marketplaceListings = [];
+let readingFactIndex = 0;
+let readingFactTimer;
 let openMenuId = null;
 let activeCoverBookId = null;
 let pendingCoverImage = "";
@@ -518,6 +532,7 @@ function notificationIcon(type) {
     recommendation: "R",
     passage: "\"",
     journal: "J",
+    marketplace: "$",
     insight: "i",
   }[type] || "i";
 }
@@ -798,6 +813,12 @@ async function loadReadingFacts() {
   renderAdminFacts();
 }
 
+async function loadMarketplace() {
+  if (!apiToken) return;
+  const data = await apiRequest("marketplace");
+  marketplaceListings = data.listings || [];
+}
+
 async function refreshCommunity() {
   try {
     await syncCommunityStats();
@@ -816,6 +837,7 @@ async function showAuthenticatedApp(account) {
     await loadAccountData();
     await loadJournals();
     await loadReadingFacts();
+    await loadMarketplace();
   } catch (error) {
     showToast(error.message);
   }
@@ -1054,6 +1076,9 @@ function renderBook(book) {
               <button type="button" data-action="cover" data-id="${book.id}">
                 ${book.coverImage ? "Change photo" : "Add photo"}
               </button>
+              <button type="button" data-action="sell" data-id="${book.id}">
+                List for sale
+              </button>
               <button class="remove-action" type="button" data-action="delete" data-id="${book.id}">
                 Remove book
               </button>
@@ -1221,6 +1246,63 @@ function openFullCover(book) {
   elements.coverViewTitle.textContent = book.title;
   elements.coverViewAuthor.textContent = `by ${book.author}`;
   elements.coverViewDialog.showModal();
+}
+
+function openMarketListingForm(id) {
+  const book = books.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!book) return;
+  const existing = marketplaceListings.find(
+    (listing) =>
+      listing.sellerId === currentAccount.id && listing.bookId === book.id,
+  );
+  if (existing) {
+    showToast("That book is already listed in the marketplace.");
+    return;
+  }
+  elements.marketListingForm.reset();
+  openMenuId = null;
+  renderBooks();
+  elements.marketListingError.textContent = "";
+  elements.marketBookIdInput.value = book.id;
+  elements.marketBookSummary.textContent = `${book.title} by ${book.author}`;
+  elements.marketListingDialog.showModal();
+  window.setTimeout(() => elements.marketPriceInput.focus(), 0);
+}
+
+async function createMarketListing(formData) {
+  const book = books.find(
+    (item) =>
+      item.id === formData.get("bookId") &&
+      item.ownerId === currentAccount?.id,
+  );
+  if (!book) {
+    elements.marketListingError.textContent =
+      "That book is no longer in your collection.";
+    return;
+  }
+  elements.marketListingError.textContent = "";
+  try {
+    await apiRequest("market-list", {
+      method: "POST",
+      body: {
+        bookId: book.id,
+        title: book.title,
+        author: book.author,
+        genre: book.genre,
+        price: formData.get("price"),
+        currency: formData.get("currency"),
+        note: formData.get("note").trim(),
+      },
+    });
+    await loadMarketplace();
+    renderMarketplace();
+    elements.marketListingDialog.close();
+    showToast(`"${book.title}" is now listed for sale.`);
+  } catch (error) {
+    elements.marketListingError.textContent = error.message;
+  }
 }
 
 function rateBook(id, rating) {
@@ -2453,29 +2535,153 @@ function renderAdminAccounts() {
 
 function currentReadingFact() {
   if (!readingFacts.length || !currentAccount) return null;
-  const dayKey = new Date().toISOString().slice(0, 10);
-  const seed = [...`${currentAccount.id}:${dayKey}`].reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  );
-  return readingFacts[seed % readingFacts.length];
+  return readingFacts[readingFactIndex % readingFacts.length];
 }
 
 function renderReadingFact() {
+  window.clearInterval(readingFactTimer);
   const fact = currentReadingFact();
-  if (!fact || sessionStorage.getItem(`dismissed-reading-fact:${fact.id}`)) {
+  if (!fact || sessionStorage.getItem("reading-facts-dismissed")) {
     elements.readingFactBanner.hidden = true;
     return;
   }
   elements.readingFactText.textContent = fact.fact;
   elements.readingFactBanner.dataset.factId = fact.id;
   elements.readingFactBanner.hidden = false;
+  if (readingFacts.length > 1) {
+    readingFactTimer = window.setInterval(() => {
+      readingFactIndex = (readingFactIndex + 1) % readingFacts.length;
+      const nextFact = currentReadingFact();
+      elements.readingFactText.classList.add("changing");
+      window.setTimeout(() => {
+        elements.readingFactText.textContent = nextFact.fact;
+        elements.readingFactBanner.dataset.factId = nextFact.id;
+        elements.readingFactText.classList.remove("changing");
+      }, 180);
+    }, 30_000);
+  }
 }
 
 function dismissReadingFact() {
-  const factId = elements.readingFactBanner.dataset.factId;
-  if (factId) sessionStorage.setItem(`dismissed-reading-fact:${factId}`, "1");
+  sessionStorage.setItem("reading-facts-dismissed", "1");
+  window.clearInterval(readingFactTimer);
   elements.readingFactBanner.hidden = true;
+}
+
+function formatMarketPrice(price, currency) {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(price);
+  } catch {
+    return `${currency} ${Number(price).toFixed(2)}`;
+  }
+}
+
+function renderMarketplace() {
+  if (!currentAccount) return;
+  elements.marketplaceGrid.innerHTML = marketplaceListings
+    .map((listing) => {
+      const seller = accounts.find(
+        (account) => account.id === listing.sellerId,
+      ) || {
+        username: listing.seller,
+        profileImage: listing.sellerImage,
+      };
+      const isSeller = listing.sellerId === currentAccount.id;
+      return `
+        <article class="marketplace-card">
+          <div class="marketplace-card-heading">
+            <div class="mini-avatar">${avatarMarkup(seller)}</div>
+            <div>
+              <h3>${escapeHtml(listing.title)}</h3>
+              <p>by ${escapeHtml(listing.author)} / listed by ${escapeHtml(listing.seller)}</p>
+            </div>
+            <strong class="marketplace-price">${escapeHtml(formatMarketPrice(listing.price, listing.currency))}</strong>
+          </div>
+          ${listing.genre ? `<span class="marketplace-genre">${escapeHtml(listing.genre)}</span>` : ""}
+          ${listing.note ? `<p class="marketplace-note">${escapeHtml(listing.note)}</p>` : ""}
+          <div class="marketplace-thread">
+            <h4>Price discussion</h4>
+            <div class="marketplace-messages">
+              ${
+                (listing.messages || []).length
+                  ? listing.messages
+                      .map(
+                        (message) => `
+                          <div class="marketplace-message">
+                            <strong>${escapeHtml(message.author)}</strong>
+                            ${
+                              message.offerPrice !== null
+                                ? `<span class="marketplace-offer">Offers ${escapeHtml(formatMarketPrice(message.offerPrice, listing.currency))}</span>`
+                                : ""
+                            }
+                            ${message.message ? `<p>${escapeHtml(message.message)}</p>` : ""}
+                            <time>${new Date(message.createdAt).toLocaleString()}</time>
+                          </div>
+                        `,
+                      )
+                      .join("")
+                  : '<p class="marketplace-no-messages">No discussion yet.</p>'
+              }
+            </div>
+            <form class="marketplace-message-form" data-listing-id="${listing.id}">
+              <label>
+                <span class="sr-only">Comment about ${escapeHtml(listing.title)}</span>
+                <input name="message" maxlength="1000" placeholder="Ask a question or discuss the price..." />
+              </label>
+              <label>
+                <span>Offer (${escapeHtml(listing.currency)})</span>
+                <input name="offerPrice" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" />
+              </label>
+              <button type="submit">Post</button>
+            </form>
+          </div>
+          ${
+            isSeller
+              ? `<button class="marketplace-withdraw" type="button" data-market-action="withdraw" data-id="${listing.id}">Withdraw listing</button>`
+              : ""
+          }
+        </article>
+      `;
+    })
+    .join("");
+  elements.marketplaceGrid.hidden = marketplaceListings.length === 0;
+  elements.marketplaceEmpty.hidden = marketplaceListings.length > 0;
+}
+
+async function postMarketMessage(listingId, formData) {
+  try {
+    await apiRequest("market-message", {
+      method: "POST",
+      body: {
+        listingId,
+        message: formData.get("message").trim(),
+        offerPrice: formData.get("offerPrice"),
+      },
+    });
+    await loadMarketplace();
+    renderMarketplace();
+    showToast("Your marketplace response was posted.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function withdrawMarketListing(listingId) {
+  try {
+    await apiRequest("market-withdraw", {
+      method: "POST",
+      body: { listingId },
+    });
+    await loadMarketplace();
+    renderMarketplace();
+    showToast("The listing was withdrawn.");
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function renderAdminFacts() {
@@ -2529,6 +2735,7 @@ function setCommunityView(view) {
   elements.communityReadersView.hidden = view !== "readers";
   elements.communityFeedView.hidden = view !== "feed";
   elements.communityJournalsView.hidden = view !== "journals";
+  elements.communityMarketplaceView.hidden = view !== "marketplace";
   elements.communityAdminView.hidden = view !== "admin";
   document.querySelectorAll("[data-community-view]").forEach((button) => {
     const selected = button.dataset.communityView === view;
@@ -2550,6 +2757,7 @@ function renderCommunity() {
   renderReaders();
   renderShareFeed();
   renderSharedJournals();
+  renderMarketplace();
   renderAdminFacts();
   renderAdminAccounts();
 }
@@ -2840,6 +3048,9 @@ document
 document
   .querySelector("#close-cover-view-button")
   .addEventListener("click", () => elements.coverViewDialog.close());
+document
+  .querySelector("#close-market-listing-button")
+  .addEventListener("click", () => elements.marketListingDialog.close());
 elements.readingFactBanner.addEventListener("click", dismissReadingFact);
 elements.readingFactBanner.addEventListener("keydown", (event) => {
   if (event.key === "Enter" || event.key === " ") {
@@ -2884,6 +3095,13 @@ elements.adminFactForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.adminFactForm.reportValidity()) {
     addReadingFact(new FormData(elements.adminFactForm));
+  }
+});
+
+elements.marketListingForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.marketListingForm.reportValidity()) {
+    createMarketListing(new FormData(elements.marketListingForm));
   }
 });
 
@@ -2973,6 +3191,12 @@ elements.coverViewDialog.addEventListener("click", (event) => {
   }
 });
 
+elements.marketListingDialog.addEventListener("click", (event) => {
+  if (event.target === elements.marketListingDialog) {
+    elements.marketListingDialog.close();
+  }
+});
+
 elements.bookGrid.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) {
@@ -2991,6 +3215,7 @@ elements.bookGrid.addEventListener("click", (event) => {
   if (action === "share") openShareDialog("book", id);
   if (action === "delete") removeBook(id);
   if (action === "cover") openCoverForm(id);
+  if (action === "sell") openMarketListingForm(id);
   if (action === "menu") {
     openMenuId = openMenuId === id ? null : id;
     renderBooks();
@@ -3091,6 +3316,20 @@ elements.adminFactList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-fact-action]");
   if (button?.dataset.factAction === "delete") {
     deleteReadingFact(button.dataset.id);
+  }
+});
+
+elements.marketplaceGrid.addEventListener("submit", (event) => {
+  const form = event.target.closest(".marketplace-message-form");
+  if (!form) return;
+  event.preventDefault();
+  postMarketMessage(form.dataset.listingId, new FormData(form));
+});
+
+elements.marketplaceGrid.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-market-action]");
+  if (button?.dataset.marketAction === "withdraw") {
+    withdrawMarketListing(button.dataset.id);
   }
 });
 
