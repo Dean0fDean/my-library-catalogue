@@ -119,6 +119,9 @@ const elements = {
   learningRunesCount: document.querySelector("#learning-runes-count"),
   learningStreakCount: document.querySelector("#learning-streak-count"),
   learningTaskGrid: document.querySelector("#learning-task-grid"),
+  chippingsRunesCount: document.querySelector("#chippings-runes-count"),
+  chippingsGrid: document.querySelector("#chippings-grid"),
+  chippingsEmpty: document.querySelector("#chippings-empty"),
   readerGrid: document.querySelector("#reader-grid"),
   readerEmptyState: document.querySelector("#reader-empty-state"),
   shareFeed: document.querySelector("#share-feed"),
@@ -207,6 +210,10 @@ let learningTasks = [];
 let debates = [];
 let announcements = [];
 let quandaries = [];
+let storeItems = [];
+let equippedTheme = "";
+let equippedFrame = "";
+let storeView = "all";
 let runesBalance = 0;
 let streakCurrent = 0;
 let streakLongest = 0;
@@ -537,6 +544,8 @@ function updateProfileDisplay() {
   elements.profileStreakBest.textContent = streakLongest
     ? `(best: ${streakLongest})`
     : "";
+  elements.profilePhoto.closest(".profile-photo-wrap").dataset.frame =
+    equippedFrame;
 }
 
 function readingSnapshot() {
@@ -580,6 +589,7 @@ function notificationIcon(type) {
     announcement: "!",
     streak: "S",
     quandary: "?",
+    store: "C",
     insight: "i",
   }[type] || "i";
 }
@@ -891,6 +901,18 @@ async function loadLearningNook() {
   elements.profileStreakBest.textContent = streakLongest
     ? `(best: ${streakLongest})`
     : "";
+  if (storeItems.length) renderChippings();
+}
+
+async function loadChippings() {
+  if (!apiToken) return;
+  const data = await apiRequest("store");
+  storeItems = data.items || [];
+  runesBalance = Number(data.balance) || 0;
+  equippedTheme = data.equipped?.theme || "";
+  equippedFrame = data.equipped?.frame || "";
+  applyEquippedCosmetics();
+  renderChippings();
 }
 
 async function loadSocialSpaces() {
@@ -925,6 +947,7 @@ async function showAuthenticatedApp(account) {
     await loadReadingFacts();
     await loadMarketplace();
     await loadLearningNook();
+    await loadChippings();
     await loadSocialSpaces();
   } catch (error) {
     showToast(error.message);
@@ -2354,6 +2377,10 @@ function avatarMarkup(account) {
     : escapeHtml(account.username.charAt(0).toUpperCase());
 }
 
+function avatarFrameAttribute(account) {
+  return `data-frame="${escapeHtml(account.equippedFrame || "")}"`;
+}
+
 function isFollowing(accountId) {
   return follows.some(
     (follow) =>
@@ -2376,7 +2403,7 @@ function renderReaderCard(account) {
   return `
     <article class="reader-card">
       <div class="reader-identity">
-        <div class="mini-avatar">${avatarMarkup(account)}</div>
+        <div class="mini-avatar" ${avatarFrameAttribute(account)}>${avatarMarkup(account)}</div>
         <div>
           <h3>${escapeHtml(account.username)}</h3>
           <p>${followerCount(account.id)} followers / ${followingCount(account.id)} following</p>
@@ -2550,7 +2577,7 @@ function renderSharedJournals() {
       return `
         <article class="community-journal-card">
           <div class="community-journal-author">
-            <div class="mini-avatar">${avatarMarkup(author)}</div>
+            <div class="mini-avatar" ${avatarFrameAttribute(author)}>${avatarMarkup(author)}</div>
             <div>
               <strong>${escapeHtml(entry.author)}</strong>
               <time datetime="${escapeHtml(String(entry.entryDate).slice(0, 10))}">
@@ -2587,7 +2614,7 @@ function renderShareCard(share) {
   const comments = share.comments || [];
   return `
     <article class="share-card ${myReadAt ? "" : "unread"}" data-share-id="${share.id}">
-      <div class="mini-avatar">${avatarMarkup(otherReader)}</div>
+      <div class="mini-avatar" ${avatarFrameAttribute(otherReader)}>${avatarMarkup(otherReader)}</div>
       <div>
         <div class="share-card-heading">
           <h3>${isBook ? "Book recommendation" : "Shared passage"}</h3>
@@ -2834,7 +2861,7 @@ function renderMarketplace() {
       return `
         <article class="marketplace-card">
           <div class="marketplace-card-heading">
-            <div class="mini-avatar">${avatarMarkup(seller)}</div>
+            <div class="mini-avatar" ${avatarFrameAttribute(seller)}>${avatarMarkup(seller)}</div>
             <div>
               <h3>${escapeHtml(listing.title)}</h3>
               <p>by ${escapeHtml(listing.author)} / listed by ${escapeHtml(listing.seller)}</p>
@@ -2919,6 +2946,111 @@ async function withdrawMarketListing(listingId) {
     await loadMarketplace();
     renderMarketplace();
     showToast("The listing was withdrawn.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function applyEquippedCosmetics() {
+  document.body.dataset.theme = equippedTheme;
+  const profileWrap = elements.profilePhoto.closest(".profile-photo-wrap");
+  if (profileWrap) profileWrap.dataset.frame = equippedFrame;
+  elements.profileRunesCount.textContent = runesBalance;
+  elements.chippingsRunesCount.textContent = runesBalance;
+}
+
+function storePreviewMarkup(item) {
+  const colors = item.preview || [];
+  if (item.type === "theme") {
+    return `
+      <div class="store-theme-preview" style="--preview-one:${colors[0]};--preview-two:${colors[1]};--preview-three:${colors[2]}">
+        <span></span><span></span><span></span>
+        <i></i>
+      </div>
+    `;
+  }
+  return `
+    <div class="store-frame-preview" data-frame="${item.key}">
+      <span>R</span>
+    </div>
+  `;
+}
+
+function renderChippings() {
+  elements.chippingsRunesCount.textContent = runesBalance;
+  const visibleItems = storeItems.filter((item) => {
+    if (storeView === "owned") return item.owned;
+    return storeView === "all" || item.type === storeView;
+  });
+  elements.chippingsGrid.innerHTML = visibleItems
+    .map((item) => {
+      const equipped =
+        item.type === "theme"
+          ? equippedTheme === item.key
+          : equippedFrame === item.key;
+      return `
+        <article class="chippings-card ${item.owned ? "owned" : ""} ${equipped ? "equipped" : ""}">
+          ${storePreviewMarkup(item)}
+          <div class="chippings-card-copy">
+            <p>${item.type === "theme" ? "UI THEME" : "PROFILE FRAME"}</p>
+            <h3>${escapeHtml(item.name)}</h3>
+            <span>${escapeHtml(item.description)}</span>
+          </div>
+          <div class="chippings-card-action">
+            ${
+              item.owned
+                ? `<button
+                    type="button"
+                    data-store-action="equip"
+                    data-type="${item.type}"
+                    data-key="${item.key}"
+                    ${equipped ? "disabled" : ""}
+                  >${equipped ? "Equipped" : "Equip"}</button>`
+                : `<button
+                    type="button"
+                    data-store-action="purchase"
+                    data-key="${item.key}"
+                    ${runesBalance < item.price ? "disabled" : ""}
+                  >Buy for ${item.price} Runes</button>`
+            }
+            ${item.owned ? '<strong>Owned</strong>' : `<strong>${item.price} Runes</strong>`}
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+  elements.chippingsGrid.hidden = visibleItems.length === 0;
+  elements.chippingsEmpty.hidden = visibleItems.length > 0;
+}
+
+async function purchaseStoreItem(itemKey) {
+  try {
+    await apiRequest("store-purchase", {
+      method: "POST",
+      body: { itemKey },
+    });
+    await Promise.all([
+      loadChippings(),
+      loadCommunity(),
+      refreshProfileActivity(),
+    ]);
+    renderCommunity();
+    showToast("Your purchase has been added to your collection.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function equipStoreItem(type, itemKey) {
+  try {
+    await apiRequest("store-equip", {
+      method: "POST",
+      body: { type, itemKey },
+    });
+    await Promise.all([loadChippings(), loadCommunity()]);
+    renderCommunity();
+    updateProfileDisplay();
+    showToast(type === "theme" ? "Theme equipped." : "Profile frame equipped.");
   } catch (error) {
     showToast(error.message);
   }
@@ -3363,6 +3495,7 @@ async function openReaderProfile(accountId) {
   const stats = statsFor(account.id);
   elements.readerProfileName.textContent = account.username;
   elements.readerProfileAvatar.innerHTML = avatarMarkup(account);
+  elements.readerProfileAvatar.dataset.frame = account.equippedFrame || "";
   elements.readerProfileStats.innerHTML = `
     <div class="reader-stat"><strong>${stats.total}</strong><span>Owned</span></div>
     <div class="reader-stat"><strong>${stats.read}</strong><span>Read</span></div>
@@ -3945,6 +4078,35 @@ elements.learningTaskGrid.addEventListener("submit", (event) => {
   if (!form) return;
   event.preventDefault();
   if (form.reportValidity()) completeLearningTask(form);
+});
+
+elements.chippingsGrid.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-store-action]");
+  if (!button) return;
+  if (button.dataset.storeAction === "purchase") {
+    purchaseStoreItem(button.dataset.key);
+  }
+  if (button.dataset.storeAction === "equip") {
+    equipStoreItem(button.dataset.type, button.dataset.key);
+  }
+});
+
+document.querySelectorAll("[data-store-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    storeView = button.dataset.storeView;
+    document.querySelectorAll("[data-store-view]").forEach((item) => {
+      const selected = item === button;
+      item.classList.toggle("active", selected);
+      item.setAttribute("aria-selected", String(selected));
+    });
+    renderChippings();
+  });
+});
+
+document.querySelectorAll("[data-store-reset]").forEach((button) => {
+  button.addEventListener("click", () => {
+    equipStoreItem(button.dataset.storeReset, "");
+  });
 });
 
 elements.searchInput.addEventListener("input", () => {
