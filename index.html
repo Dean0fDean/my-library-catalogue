@@ -506,7 +506,24 @@
             </div>
           </div>
           <div class="owl-parliament" aria-hidden="true">
-            <span>O</span><span>O</span><span>O</span>
+            <svg class="owl-icon parliament-owl" viewBox="0 0 64 64">
+              <path d="M14 21 9 8l18 9a24 24 0 0 1 10 0L55 8l-5 13a23 23 0 1 1-36 0Z"></path>
+              <circle cx="23" cy="30" r="7"></circle>
+              <circle cx="41" cy="30" r="7"></circle>
+              <path d="m28 39 4 5 4-5M20 52h24"></path>
+            </svg>
+            <svg class="owl-icon parliament-owl" viewBox="0 0 64 64">
+              <path d="M14 21 9 8l18 9a24 24 0 0 1 10 0L55 8l-5 13a23 23 0 1 1-36 0Z"></path>
+              <circle cx="23" cy="30" r="7"></circle>
+              <circle cx="41" cy="30" r="7"></circle>
+              <path d="m28 39 4 5 4-5M20 52h24"></path>
+            </svg>
+            <svg class="owl-icon parliament-owl" viewBox="0 0 64 64">
+              <path d="M14 21 9 8l18 9a24 24 0 0 1 10 0L55 8l-5 13a23 23 0 1 1-36 0Z"></path>
+              <circle cx="23" cy="30" r="7"></circle>
+              <circle cx="41" cy="30" r="7"></circle>
+              <path d="m28 39 4 5 4-5M20 52h24"></path>
+            </svg>
           </div>
           <div id="learning-task-grid" class="learning-task-grid" aria-live="polite"></div>
         </section>
@@ -631,6 +648,22 @@
               Marketplace
             </button>
             <button
+              class="community-tab"
+              type="button"
+              data-community-view="debates"
+              aria-selected="false"
+            >
+              Debate club
+            </button>
+            <button
+              class="community-tab"
+              type="button"
+              data-community-view="bulletin"
+              aria-selected="false"
+            >
+              Bulletin board
+            </button>
+            <button
               class="community-tab admin-community-tab"
               type="button"
               data-community-view="admin"
@@ -678,6 +711,51 @@
             <div id="marketplace-grid" class="marketplace-grid" aria-live="polite"></div>
             <div id="marketplace-empty" class="community-empty">
               <p>No books are listed for sale yet.</p>
+            </div>
+          </div>
+
+          <div id="community-debates-view" hidden>
+            <div class="debate-club-heading">
+              <div>
+                <p class="eyebrow">IDEAS IN CONVERSATION</p>
+                <h3>Debate club</h3>
+                <p>
+                  Invite another reader to discuss an idea. Accepted debates
+                  are public to read, but only the two participants can reply.
+                </p>
+              </div>
+            </div>
+            <div id="debate-list" class="debate-list" aria-live="polite"></div>
+            <div id="debate-empty" class="community-empty">
+              <p>No debate invitations or public debates yet.</p>
+            </div>
+          </div>
+
+          <div id="community-bulletin-view" hidden>
+            <div class="bulletin-heading">
+              <div>
+                <p class="eyebrow">FOR EVERY READER</p>
+                <h3>Bulletin board</h3>
+                <p>Community-wide notices and updates from the administrator.</p>
+              </div>
+            </div>
+            <form id="announcement-form" class="announcement-form" hidden>
+              <div>
+                <label>
+                  <span>Announcement title</span>
+                  <input name="title" maxlength="160" required />
+                </label>
+                <label>
+                  <span>Message</span>
+                  <textarea name="message" rows="5" maxlength="5000" required></textarea>
+                </label>
+              </div>
+              <p class="form-error" id="announcement-error" role="alert"></p>
+              <button class="primary-button" type="submit">Post announcement</button>
+            </form>
+            <div id="announcement-list" class="announcement-list" aria-live="polite"></div>
+            <div id="announcement-empty" class="community-empty">
+              <p>No announcements have been posted yet.</p>
             </div>
           </div>
 
@@ -914,6 +992,42 @@
         <p class="form-error" id="share-error" role="alert"></p>
         <button class="primary-button submit-button" type="submit">
           Share
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="debate-invite-dialog">
+      <form id="debate-invite-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">OPEN A CONVERSATION</p>
+            <h2>Invite to debate</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-debate-invite-button"
+            type="button"
+            aria-label="Close debate invitation"
+          >
+            X
+          </button>
+        </div>
+        <input id="debate-invitee-id" name="inviteeId" type="hidden" />
+        <p id="debate-invitee-summary" class="dialog-copy"></p>
+        <label>
+          <span>Debate topic or proposition</span>
+          <textarea
+            name="topic"
+            rows="5"
+            minlength="5"
+            maxlength="300"
+            placeholder="For example: Does knowing an author's biography improve the reading of a novel?"
+            required
+          ></textarea>
+        </label>
+        <p class="form-error" id="debate-invite-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">
+          Send invitation
         </button>
       </form>
     </dialog>
