@@ -4065,6 +4065,24 @@ fieldset {
     min-width: 0;
   }
 
+  .admin-fact-panel {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  #admin-fact-form,
+  .admin-fact-list,
+  .admin-fact-row {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-fact-list {
+    grid-column: auto;
+  }
+
   .learning-task-grid {
     grid-template-columns: 1fr;
   }
