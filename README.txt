@@ -8,6 +8,11 @@ organizes Collection, Wishlist, Reading Log, Passages, Journal, Learning Nook,
 The Chippings, Community, and Profile into clear groups. The menu closes after
 navigation, when clicking outside it, or when pressing Escape.
 
+The Community area includes dedicated Followers and Following lists with live
+counts, profile access, and follow controls. Three gently animated owls appear
+on the Home dashboard, with motion disabled when the device requests reduced
+motion.
+
 Books, wishlist entries, ratings, reading sessions, saved passage text, and
 reflections synchronize through the shared online database.
 
