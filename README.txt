@@ -23,9 +23,13 @@ Each profile includes persistent notifications, reading insight summaries,
 and achievements for milestones such as finishing books, logging reading,
 saving passages, sharing recommendations, and inspiring wishlist additions.
 
+Book photos are compressed and synchronized separately so they persist across
+devices and deployments. Catalogues are alphabetical and initially show eight
+books, with a Show all control for longer collections.
+
 The first account created in the online database is the administrator. Only
 that account can see the Community admin controls.
 
-Compressed book and passage photos remain on the device where they were added
-to keep synchronization reliable. All structured reading information, public
-profile statistics, recommendations, and passage text sync across devices.
+Highlighted passage photos remain on the device where they were added. Book
+cover photos and all structured reading information synchronize across
+devices.
