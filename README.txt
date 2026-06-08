@@ -38,7 +38,13 @@ opens the full uploaded picture of that copy when one is available.
 
 A small reading fact appears beneath the header and can be dismissed by clicking
 it. Administrators can add or remove shared reading facts from the Community
-admin panel.
+admin panel. While visible, facts rotate every 30 seconds.
+
+The Community marketplace lets readers actively list books from their own
+collections with an asking price and condition note. Other readers can leave
+comments or make non-binding price offers. The app does not process payments,
+complete purchases, arrange couriers, or accept responsibility for collection,
+delivery, book condition, or private agreements between users.
 
 The first account created in the online database is the administrator. Only
 that account can see the Community admin controls.
