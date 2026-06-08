@@ -33,6 +33,13 @@ Book photos are compressed and synchronized separately so they persist across
 devices and deployments. Catalogues are alphabetical and initially show eight
 books, with a Show all control for longer collections.
 
+Book cards support Read, Busy Reading, and To Be Read statuses. Clicking a card
+opens the full uploaded picture of that copy when one is available.
+
+A small reading fact appears beneath the header and can be dismissed by clicking
+it. Administrators can add or remove shared reading facts from the Community
+admin panel.
+
 The first account created in the online database is the administrator. Only
 that account can see the Community admin controls.
 
