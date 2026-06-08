@@ -181,6 +181,15 @@ async function ensureSchema() {
           UNIQUE (user_id, achievement_key)
         )
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_book_covers (
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          book_id TEXT NOT NULL,
+          image_data TEXT NOT NULL,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (user_id, book_id)
+        )
+      `;
     })();
   }
   return schemaReady;
@@ -456,6 +465,47 @@ export default async function handler(request, response) {
           passages = EXCLUDED.passages,
           wishlist = EXCLUDED.wishlist,
           updated_at = NOW()
+      `;
+      return json(response, 200, { ok: true });
+    }
+
+    if (action === "cover-index" && request.method === "GET") {
+      const rows = await sql`
+        SELECT book_id FROM library_book_covers WHERE user_id = ${user.id}
+      `;
+      return json(response, 200, {
+        bookIds: rows.map((item) => item.book_id),
+      });
+    }
+
+    if (action === "cover-load" && request.method === "POST") {
+      const rows = await sql`
+        SELECT image_data FROM library_book_covers
+        WHERE user_id = ${user.id} AND book_id = ${String(body.bookId || "")}
+        LIMIT 1
+      `;
+      return json(response, 200, { image: rows[0]?.image_data || "" });
+    }
+
+    if (action === "cover-save" && request.method === "POST") {
+      const image = String(body.image || "");
+      if (!image.startsWith("data:image/") || image.length > 1_500_000) {
+        return json(response, 400, { error: "That book photo is too large." });
+      }
+      await sql`
+        INSERT INTO library_book_covers (user_id, book_id, image_data)
+        VALUES (${user.id}, ${String(body.bookId || "")}, ${image})
+        ON CONFLICT (user_id, book_id) DO UPDATE SET
+          image_data = EXCLUDED.image_data,
+          updated_at = NOW()
+      `;
+      return json(response, 200, { ok: true });
+    }
+
+    if (action === "cover-delete" && request.method === "POST") {
+      await sql`
+        DELETE FROM library_book_covers
+        WHERE user_id = ${user.id} AND book_id = ${String(body.bookId || "")}
       `;
       return json(response, 200, { ok: true });
     }
