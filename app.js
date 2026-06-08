@@ -73,6 +73,14 @@ const elements = {
   passageEmptyState: document.querySelector("#passage-empty-state"),
   passageSearchInput: document.querySelector("#passage-search-input"),
   passageBookFilter: document.querySelector("#passage-book-filter"),
+  journalGrid: document.querySelector("#journal-grid"),
+  journalEmptyState: document.querySelector("#journal-empty-state"),
+  journalDialog: document.querySelector("#journal-dialog"),
+  journalForm: document.querySelector("#journal-form"),
+  journalDateInput: document.querySelector("#journal-date-input"),
+  journalBookOptions: document.querySelector("#journal-book-options"),
+  journalReflectionInput: document.querySelector("#journal-reflection-input"),
+  journalError: document.querySelector("#journal-error"),
   wishlistDialog: document.querySelector("#wishlist-dialog"),
   wishlistForm: document.querySelector("#wishlist-form"),
   wishlistTitleInput: document.querySelector("#wishlist-title-input"),
@@ -129,6 +137,9 @@ const elements = {
   shareError: document.querySelector("#share-error"),
   communityReadersView: document.querySelector("#community-readers-view"),
   communityFeedView: document.querySelector("#community-feed-view"),
+  communityJournalsView: document.querySelector("#community-journals-view"),
+  communityJournalFeed: document.querySelector("#community-journal-feed"),
+  communityJournalEmpty: document.querySelector("#community-journal-empty"),
   communityAdminView: document.querySelector("#community-admin-view"),
 };
 
@@ -140,6 +151,8 @@ const legacyAccountsSnapshot = loadArray(ACCOUNTS_STORAGE_KEY);
 let accounts = [...legacyAccountsSnapshot];
 let follows = loadArray(FOLLOWS_STORAGE_KEY);
 let shares = loadArray(SHARES_STORAGE_KEY);
+let journals = [];
+let sharedJournals = [];
 let openMenuId = null;
 let activeCoverBookId = null;
 let pendingCoverImage = "";
@@ -463,6 +476,7 @@ function readingSnapshot() {
     sessions: accountLog.length,
     pages: accountLog.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0),
     minutes: accountLog.reduce((total, entry) => total + (Number(entry.durationMinutes) || 0), 0),
+    journals: journals.length,
   };
 }
 
@@ -486,6 +500,7 @@ function notificationIcon(type) {
     follow: "+",
     recommendation: "R",
     passage: "\"",
+    journal: "J",
     insight: "i",
   }[type] || "i";
 }
@@ -743,6 +758,13 @@ async function loadCommunity() {
   accounts = data.accounts;
   follows = data.follows;
   shares = data.shares;
+  sharedJournals = data.journals || [];
+}
+
+async function loadJournals() {
+  if (!apiToken) return;
+  const data = await apiRequest("journals");
+  journals = data.journals || [];
 }
 
 async function refreshCommunity() {
@@ -761,6 +783,7 @@ async function showAuthenticatedApp(account) {
   try {
     await importLegacyUsers();
     await loadAccountData();
+    await loadJournals();
   } catch (error) {
     showToast(error.message);
   }
@@ -771,6 +794,7 @@ async function showAuthenticatedApp(account) {
   renderWishlist();
   renderReadingLog();
   renderPassages();
+  renderJournals();
   renderCommunity();
   await refreshCommunity();
   await refreshProfileActivity().catch((error) => showToast(error.message));
@@ -2015,6 +2039,151 @@ function renderReaders() {
   elements.readerEmptyState.hidden = otherAccounts.length > 0;
 }
 
+function journalDateLabel(value) {
+  const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+}
+
+function journalBookTags(books) {
+  if (!books?.length) return '<span class="journal-no-books">General reflection</span>';
+  return books
+    .map(
+      (book) =>
+        `<span class="journal-book-tag">${escapeHtml(book.title)}</span>`,
+    )
+    .join("");
+}
+
+function renderJournals() {
+  const ordered = [...journals].sort((first, second) =>
+    String(second.entryDate).localeCompare(String(first.entryDate)),
+  );
+  elements.journalGrid.innerHTML = ordered
+    .map(
+      (entry) => `
+        <article class="journal-card">
+          <div class="journal-card-heading">
+            <time datetime="${escapeHtml(String(entry.entryDate).slice(0, 10))}">
+              ${escapeHtml(journalDateLabel(entry.entryDate))}
+            </time>
+            <span class="journal-privacy ${entry.isShared ? "shared" : ""}">
+              ${entry.isShared ? "Shared" : "Private"}
+            </span>
+          </div>
+          <div class="journal-book-tags">${journalBookTags(entry.books)}</div>
+          <p class="journal-reflection">${escapeHtml(entry.reflection)}</p>
+          <button
+            class="journal-delete-button"
+            type="button"
+            data-journal-action="delete"
+            data-id="${entry.id}"
+          >Delete entry</button>
+        </article>
+      `,
+    )
+    .join("");
+  elements.journalGrid.hidden = ordered.length === 0;
+  elements.journalEmptyState.hidden = ordered.length > 0;
+}
+
+function openJournalForm() {
+  elements.journalForm.reset();
+  elements.journalError.textContent = "";
+  elements.journalDateInput.value = localDateString(new Date());
+  const accountBooks = ownedByCurrent(books).sort((first, second) =>
+    first.title.localeCompare(second.title, undefined, { sensitivity: "base" }),
+  );
+  elements.journalBookOptions.innerHTML = accountBooks.length
+    ? accountBooks
+        .map(
+          (book) => `
+            <label>
+              <input type="checkbox" name="bookIds" value="${book.id}" />
+              <span><strong>${escapeHtml(book.title)}</strong> by ${escapeHtml(book.author)}</span>
+            </label>
+          `,
+        )
+        .join("")
+    : '<p>Add books to your collection to tag them here.</p>';
+  elements.journalDialog.showModal();
+  window.setTimeout(() => elements.journalReflectionInput.focus(), 0);
+}
+
+async function saveJournalEntry(formData) {
+  const selectedIds = new Set(formData.getAll("bookIds"));
+  const taggedBooks = ownedByCurrent(books)
+    .filter((book) => selectedIds.has(book.id))
+    .map(({ id, title, author }) => ({ id, title, author }));
+  elements.journalError.textContent = "";
+  try {
+    await apiRequest("journal-save", {
+      method: "POST",
+      body: {
+        id: crypto.randomUUID(),
+        entryDate: formData.get("entryDate"),
+        reflection: formData.get("reflection").trim(),
+        books: taggedBooks,
+        isShared: formData.get("isShared") === "on",
+      },
+    });
+    await Promise.all([loadJournals(), loadCommunity()]);
+    renderJournals();
+    renderCommunity();
+    await refreshProfileActivity().catch(() => {});
+    elements.journalDialog.close();
+    showToast("Journal entry saved.");
+  } catch (error) {
+    elements.journalError.textContent = error.message;
+  }
+}
+
+async function deleteJournalEntry(id) {
+  try {
+    await apiRequest("journal-delete", { method: "POST", body: { id } });
+    await Promise.all([loadJournals(), loadCommunity()]);
+    renderJournals();
+    renderCommunity();
+    showToast("Journal entry removed.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderSharedJournals() {
+  const visible = sharedJournals;
+  elements.communityJournalFeed.innerHTML = visible
+    .map((entry) => {
+      const author = accounts.find((account) => account.id === entry.authorId) || {
+        username: entry.author,
+        profileImage: entry.profileImage,
+      };
+      return `
+        <article class="community-journal-card">
+          <div class="community-journal-author">
+            <div class="mini-avatar">${avatarMarkup(author)}</div>
+            <div>
+              <strong>${escapeHtml(entry.author)}</strong>
+              <time datetime="${escapeHtml(String(entry.entryDate).slice(0, 10))}">
+                ${escapeHtml(journalDateLabel(entry.entryDate))}
+              </time>
+            </div>
+          </div>
+          <div class="journal-book-tags">${journalBookTags(entry.books)}</div>
+          <p>${escapeHtml(entry.reflection)}</p>
+        </article>
+      `;
+    })
+    .join("");
+  elements.communityJournalFeed.hidden = visible.length === 0;
+  elements.communityJournalEmpty.hidden = visible.length > 0;
+}
+
 function renderShareCard(share) {
   const sender = accounts.find((account) => account.id === share.senderId);
   const recipient = accounts.find((account) => account.id === share.recipientId);
@@ -2224,6 +2393,7 @@ function setCommunityView(view) {
   if (view === "admin" && currentAccount?.role !== "admin") return;
   elements.communityReadersView.hidden = view !== "readers";
   elements.communityFeedView.hidden = view !== "feed";
+  elements.communityJournalsView.hidden = view !== "journals";
   elements.communityAdminView.hidden = view !== "admin";
   document.querySelectorAll("[data-community-view]").forEach((button) => {
     const selected = button.dataset.communityView === view;
@@ -2244,6 +2414,7 @@ function renderCommunity() {
   }
   renderReaders();
   renderShareFeed();
+  renderSharedJournals();
   renderAdminAccounts();
 }
 
@@ -2500,6 +2671,15 @@ document
   .querySelector("#close-passage-button")
   .addEventListener("click", () => elements.passageDialog.close());
 document
+  .querySelector("#open-journal-button")
+  .addEventListener("click", openJournalForm);
+document
+  .querySelector("#empty-journal-button")
+  .addEventListener("click", openJournalForm);
+document
+  .querySelector("#close-journal-button")
+  .addEventListener("click", () => elements.journalDialog.close());
+document
   .querySelector("#clear-highlight-button")
   .addEventListener("click", () => {
     highlightRect = null;
@@ -2586,6 +2766,13 @@ elements.passageForm.addEventListener("submit", (event) => {
   }
 });
 
+elements.journalForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.journalForm.reportValidity()) {
+    saveJournalEntry(new FormData(elements.journalForm));
+  }
+});
+
 elements.dialog.addEventListener("click", (event) => {
   if (event.target === elements.dialog) elements.dialog.close();
 });
@@ -2606,6 +2793,10 @@ elements.coverDialog.addEventListener("click", (event) => {
 
 elements.passageDialog.addEventListener("click", (event) => {
   if (event.target === elements.passageDialog) elements.passageDialog.close();
+});
+
+elements.journalDialog.addEventListener("click", (event) => {
+  if (event.target === elements.journalDialog) elements.journalDialog.close();
 });
 
 elements.profileDialog.addEventListener("click", (event) => {
@@ -2662,6 +2853,13 @@ elements.passageGrid.addEventListener("click", (event) => {
   }
   if (button?.dataset.passageAction === "share") {
     openShareDialog("passage", button.dataset.id);
+  }
+});
+
+elements.journalGrid.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-journal-action]");
+  if (button?.dataset.journalAction === "delete") {
+    deleteJournalEntry(button.dataset.id);
   }
 });
 
