@@ -31,6 +31,13 @@ function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+const DEFAULT_READING_FACTS = [
+  "Even a few minutes of reading can provide a useful transition between a busy day and rest.",
+  "Rereading often reveals patterns and ideas that were easy to miss the first time.",
+  "Keeping a brief note after reading can make the main ideas easier to recall later.",
+  "Alternating demanding books with lighter ones can help sustain a regular reading habit.",
+];
+
 async function addNotification(userId, type, title, message, dedupeKey = null) {
   await sql`
     INSERT INTO library_notifications (
@@ -108,10 +115,15 @@ async function ensureSchema() {
           user_id UUID PRIMARY KEY REFERENCES library_users(id) ON DELETE CASCADE,
           owned INTEGER NOT NULL DEFAULT 0,
           read_count INTEGER NOT NULL DEFAULT 0,
+          reading_count INTEGER NOT NULL DEFAULT 0,
           unread INTEGER NOT NULL DEFAULT 0,
           recent_books JSONB NOT NULL DEFAULT '[]'::jsonb,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
+      `;
+      await sql`
+        ALTER TABLE library_stats
+        ADD COLUMN IF NOT EXISTS reading_count INTEGER NOT NULL DEFAULT 0
       `;
       await sql`
         CREATE TABLE IF NOT EXISTS library_shares (
@@ -200,6 +212,14 @@ async function ensureSchema() {
           is_shared BOOLEAN NOT NULL DEFAULT FALSE,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS library_reading_facts (
+          id UUID PRIMARY KEY,
+          fact TEXT NOT NULL,
+          created_by UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
     })();
@@ -420,14 +440,18 @@ export default async function handler(request, response) {
             ${JSON.stringify(importedWishlist)}::jsonb
           )
         `;
-        const readCount = importedBooks.filter(
+      const readCount = importedBooks.filter(
           (book) => book.status === "read",
+        ).length;
+        const readingCount = importedBooks.filter(
+          (book) => book.status === "reading",
         ).length;
         await sql`
           UPDATE library_stats SET
             owned = ${importedBooks.length},
             read_count = ${readCount},
-            unread = ${importedBooks.length - readCount},
+            reading_count = ${readingCount},
+            unread = ${importedBooks.length - readCount - readingCount},
             recent_books = ${JSON.stringify(
               importedBooks.slice(0, 5).map(({ title, author, status }) => ({
                 title,
@@ -631,6 +655,55 @@ export default async function handler(request, response) {
       return json(response, 200, { user: publicUser(rows[0]) });
     }
 
+    if (action === "facts" && request.method === "GET") {
+      const rows = await sql`
+        SELECT id, fact, created_at
+        FROM library_reading_facts
+        ORDER BY created_at DESC
+        LIMIT 100
+      `;
+      const facts = rows.length
+        ? rows.map((item) => ({
+            id: item.id,
+            fact: item.fact,
+            createdAt: item.created_at,
+            removable: true,
+          }))
+        : DEFAULT_READING_FACTS.map((fact, index) => ({
+            id: `default-${index + 1}`,
+            fact,
+            createdAt: null,
+            removable: false,
+          }));
+      return json(response, 200, { facts });
+    }
+
+    if (action === "fact-save" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      const fact = String(body.fact || "").trim().slice(0, 320);
+      if (fact.length < 10) {
+        return json(response, 400, { error: "Add a slightly longer reading fact." });
+      }
+      await sql`
+        INSERT INTO library_reading_facts (id, fact, created_by)
+        VALUES (${crypto.randomUUID()}, ${fact}, ${user.id})
+      `;
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "fact-delete" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      await sql`
+        DELETE FROM library_reading_facts
+        WHERE id = ${String(body.id || "")}
+      `;
+      return json(response, 200, { ok: true });
+    }
+
     if (action === "profile-activity" && request.method === "GET") {
       const notifications = await sql`
         SELECT id, type, title, message, read_at, created_at
@@ -735,15 +808,17 @@ export default async function handler(request, response) {
         : [];
       await sql`
         INSERT INTO library_stats (
-          user_id, owned, read_count, unread, recent_books, updated_at
+          user_id, owned, read_count, reading_count, unread, recent_books, updated_at
         )
         VALUES (
           ${user.id}, ${Number(body.owned) || 0}, ${Number(body.read) || 0},
-          ${Number(body.unread) || 0}, ${JSON.stringify(recentBooks)}::jsonb, NOW()
+          ${Number(body.reading) || 0}, ${Number(body.unread) || 0},
+          ${JSON.stringify(recentBooks)}::jsonb, NOW()
         )
         ON CONFLICT (user_id) DO UPDATE SET
           owned = EXCLUDED.owned,
           read_count = EXCLUDED.read_count,
+          reading_count = EXCLUDED.reading_count,
           unread = EXCLUDED.unread,
           recent_books = EXCLUDED.recent_books,
           updated_at = NOW()
@@ -757,6 +832,7 @@ export default async function handler(request, response) {
           u.id, u.username, u.profile_image, u.role, u.created_at,
           COALESCE(s.owned, 0)::int AS owned,
           COALESCE(s.read_count, 0)::int AS read_count,
+          COALESCE(s.reading_count, 0)::int AS reading_count,
           COALESCE(s.unread, 0)::int AS unread,
           COALESCE(s.recent_books, '[]'::jsonb) AS recent_books
         FROM library_users u
@@ -796,6 +872,7 @@ export default async function handler(request, response) {
           stats: {
             total: item.owned,
             read: item.read_count,
+            reading: item.reading_count,
             unread: item.unread,
           },
           recentBooks: item.recent_books,
@@ -860,7 +937,9 @@ export default async function handler(request, response) {
         title: String(book.title || "Untitled"),
         author: String(book.author || "Unknown author"),
         genre: String(book.genre || "Uncategorized"),
-        status: book.status === "read" ? "read" : "unread",
+        status: ["read", "reading"].includes(book.status)
+          ? book.status
+          : "unread",
         rating: Math.round(
           Math.min(5, Math.max(0, Number(book.rating) || 0)),
         ),
