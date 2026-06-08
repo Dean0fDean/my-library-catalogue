@@ -114,7 +114,10 @@ const elements = {
   markNotificationsRead: document.querySelector("#mark-notifications-read"),
   profileAchievementGrid: document.querySelector("#profile-achievement-grid"),
   profileRunesCount: document.querySelector("#profile-runes-count"),
+  profileStreakCount: document.querySelector("#profile-streak-count"),
+  profileStreakBest: document.querySelector("#profile-streak-best"),
   learningRunesCount: document.querySelector("#learning-runes-count"),
+  learningStreakCount: document.querySelector("#learning-streak-count"),
   learningTaskGrid: document.querySelector("#learning-task-grid"),
   readerGrid: document.querySelector("#reader-grid"),
   readerEmptyState: document.querySelector("#reader-empty-state"),
@@ -126,6 +129,8 @@ const elements = {
   adminFactInput: document.querySelector("#admin-fact-input"),
   adminFactError: document.querySelector("#admin-fact-error"),
   adminFactList: document.querySelector("#admin-fact-list"),
+  adminQuandaryList: document.querySelector("#admin-quandary-list"),
+  adminQuandaryEmpty: document.querySelector("#admin-quandary-empty"),
   readingFactBanner: document.querySelector("#reading-fact-banner"),
   readingFactText: document.querySelector("#reading-fact-text"),
   dismissReadingFact: document.querySelector("#dismiss-reading-fact"),
@@ -167,6 +172,9 @@ const elements = {
   debateInviteeId: document.querySelector("#debate-invitee-id"),
   debateInviteeSummary: document.querySelector("#debate-invitee-summary"),
   debateInviteError: document.querySelector("#debate-invite-error"),
+  quandaryDialog: document.querySelector("#quandary-dialog"),
+  quandaryForm: document.querySelector("#quandary-form"),
+  quandaryError: document.querySelector("#quandary-error"),
   communityBulletinView: document.querySelector("#community-bulletin-view"),
   announcementForm: document.querySelector("#announcement-form"),
   announcementError: document.querySelector("#announcement-error"),
@@ -198,7 +206,11 @@ let marketplaceListings = [];
 let learningTasks = [];
 let debates = [];
 let announcements = [];
+let quandaries = [];
 let runesBalance = 0;
+let streakCurrent = 0;
+let streakLongest = 0;
+let dailyStreakRewardEarned = false;
 let readingFactIndex = 0;
 let readingFactTimer;
 let notificationPollTimer;
@@ -521,6 +533,10 @@ function updateProfileDisplay() {
   renderProfileInsights();
   renderProfileActivity();
   elements.profileRunesCount.textContent = runesBalance;
+  elements.profileStreakCount.textContent = streakCurrent;
+  elements.profileStreakBest.textContent = streakLongest
+    ? `(best: ${streakLongest})`
+    : "";
 }
 
 function readingSnapshot() {
@@ -562,6 +578,8 @@ function notificationIcon(type) {
     learning: "R",
     debate: "D",
     announcement: "!",
+    streak: "S",
+    quandary: "?",
     insight: "i",
   }[type] || "i";
 }
@@ -864,18 +882,27 @@ async function loadLearningNook() {
   const data = await apiRequest("learning");
   learningTasks = data.tasks || [];
   runesBalance = Number(data.runes) || 0;
+  streakCurrent = Number(data.streak?.current) || 0;
+  streakLongest = Number(data.streak?.longest) || 0;
+  dailyStreakRewardEarned = Boolean(data.streak?.earnedDailyReward);
   renderLearningNook();
   elements.profileRunesCount.textContent = runesBalance;
+  elements.profileStreakCount.textContent = streakCurrent;
+  elements.profileStreakBest.textContent = streakLongest
+    ? `(best: ${streakLongest})`
+    : "";
 }
 
 async function loadSocialSpaces() {
   if (!apiToken) return;
-  const [debateData, announcementData] = await Promise.all([
+  const [debateData, announcementData, quandaryData] = await Promise.all([
     apiRequest("debates"),
     apiRequest("announcements"),
+    apiRequest("quandaries"),
   ]);
   debates = debateData.debates || [];
   announcements = announcementData.announcements || [];
+  quandaries = quandaryData.quandaries || [];
 }
 
 async function refreshCommunity() {
@@ -904,6 +931,9 @@ async function showAuthenticatedApp(account) {
   }
   elements.authScreen.hidden = true;
   elements.appShell.hidden = false;
+  if (dailyStreakRewardEarned) {
+    showToast(`Daily streak: +5 Runes. Day ${streakCurrent}!`);
+  }
   updateProfileDisplay();
   renderBooks();
   renderWishlist();
@@ -1297,6 +1327,7 @@ function playNotificationChime() {
 
 function renderLearningNook() {
   elements.learningRunesCount.textContent = runesBalance;
+  elements.learningStreakCount.textContent = streakCurrent;
   elements.learningTaskGrid.innerHTML = learningTasks
     .map(
       (task) => `
@@ -1311,12 +1342,7 @@ function renderLearningNook() {
           </div>
           <p class="learning-prompt">${escapeHtml(task.prompt)}</p>
           ${
-            task.completed
-              ? `<div class="learning-complete">
-                  <span aria-hidden="true">R</span>
-                  Completed by order of the Parliament
-                </div>`
-              : task.type === "choice"
+            task.type === "choice"
                 ? `<form class="learning-choice-form" data-task-key="${task.key}">
                     ${task.options
                       .map(
@@ -1376,7 +1402,7 @@ async function completeLearningTask(form) {
       },
     });
     await Promise.all([loadLearningNook(), refreshProfileActivity()]);
-    showToast(`The Parliament awarded ${data.runesAwarded} Runes.`);
+    showToast(`The Parliament of Owls awarded ${data.runesAwarded} Runes.`);
   } catch (error) {
     errorElement.textContent = error.message;
   }
@@ -3141,6 +3167,88 @@ async function deleteAnnouncement(id) {
   }
 }
 
+function renderAdminQuandaries() {
+  if (!currentAccount || currentAccount.role !== "admin") {
+    elements.adminQuandaryList.innerHTML = "";
+    elements.adminQuandaryEmpty.hidden = true;
+    return;
+  }
+  elements.adminQuandaryList.innerHTML = quandaries
+    .map(
+      (item) => `
+        <article class="admin-quandary ${item.status}">
+          <div class="admin-quandary-heading">
+            <div>
+              <span>${escapeHtml(item.category)}</span>
+              <h4>${escapeHtml(item.title)}</h4>
+              <p>Reported by ${escapeHtml(item.username)} on ${new Date(item.createdAt).toLocaleString()}</p>
+            </div>
+            <strong>${escapeHtml(item.status)}</strong>
+          </div>
+          <p class="admin-quandary-details">${escapeHtml(item.details)}</p>
+          ${
+            item.status === "open"
+              ? `<form class="quandary-resolve-form" data-quandary-id="${item.id}">
+                  <label>
+                    <span>Reply or resolution note (optional)</span>
+                    <textarea name="adminNote" rows="3" maxlength="2000" placeholder="Tell the reader how this was handled."></textarea>
+                  </label>
+                  <button type="submit">Mark resolved</button>
+                </form>`
+              : `<p class="admin-quandary-note">${
+                  item.adminNote
+                    ? `Admin response: ${escapeHtml(item.adminNote)}`
+                    : "Reviewed by the administrator."
+                }</p>`
+          }
+        </article>
+      `,
+    )
+    .join("");
+  elements.adminQuandaryList.hidden = quandaries.length === 0;
+  elements.adminQuandaryEmpty.hidden = quandaries.length > 0;
+}
+
+function openQuandaryForm() {
+  elements.quandaryForm.reset();
+  elements.quandaryError.textContent = "";
+  elements.quandaryDialog.showModal();
+}
+
+async function saveQuandary(formData) {
+  elements.quandaryError.textContent = "";
+  try {
+    await apiRequest("quandary-save", {
+      method: "POST",
+      body: {
+        category: formData.get("category"),
+        title: formData.get("title").trim(),
+        details: formData.get("details").trim(),
+      },
+    });
+    elements.quandaryDialog.close();
+    await Promise.all([loadSocialSpaces(), refreshProfileActivity()]);
+    renderAdminQuandaries();
+    showToast("Your quandary was reported to the Admin.");
+  } catch (error) {
+    elements.quandaryError.textContent = error.message;
+  }
+}
+
+async function resolveQuandary(id, adminNote) {
+  try {
+    await apiRequest("quandary-resolve", {
+      method: "POST",
+      body: { id, adminNote },
+    });
+    await loadSocialSpaces();
+    renderAdminQuandaries();
+    showToast("Quandary marked as resolved.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 function setCommunityView(view) {
   if (view === "admin" && currentAccount?.role !== "admin") return;
   elements.communityReadersView.hidden = view !== "readers";
@@ -3174,6 +3282,7 @@ function renderCommunity() {
   renderDebates();
   renderAnnouncements();
   renderAdminFacts();
+  renderAdminQuandaries();
   renderAdminAccounts();
 }
 
@@ -3465,6 +3574,12 @@ document
   .querySelector("#close-debate-invite-button")
   .addEventListener("click", () => elements.debateInviteDialog.close());
 document
+  .querySelector("#open-quandary-button")
+  .addEventListener("click", openQuandaryForm);
+document
+  .querySelector("#close-quandary-button")
+  .addEventListener("click", () => elements.quandaryDialog.close());
+document
   .querySelector("#close-cover-view-button")
   .addEventListener("click", () => elements.coverViewDialog.close());
 document
@@ -3514,6 +3629,13 @@ elements.debateInviteForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.debateInviteForm.reportValidity()) {
     sendDebateInvite(new FormData(elements.debateInviteForm));
+  }
+});
+
+elements.quandaryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.quandaryForm.reportValidity()) {
+    saveQuandary(new FormData(elements.quandaryForm));
   }
 });
 
@@ -3607,6 +3729,12 @@ elements.journalDialog.addEventListener("click", (event) => {
 elements.debateInviteDialog.addEventListener("click", (event) => {
   if (event.target === elements.debateInviteDialog) {
     elements.debateInviteDialog.close();
+  }
+});
+
+elements.quandaryDialog.addEventListener("click", (event) => {
+  if (event.target === elements.quandaryDialog) {
+    elements.quandaryDialog.close();
   }
 });
 
@@ -3759,6 +3887,16 @@ elements.adminFactList.addEventListener("click", (event) => {
   if (button?.dataset.factAction === "delete") {
     deleteReadingFact(button.dataset.id);
   }
+});
+
+elements.adminQuandaryList.addEventListener("submit", (event) => {
+  const form = event.target.closest(".quandary-resolve-form");
+  if (!form) return;
+  event.preventDefault();
+  resolveQuandary(
+    form.dataset.quandaryId,
+    new FormData(form).get("adminNote").trim(),
+  );
 });
 
 elements.marketplaceGrid.addEventListener("submit", (event) => {
