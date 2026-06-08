@@ -65,6 +65,17 @@ Completing each assignment once earns synchronized in-app Runes. Rune totals
 appear on personal profiles and on the profiles other readers can view. Owl
 icons represent the Parliament throughout the Learning Nook.
 
+The Learning Nook draws six unanswered assignments at a time from a bank of
+30 questions and writing tasks. Completing a task replaces it with another.
+Each account also has a synchronized daily streak: the first visit each UTC
+day awards 5 Runes, consecutive days extend the streak, and a missed day resets
+the current streak.
+
+Readers can flag a quandary for the administrator from the Learning Nook.
+Quandaries can concern assignments, accounts, community activity, catalogues,
+or technical problems. The administrator can review and resolve them from the
+private Admin panel, optionally sending a response to the reporting reader.
+
 The Debate Club lets a reader invite another reader to discuss a topic. The
 invitation must be accepted or declined before messages can be sent. Accepted
 debates are public to read, while only the two invited participants can post.
