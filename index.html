@@ -138,6 +138,7 @@
           <a href="#reading-log">Reading log</a>
           <a href="#passages">Passages</a>
           <a href="#journal">Journal</a>
+          <a href="#learning-nook">Learning Nook</a>
           <a href="#community">Community</a>
           <a href="#profile">Profile</a>
         </nav>
@@ -483,6 +484,34 @@
         </section>
 
         <section
+          class="learning-section"
+          id="learning-nook"
+          aria-labelledby="learning-title"
+        >
+          <div class="learning-heading">
+            <div>
+              <p class="eyebrow">THE PARLIAMENT OF OWLS</p>
+              <h2 id="learning-title">Learning Nook</h2>
+              <p>
+                Complete small language and literary assignments issued by the
+                Parliament. Each completed task earns Runes.
+              </p>
+            </div>
+            <div class="runes-balance" aria-label="Rune balance">
+              <span aria-hidden="true">R</span>
+              <div>
+                <strong id="learning-runes-count">0</strong>
+                <small>RUNES</small>
+              </div>
+            </div>
+          </div>
+          <div class="owl-parliament" aria-hidden="true">
+            <span>O</span><span>O</span><span>O</span>
+          </div>
+          <div id="learning-task-grid" class="learning-task-grid" aria-live="polite"></div>
+        </section>
+
+        <section
           class="profile-section"
           id="profile"
           aria-labelledby="profile-title"
@@ -495,6 +524,9 @@
             <div class="profile-copy">
               <p class="eyebrow">YOUR READER PROFILE</p>
               <h2 id="profile-title">Hello, <span id="profile-greeting">Reader</span>.</h2>
+              <p class="profile-runes">
+                <strong id="profile-runes-count">0</strong> Runes earned
+              </p>
               <p>
                 Personalize the identity attached to this library on your
                 device.
@@ -1001,8 +1033,10 @@
             type="text"
             placeholder="e.g. Donna Tartt"
             maxlength="100"
+            list="author-suggestions"
             required
           />
+          <datalist id="author-suggestions"></datalist>
         </label>
 
         <label>
