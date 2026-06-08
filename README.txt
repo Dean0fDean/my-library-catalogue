@@ -2,6 +2,12 @@ MY LIBRARY
 
 Open index.html in a modern web browser to use your personal book catalogue.
 
+The app opens on a dedicated Home dashboard with live collection statistics
+and shortcuts to frequently used areas. A responsive Menu in the sticky header
+organizes Collection, Wishlist, Reading Log, Passages, Journal, Learning Nook,
+The Chippings, Community, and Profile into clear groups. The menu closes after
+navigation, when clicking outside it, or when pressing Escape.
+
 Books, wishlist entries, ratings, reading sessions, saved passage text, and
 reflections synchronize through the shared online database.
 
