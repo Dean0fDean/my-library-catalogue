@@ -153,6 +153,11 @@ The Dream Journal is linked from Home. The Parliament of Owls awards 50 Runes
 the first time each dream is recorded and another 50 when archetype, motif, or
 symbol notes are added. The Collection has a warmer library-shelf visual theme.
 
+Within the Dream Journal, an estimated symbol total counts the symbols readers
+explicitly list across their entries. A searchable reference presents central
+Jungian archetypes and related recurring patterns while emphasizing that their
+meaning depends on personal, cultural, and dream-specific context.
+
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
 once per signed-in browsing session, carries no reward or streak pressure, and
