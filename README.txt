@@ -137,6 +137,11 @@ responsive card catalogue with compact previews and expandable full details.
 Each dream can use a chosen symbolic icon, including a moon, heart, chain,
 wizard, key, eye, star, tree, water, or door.
 
+The profile displays both the number of books finished and dreams recorded.
+The Dream Journal uses a distinctive night-sky theme and includes dismissible
+Dream Facts that rotate every 30 seconds. Administrators can add or remove
+community Dream Facts from the private Admin area.
+
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
 once per signed-in browsing session, carries no reward or streak pressure, and
