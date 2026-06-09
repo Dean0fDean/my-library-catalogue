@@ -134,3 +134,10 @@ dated dream with an optional remembered time, add notes about archetypes,
 motifs, and symbols, and connect related dreams. Dream entries synchronize
 with the signed-in account across devices. Entries are displayed in a
 responsive card catalogue with compact previews and expandable full details.
+Each dream can use a chosen symbolic icon, including a moon, heart, chain,
+wizard, key, eye, star, tree, water, or door.
+
+After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
+the reader to rest their eyes, move, hydrate, or step outside. It appears only
+once per signed-in browsing session, carries no reward or streak pressure, and
+waits when another dialog is already open.
