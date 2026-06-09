@@ -122,6 +122,10 @@ const elements = {
   profilePreviewImage: document.querySelector("#profile-preview-image"),
   profileError: document.querySelector("#profile-error"),
   profileInsightGrid: document.querySelector("#profile-insight-grid"),
+  dreamProfileReadCount: document.querySelector("#dream-profile-read-count"),
+  dreamProfileEntryCount: document.querySelector("#dream-profile-entry-count"),
+  dreamFactBanner: document.querySelector("#dream-fact-banner"),
+  dreamFactText: document.querySelector("#dream-fact-text"),
   profileNotificationCount: document.querySelector("#profile-notification-count"),
   headerNotificationCount: document.querySelector("#header-notification-count"),
   notificationChimeButton: document.querySelector("#notification-chime-button"),
@@ -194,6 +198,10 @@ const elements = {
   adminFactInput: document.querySelector("#admin-fact-input"),
   adminFactError: document.querySelector("#admin-fact-error"),
   adminFactList: document.querySelector("#admin-fact-list"),
+  adminDreamFactForm: document.querySelector("#admin-dream-fact-form"),
+  adminDreamFactInput: document.querySelector("#admin-dream-fact-input"),
+  adminDreamFactError: document.querySelector("#admin-dream-fact-error"),
+  adminDreamFactList: document.querySelector("#admin-dream-fact-list"),
   adminQuandaryList: document.querySelector("#admin-quandary-list"),
   adminQuandaryEmpty: document.querySelector("#admin-quandary-empty"),
   readingFactBanner: document.querySelector("#reading-fact-banner"),
@@ -282,6 +290,7 @@ let shares = loadArray(SHARES_STORAGE_KEY);
 let journals = [];
 let sharedJournals = [];
 let readingFacts = [];
+let dreamFacts = [];
 let marketplaceListings = [];
 let learningTasks = [];
 let debates = [];
@@ -300,6 +309,8 @@ let streakLongest = 0;
 let dailyStreakRewardEarned = false;
 let readingFactIndex = 0;
 let readingFactTimer;
+let dreamFactIndex = 0;
+let dreamFactTimer;
 let notificationPollTimer;
 let breakReminderTimer;
 let knownNotificationIds = new Set();
@@ -700,6 +711,7 @@ function readingSnapshot() {
     pages: accountLog.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0),
     minutes: accountLog.reduce((total, entry) => total + (Number(entry.durationMinutes) || 0), 0),
     journals: journals.length,
+    dreams: ownedByCurrent(dreams).length,
   };
 }
 
@@ -711,10 +723,13 @@ function renderProfileInsights() {
     : 0;
   elements.profileInsightGrid.innerHTML = `
     <div><strong>${snapshot.readBooks}</strong><span>Books finished</span></div>
+    <div><strong>${snapshot.dreams}</strong><span>Dreams recorded</span></div>
     <div><strong>${snapshot.pages}</strong><span>Pages logged</span></div>
     <div><strong>${formatDuration(snapshot.minutes)}</strong><span>Reading time</span></div>
     <div><strong>${averagePages}</strong><span>Pages per session</span></div>
   `;
+  elements.dreamProfileReadCount.textContent = snapshot.readBooks;
+  elements.dreamProfileEntryCount.textContent = snapshot.dreams;
 }
 
 function notificationIcon(type) {
@@ -1066,6 +1081,14 @@ async function loadReadingFacts() {
   renderAdminFacts();
 }
 
+async function loadDreamFacts() {
+  if (!apiToken) return;
+  const data = await apiRequest("dream-facts");
+  dreamFacts = data.facts || [];
+  renderDreamFact();
+  renderAdminDreamFacts();
+}
+
 async function loadMarketplace() {
   if (!apiToken) return;
   const data = await apiRequest("marketplace");
@@ -1130,6 +1153,7 @@ async function showAuthenticatedApp(account) {
     await loadAccountData();
     await loadJournals();
     await loadReadingFacts();
+    await loadDreamFacts();
     await loadMarketplace();
     await loadLearningNook();
     await loadChippings();
@@ -1163,6 +1187,7 @@ async function showAuthenticatedApp(account) {
 
 function showLoginScreen() {
   window.clearInterval(notificationPollTimer);
+  window.clearInterval(dreamFactTimer);
   window.clearTimeout(breakReminderTimer);
   notificationBaselineReady = false;
   knownNotificationIds = new Set();
@@ -3148,6 +3173,7 @@ function saveDreamEntry(formData) {
   }
   saveDreams();
   renderDreams();
+  renderProfileInsights();
   elements.dreamDialog.close();
   showToast(previous ? `"${entry.title}" updated.` : `"${entry.title}" recorded.`);
 }
@@ -3167,6 +3193,7 @@ function deleteDream(id) {
     }));
   saveDreams();
   renderDreams();
+  renderProfileInsights();
   showToast(`"${dream.title}" deleted.`);
 }
 
@@ -3834,6 +3861,41 @@ function dismissReadingFact() {
   elements.readingFactBanner.hidden = true;
 }
 
+function currentDreamFact() {
+  if (!dreamFacts.length || !currentAccount) return null;
+  return dreamFacts[dreamFactIndex % dreamFacts.length];
+}
+
+function renderDreamFact() {
+  window.clearInterval(dreamFactTimer);
+  const fact = currentDreamFact();
+  if (!fact || sessionStorage.getItem("dream-facts-dismissed")) {
+    elements.dreamFactBanner.hidden = true;
+    return;
+  }
+  elements.dreamFactText.textContent = fact.fact;
+  elements.dreamFactBanner.dataset.factId = fact.id;
+  elements.dreamFactBanner.hidden = false;
+  if (dreamFacts.length > 1) {
+    dreamFactTimer = window.setInterval(() => {
+      dreamFactIndex = (dreamFactIndex + 1) % dreamFacts.length;
+      const nextFact = currentDreamFact();
+      elements.dreamFactText.classList.add("changing");
+      window.setTimeout(() => {
+        elements.dreamFactText.textContent = nextFact.fact;
+        elements.dreamFactBanner.dataset.factId = nextFact.id;
+        elements.dreamFactText.classList.remove("changing");
+      }, 180);
+    }, 30_000);
+  }
+}
+
+function dismissDreamFact() {
+  sessionStorage.setItem("dream-facts-dismissed", "1");
+  window.clearInterval(dreamFactTimer);
+  elements.dreamFactBanner.hidden = true;
+}
+
 function formatMarketPrice(price, currency) {
   try {
     return new Intl.NumberFormat(undefined, {
@@ -4075,6 +4137,52 @@ function renderAdminFacts() {
       `,
     )
     .join("");
+}
+
+function renderAdminDreamFacts() {
+  if (!currentAccount || currentAccount.role !== "admin") {
+    elements.adminDreamFactList.innerHTML = "";
+    return;
+  }
+  elements.adminDreamFactList.innerHTML = dreamFacts
+    .map(
+      (item) => `
+        <article class="admin-fact-row">
+          <p>${escapeHtml(item.fact)}</p>
+          ${
+            item.removable
+              ? `<button type="button" data-dream-fact-action="delete" data-id="${item.id}">Delete</button>`
+              : "<span>Built in</span>"
+          }
+        </article>
+      `,
+    )
+    .join("");
+}
+
+async function addDreamFact(formData) {
+  elements.adminDreamFactError.textContent = "";
+  try {
+    await apiRequest("dream-fact-save", {
+      method: "POST",
+      body: { fact: formData.get("fact").trim() },
+    });
+    elements.adminDreamFactForm.reset();
+    await loadDreamFacts();
+    showToast("Dream fact added for everyone.");
+  } catch (error) {
+    elements.adminDreamFactError.textContent = error.message;
+  }
+}
+
+async function deleteDreamFact(id) {
+  try {
+    await apiRequest("dream-fact-delete", { method: "POST", body: { id } });
+    await loadDreamFacts();
+    showToast("Dream fact removed.");
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 async function addReadingFact(formData) {
@@ -4774,6 +4882,13 @@ elements.readingFactBanner.addEventListener("keydown", (event) => {
     dismissReadingFact();
   }
 });
+elements.dreamFactBanner.addEventListener("click", dismissDreamFact);
+elements.dreamFactBanner.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    dismissDreamFact();
+  }
+});
 document.querySelector("#logout-button").addEventListener("click", () => {
   saveOpenStory();
   elements.profileDialog.close();
@@ -4847,6 +4962,13 @@ elements.adminFactForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.adminFactForm.reportValidity()) {
     addReadingFact(new FormData(elements.adminFactForm));
+  }
+});
+
+elements.adminDreamFactForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.adminDreamFactForm.reportValidity()) {
+    addDreamFact(new FormData(elements.adminDreamFactForm));
   }
 });
 
@@ -5177,6 +5299,13 @@ elements.adminFactList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-fact-action]");
   if (button?.dataset.factAction === "delete") {
     deleteReadingFact(button.dataset.id);
+  }
+});
+
+elements.adminDreamFactList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-dream-fact-action]");
+  if (button?.dataset.dreamFactAction === "delete") {
+    deleteDreamFact(button.dataset.id);
   }
 });
 
