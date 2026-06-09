@@ -13,6 +13,12 @@ counts, profile access, and follow controls. Three gently animated owls appear
 on the Home dashboard, with motion disabled when the device requests reduced
 motion.
 
+Saved passages can be reopened and edited, including their citation, typed
+text, reflection, entry method, and photographed page. The first login that
+earns each day's streak reward opens a dedicated popup showing the increased
+streak and five awarded Runes. Log out is always available in the header, and
+the quandary reporting action is available directly from Home.
+
 Books, wishlist entries, ratings, reading sessions, saved passage text, and
 reflections synchronize through the shared online database.
 
