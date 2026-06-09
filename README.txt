@@ -4,9 +4,10 @@ Open index.html in a modern web browser to use your personal book catalogue.
 
 The app opens on a dedicated Home dashboard with live collection statistics
 and shortcuts to frequently used areas. A responsive Menu in the sticky header
-organizes Collection, Wishlist, Reading Log, Passages, Journal, Learning Nook,
-The Chippings, Community, and Profile into clear groups. The menu closes after
-navigation, when clicking outside it, or when pressing Escape.
+organizes Collection, Wishlist, Reading Log, Passages, Journal, Creative
+Writing, WordHub Alcove, Learning Nook, The Chippings, Community, and Profile
+into clear groups. The menu closes after navigation, when clicking outside it,
+or when pressing Escape.
 
 The Community area includes dedicated Followers and Following lists with live
 counts, profile access, and follow controls. Three gently animated owls appear
@@ -18,6 +19,14 @@ text, reflection, entry method, and photographed page. The first login that
 earns each day's streak reward opens a dedicated popup showing the increased
 streak and five awarded Runes. Log out is always available in the header, and
 the quandary reporting action is available directly from Home.
+
+Creative Writing provides private synchronized story projects with fields for
+genre, point of view, premise, characters, setting, plot outline, and a full
+manuscript. Drafts autosave, show a live word count, and use the browser's
+spellchecker. WordHub Alcove stores words encountered while reading, their
+meanings, source books and pages, and original practice sentences. WordHub
+entries can be searched, edited, and removed, and its writing fields also use
+spellcheck.
 
 Books, wishlist entries, ratings, reading sessions, saved passage text, and
 reflections synchronize through the shared online database.
