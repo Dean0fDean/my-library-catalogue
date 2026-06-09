@@ -744,6 +744,16 @@ async function ensureSchema() {
         )
       `;
       await sql`
+        CREATE TABLE IF NOT EXISTS library_dream_rewards (
+          user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          dream_id TEXT NOT NULL,
+          runes_awarded INTEGER NOT NULL DEFAULT 50,
+          awarded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (user_id, dream_id)
+        )
+      `;
+      await sql`
         CREATE TABLE IF NOT EXISTS library_quandaries (
           id UUID PRIMARY KEY,
           user_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
@@ -1568,6 +1578,11 @@ export default async function handler(request, response) {
         (total, item) => total + Number(item.runes_awarded || 0),
         0,
       );
+      const dreamRuneRows = await sql`
+        SELECT COALESCE(SUM(runes_awarded), 0)::int AS awarded
+        FROM library_dream_rewards
+        WHERE user_id = ${user.id}
+      `;
       const spendingRows = await sql`
         SELECT COALESCE(SUM(price_paid), 0)::int AS spent
         FROM library_store_purchases
@@ -1591,7 +1606,8 @@ export default async function handler(request, response) {
         runes: Math.max(
           0,
           learningRunes +
-            Number(streak.runes_awarded || 0) -
+            Number(streak.runes_awarded || 0) +
+            Number(dreamRuneRows[0].awarded || 0) -
             Number(spendingRows[0].spent || 0),
         ),
         streak: {
@@ -1662,6 +1678,59 @@ export default async function handler(request, response) {
       return json(response, 201, { ok: true, runesAwarded: task.runes });
     }
 
+    if (action === "dream-reward" && request.method === "POST") {
+      const dreamId = String(body.dreamId || "").trim().slice(0, 200);
+      if (!dreamId) {
+        return json(response, 400, { error: "Dream entry required." });
+      }
+      const ownedDream = await sql`
+        SELECT 1
+        FROM library_data
+        WHERE user_id = ${user.id}
+          AND dreams @> ${JSON.stringify([{ id: dreamId }])}::jsonb
+        LIMIT 1
+      `;
+      if (!ownedDream.length) {
+        return json(response, 404, { error: "Save the dream before claiming its reward." });
+      }
+      const targetAward = body.hasNotes ? 100 : 50;
+      const previous = await sql`
+        SELECT runes_awarded
+        FROM library_dream_rewards
+        WHERE user_id = ${user.id} AND dream_id = ${dreamId}
+      `;
+      const previousAward = Number(previous[0]?.runes_awarded || 0);
+      const rows = await sql`
+        INSERT INTO library_dream_rewards (
+          user_id, dream_id, runes_awarded, awarded_at, updated_at
+        )
+        VALUES (${user.id}, ${dreamId}, ${targetAward}, NOW(), NOW())
+        ON CONFLICT (user_id, dream_id) DO UPDATE SET
+          runes_awarded = GREATEST(
+            library_dream_rewards.runes_awarded,
+            EXCLUDED.runes_awarded
+          ),
+          updated_at = NOW()
+        RETURNING runes_awarded
+      `;
+      const totalAward = Number(rows[0].runes_awarded || 0);
+      const newlyAwarded = Math.max(0, totalAward - previousAward);
+      if (newlyAwarded) {
+        await addNotification(
+          user.id,
+          "learning",
+          "Dream journal Runes",
+          `The Parliament of Owls awarded you ${newlyAwarded} Runes for ${previousAward ? "adding dream notes" : "recording a dream"}.`,
+          `dream-runes:${dreamId}:${totalAward}`,
+        );
+      }
+      return json(response, 200, {
+        ok: true,
+        runesAwarded: newlyAwarded,
+        totalDreamRunes: totalAward,
+      });
+    }
+
     if (action === "store" && request.method === "GET") {
       const purchases = await sql`
         SELECT item_key, price_paid, purchased_at
@@ -1685,6 +1754,11 @@ export default async function handler(request, response) {
           + COALESCE((
             SELECT runes_awarded
             FROM library_daily_streaks
+            WHERE user_id = ${user.id}
+          ), 0)::int
+          + COALESCE((
+            SELECT SUM(runes_awarded)
+            FROM library_dream_rewards
             WHERE user_id = ${user.id}
           ), 0)::int
           - COALESCE((
@@ -1733,6 +1807,11 @@ export default async function handler(request, response) {
           + COALESCE((
             SELECT runes_awarded
             FROM library_daily_streaks
+            WHERE user_id = ${user.id}
+          ), 0)
+          + COALESCE((
+            SELECT SUM(runes_awarded)
+            FROM library_dream_rewards
             WHERE user_id = ${user.id}
           ), 0)
           - COALESCE((
@@ -2228,6 +2307,11 @@ export default async function handler(request, response) {
             SELECT ds.runes_awarded
             FROM library_daily_streaks ds
             WHERE ds.user_id = u.id
+          ), 0)::int
+          + COALESCE((
+            SELECT SUM(dr.runes_awarded)
+            FROM library_dream_rewards dr
+            WHERE dr.user_id = u.id
           ), 0)::int
           - COALESCE((
             SELECT SUM(sp.price_paid)
