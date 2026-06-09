@@ -147,6 +147,15 @@
           <button class="header-logout-button" id="logout-button" type="button">
             Log out
           </button>
+          <button
+            class="notification-chime-button"
+            id="notification-chime-button"
+            type="button"
+            aria-label="Open notifications"
+          >
+            <span class="chime-symbol" aria-hidden="true">♪</span>
+            <span id="header-notification-count" class="header-notification-count" hidden>0</span>
+          </button>
           <div class="feature-menu" id="feature-menu" hidden>
             <div class="menu-group">
               <p>Your library</p>
@@ -988,7 +997,7 @@
               <div id="profile-insight-grid" class="profile-insight-grid"></div>
             </section>
 
-            <section class="profile-panel" aria-labelledby="notifications-title">
+            <section class="profile-panel" id="notifications-panel" aria-labelledby="notifications-title">
               <div class="profile-panel-heading">
                 <div>
                   <p class="eyebrow">WHAT'S NEW</p>
@@ -1631,8 +1640,8 @@
       <form id="book-form" method="dialog">
         <div class="dialog-heading">
           <div>
-            <p class="eyebrow">A NEW STORY</p>
-            <h2>Add a book</h2>
+            <p class="eyebrow" id="book-dialog-eyebrow">A NEW STORY</p>
+            <h2 id="book-dialog-title">Add a book</h2>
           </div>
           <button
             class="icon-button"
@@ -1738,8 +1747,44 @@
           </label>
         </fieldset>
 
-        <button class="primary-button submit-button" type="submit">
+        <button class="primary-button submit-button" id="book-submit-button" type="submit">
           Add to my library
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="recommendation-edit-dialog">
+      <form id="recommendation-edit-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">REVISE YOUR RECOMMENDATION</p>
+            <h2>Edit recommendation</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-recommendation-edit"
+            type="button"
+            aria-label="Close recommendation editor"
+          >
+            X
+          </button>
+        </div>
+        <input id="recommendation-edit-id" name="shareId" type="hidden" />
+        <label>
+          <span>Book title</span>
+          <input id="recommendation-edit-title" name="title" maxlength="300" required />
+        </label>
+        <label>
+          <span>Author</span>
+          <input id="recommendation-edit-author" name="author" maxlength="300" required />
+        </label>
+        <label>
+          <span>Message (optional)</span>
+          <textarea id="recommendation-edit-message" name="message" rows="5" maxlength="1000"></textarea>
+        </label>
+        <p class="form-error" id="recommendation-edit-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">
+          Save recommendation
         </button>
       </form>
     </dialog>
