@@ -209,6 +209,7 @@
             <div class="home-primary-actions">
               <a class="primary-button" href="#collection">Open my collection</a>
               <a class="home-menu-link" href="#reading-log">Log today's reading</a>
+              <a class="home-menu-link dream-home-link" href="#dream-journal">Open dream journal</a>
               <button class="home-quandary-button" id="open-quandary-button" type="button">
                 Flag a quandary
               </button>
@@ -1528,6 +1529,37 @@
           <div id="dream-related-options" class="dream-related-options"></div>
         </fieldset>
         <button class="primary-button submit-button" type="submit">Save dream</button>
+      </form>
+    </dialog>
+
+    <dialog id="dream-analysis-dialog" class="wide-dialog">
+      <form id="dream-analysis-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">JUNGIAN REFLECTION</p>
+            <h2>Explore this dream</h2>
+          </div>
+          <button class="icon-button" id="close-dream-analysis" type="button" aria-label="Close dream analysis">X</button>
+        </div>
+        <input id="dream-analysis-id" name="dreamId" type="hidden" />
+        <p class="dialog-copy" id="dream-analysis-summary"></p>
+        <aside class="dream-analysis-caution">
+          <strong>Reflective, not definitive</strong>
+          <p>
+            This tool offers possible Jungian lenses, not facts, predictions,
+            medical advice, or mental-health diagnoses. Your own associations
+            and waking circumstances matter more than a symbol dictionary.
+          </p>
+        </aside>
+        <label>
+          <span>Relevant waking-life situation (optional)</span>
+          <textarea name="wakingContext" rows="5" maxlength="5000" placeholder="What was happening, changing, or troubling you around the time of this dream?" spellcheck="true"></textarea>
+        </label>
+        <label>
+          <span>Question you want to explore (optional)</span>
+          <textarea name="focusQuestion" rows="3" maxlength="1500" placeholder="What might this dream be balancing, preparing, or asking me to notice?" spellcheck="true"></textarea>
+        </label>
+        <button class="primary-button submit-button" type="submit">Create and save analysis</button>
       </form>
     </dialog>
 
