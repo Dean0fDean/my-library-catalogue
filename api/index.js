@@ -2368,6 +2368,58 @@ export default async function handler(request, response) {
       return json(response, 200, { ok: true });
     }
 
+    if (action === "share-edit" && request.method === "POST") {
+      const shareId = String(body.shareId || "");
+      const title = String(body.title || "").trim().slice(0, 300);
+      const author = String(body.author || "").trim().slice(0, 300);
+      const message = String(body.message || "").trim().slice(0, 1000);
+      if (!title || !author) {
+        return json(response, 400, { error: "Add the book title and author." });
+      }
+      const shares = await sql`
+        SELECT id, payload FROM library_shares
+        WHERE id = ${shareId} AND sender_id = ${user.id} AND kind = 'book'
+        LIMIT 1
+      `;
+      if (!shares.length) {
+        return json(response, 404, {
+          error: "That recommendation cannot be edited.",
+        });
+      }
+      const payload = {
+        ...(shares[0].payload || {}),
+        title,
+        author,
+      };
+      await sql`
+        UPDATE library_shares
+        SET payload = ${JSON.stringify(payload)}::jsonb,
+            message = ${message},
+            recipient_read_at = NULL
+        WHERE id = ${shareId} AND sender_id = ${user.id}
+      `;
+      return json(response, 200, { ok: true });
+    }
+
+    if (action === "share-delete" && request.method === "POST") {
+      const shareId = String(body.shareId || "");
+      const deleted = await sql`
+        DELETE FROM library_shares
+        WHERE id = ${shareId} AND sender_id = ${user.id} AND kind = 'book'
+        RETURNING id
+      `;
+      if (!deleted.length) {
+        return json(response, 404, {
+          error: "That recommendation cannot be deleted.",
+        });
+      }
+      await sql`
+        DELETE FROM library_notifications
+        WHERE dedupe_key = ${`share:${shareId}`}
+      `;
+      return json(response, 200, { ok: true });
+    }
+
     if (action === "share-comment" && request.method === "POST") {
       const shareId = String(body.shareId || "");
       const comment = String(body.comment || "").trim().slice(0, 1000);
