@@ -1448,6 +1448,21 @@
             <input id="dream-time-input" name="rememberedTime" type="time" />
           </label>
         </div>
+        <fieldset class="dream-icon-fieldset">
+          <legend>Display symbol</legend>
+          <div class="dream-icon-options">
+            <label><input type="radio" name="symbolIcon" value="moon" checked /><span aria-hidden="true">&#9790;</span><small>Moon</small></label>
+            <label><input type="radio" name="symbolIcon" value="heart" /><span aria-hidden="true">&#9829;</span><small>Heart</small></label>
+            <label><input type="radio" name="symbolIcon" value="chain" /><span aria-hidden="true">&#128279;</span><small>Chain</small></label>
+            <label><input type="radio" name="symbolIcon" value="wizard" /><span aria-hidden="true">&#129497;</span><small>Wizard</small></label>
+            <label><input type="radio" name="symbolIcon" value="key" /><span aria-hidden="true">&#128273;</span><small>Key</small></label>
+            <label><input type="radio" name="symbolIcon" value="eye" /><span aria-hidden="true">&#128065;</span><small>Eye</small></label>
+            <label><input type="radio" name="symbolIcon" value="star" /><span aria-hidden="true">&#9733;</span><small>Star</small></label>
+            <label><input type="radio" name="symbolIcon" value="tree" /><span aria-hidden="true">&#127795;</span><small>Tree</small></label>
+            <label><input type="radio" name="symbolIcon" value="water" /><span aria-hidden="true">&#8776;</span><small>Water</small></label>
+            <label><input type="radio" name="symbolIcon" value="door" /><span aria-hidden="true">&#128682;</span><small>Door</small></label>
+          </div>
+        </fieldset>
         <label>
           <span>What do you remember?</span>
           <textarea id="dream-text-input" name="dream" rows="9" maxlength="15000" spellcheck="true" required></textarea>
@@ -2240,6 +2255,34 @@
         </div>
         <button class="primary-button" id="acknowledge-streak-reward" type="button">
           Continue to my library
+        </button>
+      </div>
+    </dialog>
+
+    <dialog id="break-reminder-dialog" class="break-reminder-dialog">
+      <div class="break-reminder-card">
+        <button
+          class="icon-button break-reminder-close"
+          id="close-break-reminder"
+          type="button"
+          aria-label="Dismiss break reminder"
+        >
+          X
+        </button>
+        <div class="break-reminder-landscape" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <p class="eyebrow">GO TOUCH GRASS</p>
+        <h2>Your library can wait.</h2>
+        <p>
+          You have been here for a while. Rest your eyes, stretch, drink some
+          water, or step outside before continuing.
+        </p>
+        <p class="break-reminder-note">
+          There is no streak to protect and nothing here will disappear.
+        </p>
+        <button class="primary-button" id="dismiss-break-reminder" type="button">
+          Take a break
         </button>
       </div>
     </dialog>
