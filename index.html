@@ -307,9 +307,14 @@
               <p class="eyebrow">THE BOOKSHELF</p>
               <h2 id="collection-title">My collection</h2>
             </div>
-            <button class="primary-button" id="open-form-button" type="button">
-              <span aria-hidden="true">+</span> Add a book
-            </button>
+            <div class="section-actions">
+              <button class="print-list-button" type="button" data-print-list="collection">
+                Print list
+              </button>
+              <button class="primary-button" id="open-form-button" type="button">
+                <span aria-hidden="true">+</span> Add a book
+              </button>
+            </div>
           </div>
 
           <div class="toolbar">
@@ -518,13 +523,18 @@
                 and what they made you think.
               </p>
             </div>
-            <button
-              class="primary-button"
-              id="open-passage-button"
-              type="button"
-            >
-              <span aria-hidden="true">+</span> Save a passage
-            </button>
+            <div class="section-actions">
+              <button class="print-list-button" type="button" data-print-list="passages">
+                Print list
+              </button>
+              <button
+                class="primary-button"
+                id="open-passage-button"
+                type="button"
+              >
+                <span aria-hidden="true">+</span> Save a passage
+              </button>
+            </div>
           </div>
 
           <div class="passage-toolbar">
@@ -577,9 +587,14 @@
                 them, and decide which reflections to share.
               </p>
             </div>
-            <button class="primary-button" id="open-journal-button" type="button">
-              <span aria-hidden="true">+</span> New entry
-            </button>
+            <div class="section-actions">
+              <button class="print-list-button" type="button" data-print-list="journal">
+                Print list
+              </button>
+              <button class="primary-button" id="open-journal-button" type="button">
+                <span aria-hidden="true">+</span> New entry
+              </button>
+            </div>
           </div>
           <div id="journal-grid" class="journal-grid" aria-live="polite"></div>
           <div id="journal-empty-state" class="journal-empty-state">
@@ -606,9 +621,14 @@
                 story in a private, automatically saved workspace.
               </p>
             </div>
-            <button class="primary-button" id="new-story-button" type="button">
-              <span aria-hidden="true">+</span> New story
-            </button>
+            <div class="section-actions">
+              <button class="print-list-button" type="button" data-print-list="writing">
+                Print list
+              </button>
+              <button class="primary-button" id="new-story-button" type="button">
+                <span aria-hidden="true">+</span> New story
+              </button>
+            </div>
           </div>
 
           <div class="writing-workspace">
@@ -1021,6 +1041,24 @@
               </div>
               <div id="profile-achievement-grid" class="profile-achievement-grid"></div>
             </section>
+
+            <section class="profile-panel dream-journal-panel" id="dream-journal" aria-labelledby="dream-journal-title">
+              <div class="profile-panel-heading">
+                <div>
+                  <p class="eyebrow">PRIVATE DREAM JOURNAL</p>
+                  <h3 id="dream-journal-title">Dreams and recurring symbols</h3>
+                </div>
+                <button id="open-dream-button" type="button">Record a dream</button>
+              </div>
+              <p class="dream-journal-intro">
+                Capture remembered dreams, notice recurring imagery, and connect entries that belong together.
+              </p>
+              <div id="dream-list" class="dream-list" aria-live="polite"></div>
+              <div id="dream-empty" class="dream-empty">
+                <strong>No dreams recorded yet.</strong>
+                <p>Your entries are private and synchronize with your account.</p>
+              </div>
+            </section>
           </div>
         </section>
 
@@ -1376,6 +1414,63 @@
         <button class="primary-button submit-button" type="submit">
           Save profile
         </button>
+      </form>
+    </dialog>
+
+    <dialog id="dream-dialog" class="wide-dialog">
+      <form id="dream-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">DREAM JOURNAL</p>
+            <h2 id="dream-dialog-title">Record a dream</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-dream-button"
+            type="button"
+            aria-label="Close dream form"
+          >
+            X
+          </button>
+        </div>
+        <input id="dream-id-input" name="id" type="hidden" />
+        <label>
+          <span>Dream heading or title</span>
+          <input id="dream-title-input" name="title" type="text" maxlength="160" required />
+        </label>
+        <div class="form-row two-columns">
+          <label>
+            <span>Date of dream</span>
+            <input id="dream-date-input" name="dreamDate" type="date" required />
+          </label>
+          <label>
+            <span>Approximate time remembered (optional)</span>
+            <input id="dream-time-input" name="rememberedTime" type="time" />
+          </label>
+        </div>
+        <label>
+          <span>What do you remember?</span>
+          <textarea id="dream-text-input" name="dream" rows="9" maxlength="15000" spellcheck="true" required></textarea>
+        </label>
+        <div class="dream-symbol-grid">
+          <label>
+            <span>Archetypes</span>
+            <textarea name="archetypes" rows="4" maxlength="3000" placeholder="The guide, shadow, child, trickster..." spellcheck="true"></textarea>
+          </label>
+          <label>
+            <span>Motifs</span>
+            <textarea name="motifs" rows="4" maxlength="3000" placeholder="Recurring journeys, thresholds, transformations..." spellcheck="true"></textarea>
+          </label>
+          <label>
+            <span>Symbols</span>
+            <textarea name="symbols" rows="4" maxlength="3000" placeholder="Places, colours, objects, people, animals..." spellcheck="true"></textarea>
+          </label>
+        </div>
+        <fieldset class="dream-related-fieldset">
+          <legend>Connected dreams (optional)</legend>
+          <div id="dream-related-options" class="dream-related-options"></div>
+        </fieldset>
+        <button class="primary-button submit-button" type="submit">Save dream</button>
       </form>
     </dialog>
 
@@ -2149,6 +2244,7 @@
       </div>
     </dialog>
 
+    <section id="print-sheet" class="print-sheet" aria-hidden="true"></section>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </body>
 </html>
