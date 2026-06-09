@@ -3202,7 +3202,6 @@ function printList(kind) {
   };
   window.addEventListener("afterprint", cleanUp);
   window.print();
-  window.setTimeout(cleanUp, 1000);
 }
 
 function avatarMarkup(account) {
