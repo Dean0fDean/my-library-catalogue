@@ -600,8 +600,18 @@ async function ensureSchema() {
           reading_log JSONB NOT NULL DEFAULT '[]'::jsonb,
           passages JSONB NOT NULL DEFAULT '[]'::jsonb,
           wishlist JSONB NOT NULL DEFAULT '[]'::jsonb,
+          creative_writing JSONB NOT NULL DEFAULT '[]'::jsonb,
+          wordhub JSONB NOT NULL DEFAULT '[]'::jsonb,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
+      `;
+      await sql`
+        ALTER TABLE library_data
+        ADD COLUMN IF NOT EXISTS creative_writing JSONB NOT NULL DEFAULT '[]'::jsonb
+      `;
+      await sql`
+        ALTER TABLE library_data
+        ADD COLUMN IF NOT EXISTS wordhub JSONB NOT NULL DEFAULT '[]'::jsonb
       `;
       await sql`
         CREATE TABLE IF NOT EXISTS library_notifications (
@@ -1017,7 +1027,8 @@ export default async function handler(request, response) {
 
     if (action === "data" && request.method === "GET") {
       const rows = await sql`
-        SELECT books, reading_log, passages, wishlist, updated_at
+        SELECT books, reading_log, passages, wishlist, creative_writing,
+               wordhub, updated_at
         FROM library_data WHERE user_id = ${user.id}
       `;
       const row = rows[0] || {};
@@ -1026,6 +1037,8 @@ export default async function handler(request, response) {
         readingLog: row.reading_log || [],
         passages: row.passages || [],
         wishlist: row.wishlist || [],
+        creativeWriting: row.creative_writing || [],
+        wordhub: row.wordhub || [],
         updatedAt: row.updated_at || null,
       });
     }
@@ -1035,19 +1048,24 @@ export default async function handler(request, response) {
         Array.isArray(value) ? value.slice(0, 5000) : [];
       await sql`
         INSERT INTO library_data (
-          user_id, books, reading_log, passages, wishlist, updated_at
+          user_id, books, reading_log, passages, wishlist, creative_writing,
+          wordhub, updated_at
         )
         VALUES (
           ${user.id}, ${JSON.stringify(cleanArray(body.books))}::jsonb,
           ${JSON.stringify(cleanArray(body.readingLog))}::jsonb,
           ${JSON.stringify(cleanArray(body.passages))}::jsonb,
-          ${JSON.stringify(cleanArray(body.wishlist))}::jsonb, NOW()
+          ${JSON.stringify(cleanArray(body.wishlist))}::jsonb,
+          ${JSON.stringify(cleanArray(body.creativeWriting))}::jsonb,
+          ${JSON.stringify(cleanArray(body.wordhub))}::jsonb, NOW()
         )
         ON CONFLICT (user_id) DO UPDATE SET
           books = EXCLUDED.books,
           reading_log = EXCLUDED.reading_log,
           passages = EXCLUDED.passages,
           wishlist = EXCLUDED.wishlist,
+          creative_writing = EXCLUDED.creative_writing,
+          wordhub = EXCLUDED.wordhub,
           updated_at = NOW()
       `;
       return json(response, 200, { ok: true });
