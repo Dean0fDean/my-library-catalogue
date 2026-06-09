@@ -10,6 +10,8 @@ const API_TOKEN_KEY = "my-library-api-token-v1";
 const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
 const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
 const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
+const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
+const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
@@ -177,6 +179,7 @@ const elements = {
   learningStreakCount: document.querySelector("#learning-streak-count"),
   streakRewardDialog: document.querySelector("#streak-reward-dialog"),
   streakRewardCount: document.querySelector("#streak-reward-count"),
+  breakReminderDialog: document.querySelector("#break-reminder-dialog"),
   learningTaskGrid: document.querySelector("#learning-task-grid"),
   chippingsRunesCount: document.querySelector("#chippings-runes-count"),
   chippingsGrid: document.querySelector("#chippings-grid"),
@@ -298,6 +301,7 @@ let dailyStreakRewardEarned = false;
 let readingFactIndex = 0;
 let readingFactTimer;
 let notificationPollTimer;
+let breakReminderTimer;
 let knownNotificationIds = new Set();
 let notificationBaselineReady = false;
 let audioContext;
@@ -1154,10 +1158,12 @@ async function showAuthenticatedApp(account) {
   notificationPollTimer = window.setInterval(() => {
     refreshProfileActivity().catch(() => {});
   }, 30_000);
+  scheduleBreakReminder();
 }
 
 function showLoginScreen() {
   window.clearInterval(notificationPollTimer);
+  window.clearTimeout(breakReminderTimer);
   notificationBaselineReady = false;
   knownNotificationIds = new Set();
   currentAccount = null;
@@ -1503,6 +1509,37 @@ function showDailyStreakReward() {
   elements.streakRewardCount.textContent = streakCurrent;
   elements.streakRewardDialog.showModal();
   dailyStreakRewardEarned = false;
+}
+
+function scheduleBreakReminder(delay = BREAK_REMINDER_DELAY) {
+  window.clearTimeout(breakReminderTimer);
+  if (
+    !currentAccount ||
+    sessionStorage.getItem(BREAK_REMINDER_DISMISSED_KEY)
+  ) {
+    return;
+  }
+  breakReminderTimer = window.setTimeout(showBreakReminder, delay);
+}
+
+function showBreakReminder() {
+  if (
+    !currentAccount ||
+    sessionStorage.getItem(BREAK_REMINDER_DISMISSED_KEY)
+  ) {
+    return;
+  }
+  if (document.querySelector("dialog[open]")) {
+    scheduleBreakReminder(2 * 60 * 1000);
+    return;
+  }
+  elements.breakReminderDialog.showModal();
+}
+
+function dismissBreakReminder() {
+  sessionStorage.setItem(BREAK_REMINDER_DISMISSED_KEY, "1");
+  window.clearTimeout(breakReminderTimer);
+  elements.breakReminderDialog.close();
 }
 
 function ensureAudioContext() {
@@ -2971,6 +3008,21 @@ function dreamAccent(dream) {
   );
 }
 
+function dreamSymbolIcon(value) {
+  return {
+    moon: "&#9790;",
+    heart: "&#9829;",
+    chain: "&#128279;",
+    wizard: "&#129497;",
+    key: "&#128273;",
+    eye: "&#128065;",
+    star: "&#9733;",
+    tree: "&#127795;",
+    water: "&#8776;",
+    door: "&#128682;",
+  }[value] || "&#9790;";
+}
+
 function renderDreams() {
   if (!currentAccount) return;
   const accountDreams = ownedByCurrent(dreams).sort((first, second) =>
@@ -2988,7 +3040,7 @@ function renderDreams() {
             <p class="dream-date">
               <time datetime="${escapeHtml(dream.dreamDate)}">${escapeHtml(dreamDateLabel(dream.dreamDate))}</time>
             </p>
-            <span class="dream-mark" aria-hidden="true">D</span>
+            <span class="dream-mark" aria-hidden="true">${dreamSymbolIcon(dream.symbolIcon)}</span>
           </div>
           <h4>${escapeHtml(dream.title)}</h4>
           ${dream.rememberedTime ? `<p class="dream-remembered-time">Remembered around ${escapeHtml(dreamTimeLabel(dream.rememberedTime))}</p>` : ""}
@@ -3042,6 +3094,11 @@ function openDreamForm(dreamId = "") {
   elements.dreamForm.elements.archetypes.value = dream?.archetypes || "";
   elements.dreamForm.elements.motifs.value = dream?.motifs || "";
   elements.dreamForm.elements.symbols.value = dream?.symbols || "";
+  const iconValue = dream?.symbolIcon || "moon";
+  const iconInput = elements.dreamForm.querySelector(
+    `input[name="symbolIcon"][value="${iconValue}"]`,
+  );
+  if (iconInput) iconInput.checked = true;
   const selected = new Set(dream?.relatedDreamIds || []);
   const possibleConnections = ownedByCurrent(dreams)
     .filter((item) => item.id !== dream?.id)
@@ -3078,6 +3135,7 @@ function saveDreamEntry(formData) {
     archetypes: formData.get("archetypes").trim(),
     motifs: formData.get("motifs").trim(),
     symbols: formData.get("symbols").trim(),
+    symbolIcon: formData.get("symbolIcon") || "moon",
     relatedDreamIds: formData.getAll("relatedDreamIds"),
     createdAt: previous?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -4625,6 +4683,12 @@ document
   .querySelector("#acknowledge-streak-reward")
   .addEventListener("click", () => elements.streakRewardDialog.close());
 document
+  .querySelector("#close-break-reminder")
+  .addEventListener("click", dismissBreakReminder);
+document
+  .querySelector("#dismiss-break-reminder")
+  .addEventListener("click", dismissBreakReminder);
+document
   .querySelector("#open-journal-button")
   .addEventListener("click", openJournalForm);
 document
@@ -4902,6 +4966,14 @@ elements.streakRewardDialog.addEventListener("click", (event) => {
   if (event.target === elements.streakRewardDialog) {
     elements.streakRewardDialog.close();
   }
+});
+
+elements.breakReminderDialog.addEventListener("click", (event) => {
+  if (event.target === elements.breakReminderDialog) dismissBreakReminder();
+});
+elements.breakReminderDialog.addEventListener("close", () => {
+  sessionStorage.setItem(BREAK_REMINDER_DISMISSED_KEY, "1");
+  window.clearTimeout(breakReminderTimer);
 });
 
 elements.journalDialog.addEventListener("click", (event) => {
