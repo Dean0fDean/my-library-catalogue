@@ -144,6 +144,10 @@ const elements = {
   dreamTimeInput: document.querySelector("#dream-time-input"),
   dreamTextInput: document.querySelector("#dream-text-input"),
   dreamRelatedOptions: document.querySelector("#dream-related-options"),
+  dreamAnalysisDialog: document.querySelector("#dream-analysis-dialog"),
+  dreamAnalysisForm: document.querySelector("#dream-analysis-form"),
+  dreamAnalysisId: document.querySelector("#dream-analysis-id"),
+  dreamAnalysisSummary: document.querySelector("#dream-analysis-summary"),
   printSheet: document.querySelector("#print-sheet"),
   storyList: document.querySelector("#story-list"),
   storyCount: document.querySelector("#story-count"),
@@ -3048,6 +3052,212 @@ function dreamSymbolIcon(value) {
   }[value] || "&#9790;";
 }
 
+function analysisCategoryLabel(key) {
+  return {
+    compensatory: "Compensatory dream",
+    prospective: "Prospective dream",
+    big: "Big / archetypal dream",
+    reductive: "Reductive dream",
+    prophetic: "Prophetic-seeming dream",
+  }[key] || key;
+}
+
+function likelihoodLabel(score) {
+  if (score >= 7) return "strong possibility";
+  if (score >= 4) return "moderate possibility";
+  return "tentative possibility";
+}
+
+function keywordScore(text, words, weight = 1) {
+  return words.reduce(
+    (score, word) => score + (text.includes(word) ? weight : 0),
+    0,
+  );
+}
+
+function uniqueDreamImages(dream) {
+  const source = [dream.symbols, dream.archetypes, dream.motifs]
+    .filter(Boolean)
+    .join(", ");
+  return [
+    ...new Set(
+      source
+        .split(/[,;\n]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ].slice(0, 6);
+}
+
+function createJungianAnalysis(dream, wakingContext, focusQuestion) {
+  const text = [
+    dream.dream,
+    dream.archetypes,
+    dream.motifs,
+    dream.symbols,
+    wakingContext,
+  ]
+    .join(" ")
+    .toLocaleLowerCase();
+  const scores = {
+    compensatory:
+      3 +
+      keywordScore(text, [
+        "opposite",
+        "contrast",
+        "shadow",
+        "denied",
+        "hidden",
+        "forbidden",
+        "balance",
+      ]),
+    prospective: keywordScore(
+      text,
+      [
+        "future",
+        "tomorrow",
+        "journey",
+        "road",
+        "path",
+        "door",
+        "threshold",
+        "choice",
+        "new",
+        "change",
+        "becoming",
+      ],
+      2,
+    ),
+    big:
+      keywordScore(
+        text,
+        [
+          "god",
+          "goddess",
+          "king",
+          "queen",
+          "wizard",
+          "dragon",
+          "world",
+          "cosmic",
+          "ancient",
+          "temple",
+          "death",
+          "rebirth",
+          "ocean",
+          "sun",
+          "moon",
+        ],
+        2,
+      ) +
+      (dream.dream.length > 1200 ? 3 : 0) +
+      (dream.archetypes ? 2 : 0),
+    reductive: keywordScore(
+      text,
+      [
+        "fall",
+        "collapse",
+        "failure",
+        "humiliation",
+        "lost",
+        "broken",
+        "powerless",
+        "small",
+        "ruin",
+      ],
+      2,
+    ),
+    prophetic: keywordScore(
+      text,
+      ["prediction", "prophecy", "foretell", "came true", "deja vu"],
+      2,
+    ),
+  };
+  if (!scores.prospective) scores.prospective = 2;
+  const categories = Object.entries(scores)
+    .map(([key, score]) => ({
+      key,
+      label: analysisCategoryLabel(key),
+      score,
+      likelihood: likelihoodLabel(score),
+      note:
+        key === "prophetic"
+          ? "This describes a felt resemblance to events, not evidence that a dream predicts the future."
+          : "",
+    }))
+    .sort((first, second) => second.score - first.score);
+  const primary = categories[0];
+  const images = uniqueDreamImages(dream);
+  const contextNote = wakingContext
+    ? `The waking situation you supplied may help locate the tension or possibility the dream is exploring.`
+    : "No waking-life context was supplied, so this interpretation is especially tentative. Jungian work normally compares the dream with the dreamer's conscious situation.";
+  return {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    wakingContext,
+    focusQuestion,
+    primaryCategory: primary.key,
+    categories,
+    overview: `The strongest available lens is ${primary.label.toLocaleLowerCase()}, but this is a ${primary.likelihood}, not a classification. ${contextNote}`,
+    amplification: images.length
+      ? `Images worth amplifying through your own memories, cultural associations, stories, and art include ${images.join(", ")}.`
+      : "Choose the images with the strongest emotional charge and write your personal associations before consulting general symbol traditions.",
+    reflectionQuestions: [
+      focusQuestion ||
+        "What conscious attitude, plan, fear, or certainty might this dream be balancing or enlarging?",
+      "Which figure or image feels most unlike your usual conscious attitude?",
+      "If every figure represented part of you, what quality would each contribute?",
+      "What small waking-life experiment could honour the dream without obeying it literally?",
+    ],
+    sources: [
+      "C. G. Jung, Man and His Symbols",
+      "C. G. Jung, The Structure and Dynamics of the Psyche (Collected Works, Vol. 8)",
+      "C. G. Jung, The Practice of Psychotherapy (Collected Works, Vol. 16)",
+      "C. G. Jung, Modern Man in Search of a Soul",
+    ],
+    disclaimer:
+      "This automated reflection is uncertain and educational. It does not diagnose mental illness, establish universal symbol meanings, or verify prophecy. Distressing or persistent experiences are best discussed with a qualified professional.",
+  };
+}
+
+function renderDreamAnalysis(analysis) {
+  return `
+    <article class="dream-analysis">
+      <div class="dream-analysis-heading">
+        <div>
+          <p class="eyebrow">SAVED JUNGIAN REFLECTION</p>
+          <h5>${escapeHtml(analysisCategoryLabel(analysis.primaryCategory))}</h5>
+        </div>
+        <time>${escapeHtml(new Date(analysis.createdAt).toLocaleDateString())}</time>
+      </div>
+      <div class="dream-analysis-categories">
+        ${(analysis.categories || [])
+          .slice(0, 3)
+          .map(
+            (category) =>
+              `<span><strong>${escapeHtml(category.label)}</strong>${escapeHtml(category.likelihood)}</span>`,
+          )
+          .join("")}
+      </div>
+      <p>${escapeHtml(analysis.overview)}</p>
+      <p><strong>Amplification:</strong> ${escapeHtml(analysis.amplification)}</p>
+      <div class="dream-analysis-questions">
+        <strong>Questions for your own analysis</strong>
+        <ul>${(analysis.reflectionQuestions || [])
+          .map((question) => `<li>${escapeHtml(question)}</li>`)
+          .join("")}</ul>
+      </div>
+      <details>
+        <summary>Sources and limits</summary>
+        <ul>${(analysis.sources || [])
+          .map((source) => `<li>${escapeHtml(source)}</li>`)
+          .join("")}</ul>
+        <p>${escapeHtml(analysis.disclaimer)}</p>
+      </details>
+    </article>
+  `;
+}
+
 function renderDreams() {
   if (!currentAccount) return;
   const accountDreams = ownedByCurrent(dreams).sort((first, second) =>
@@ -3091,8 +3301,14 @@ function renderDreams() {
                     .join("")}</div>`
                 : ""
             }
+            <div class="dream-analysis-history">
+              ${(dream.analyses || []).length
+                ? dream.analyses.map(renderDreamAnalysis).join("")
+                : '<p class="dream-analysis-empty">No saved Jungian reflections yet.</p>'}
+            </div>
           </details>
           <div class="dream-card-actions">
+            <button type="button" data-dream-action="analyse" data-id="${dream.id}">Analyse</button>
             <button type="button" data-dream-action="edit" data-id="${dream.id}">Edit</button>
             <button type="button" data-dream-action="delete" data-id="${dream.id}">Delete</button>
           </div>
@@ -3162,6 +3378,7 @@ function saveDreamEntry(formData) {
     symbols: formData.get("symbols").trim(),
     symbolIcon: formData.get("symbolIcon") || "moon",
     relatedDreamIds: formData.getAll("relatedDreamIds"),
+    analyses: previous?.analyses || [],
     createdAt: previous?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ownerId: currentAccount.id,
@@ -3175,7 +3392,59 @@ function saveDreamEntry(formData) {
   renderDreams();
   renderProfileInsights();
   elements.dreamDialog.close();
+  awardDreamRunes(entry).catch(() => {
+    showToast("Dream saved. Rune rewards will update when online.");
+  });
   showToast(previous ? `"${entry.title}" updated.` : `"${entry.title}" recorded.`);
+}
+
+async function awardDreamRunes(dream) {
+  await syncAccountData();
+  const data = await apiRequest("dream-reward", {
+    method: "POST",
+    body: {
+      dreamId: dream.id,
+      hasNotes: Boolean(dream.archetypes || dream.motifs || dream.symbols),
+    },
+  });
+  if (data.runesAwarded > 0) {
+    await loadLearningNook();
+    showToast(
+      `The Parliament of Owls awarded ${data.runesAwarded} Runes for your dream journal.`,
+    );
+  }
+}
+
+function openDreamAnalysis(dreamId) {
+  const dream = dreams.find(
+    (item) => item.id === dreamId && item.ownerId === currentAccount?.id,
+  );
+  if (!dream) return;
+  elements.dreamAnalysisForm.reset();
+  elements.dreamAnalysisId.value = dream.id;
+  elements.dreamAnalysisSummary.textContent =
+    `"${dream.title}" — ${dreamDateLabel(dream.dreamDate)}`;
+  elements.dreamAnalysisDialog.showModal();
+}
+
+function saveDreamAnalysis(formData) {
+  const dream = dreams.find(
+    (item) =>
+      item.id === formData.get("dreamId") &&
+      item.ownerId === currentAccount?.id,
+  );
+  if (!dream) return;
+  const analysis = createJungianAnalysis(
+    dream,
+    formData.get("wakingContext").trim(),
+    formData.get("focusQuestion").trim(),
+  );
+  dream.analyses = [analysis, ...(dream.analyses || [])];
+  dream.updatedAt = new Date().toISOString();
+  saveDreams();
+  renderDreams();
+  elements.dreamAnalysisDialog.close();
+  showToast("Jungian reflection saved with this dream.");
 }
 
 function deleteDream(id) {
@@ -4836,6 +5105,9 @@ document
   .querySelector("#close-dream-button")
   .addEventListener("click", () => elements.dreamDialog.close());
 document
+  .querySelector("#close-dream-analysis")
+  .addEventListener("click", () => elements.dreamAnalysisDialog.close());
+document
   .querySelector("#close-reader-profile-button")
   .addEventListener("click", () => elements.readerProfileDialog.close());
 document
@@ -4920,6 +5192,13 @@ elements.dreamForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.dreamForm.reportValidity()) {
     saveDreamEntry(new FormData(elements.dreamForm));
+  }
+});
+
+elements.dreamAnalysisForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.dreamAnalysisForm.reportValidity()) {
+    saveDreamAnalysis(new FormData(elements.dreamAnalysisForm));
   }
 });
 
@@ -5106,6 +5385,12 @@ elements.dreamDialog.addEventListener("click", (event) => {
   if (event.target === elements.dreamDialog) elements.dreamDialog.close();
 });
 
+elements.dreamAnalysisDialog.addEventListener("click", (event) => {
+  if (event.target === elements.dreamAnalysisDialog) {
+    elements.dreamAnalysisDialog.close();
+  }
+});
+
 elements.debateInviteDialog.addEventListener("click", (event) => {
   if (event.target === elements.debateInviteDialog) {
     elements.debateInviteDialog.close();
@@ -5217,6 +5502,9 @@ elements.journalGrid.addEventListener("click", (event) => {
 elements.dreamList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-dream-action]");
   if (!button) return;
+  if (button.dataset.dreamAction === "analyse") {
+    openDreamAnalysis(button.dataset.id);
+  }
   if (button.dataset.dreamAction === "edit") openDreamForm(button.dataset.id);
   if (button.dataset.dreamAction === "delete") deleteDream(button.dataset.id);
 });
