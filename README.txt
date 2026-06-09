@@ -55,12 +55,19 @@ saving passages, sharing recommendations, and inspiring wishlist additions.
 Journal milestones and newly shared reflections can also generate achievements
 and notifications.
 
+A notification chime in the sticky header displays the unread count and opens
+the notifications panel when selected. Readers who send book recommendations
+can edit the recommended title, author, and message or delete the
+recommendation; these controls are restricted to the original sender.
+
 Book photos are compressed and synchronized separately so they persist across
 devices and deployments. Catalogues are alphabetical and initially show eight
 books, with a Show all control for longer collections.
 
 Book cards support Read, Busy Reading, and To Be Read statuses. Clicking a card
 opens the full uploaded picture of that copy when one is available.
+Each card also has an Edit details action for changing the title, author, and
+genre while preserving its cover, rating, and reading status.
 
 A small reading fact appears beneath the header and can be dismissed by clicking
 it. Administrators can add or remove shared reading facts from the Community
