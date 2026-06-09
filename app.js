@@ -9,6 +9,7 @@ const SHARES_STORAGE_KEY = "my-library-shares-v1";
 const API_TOKEN_KEY = "my-library-api-token-v1";
 const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
 const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
+const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
 
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
@@ -126,6 +127,18 @@ const elements = {
   profileNotificationList: document.querySelector("#profile-notification-list"),
   markNotificationsRead: document.querySelector("#mark-notifications-read"),
   profileAchievementGrid: document.querySelector("#profile-achievement-grid"),
+  dreamList: document.querySelector("#dream-list"),
+  dreamEmpty: document.querySelector("#dream-empty"),
+  dreamDialog: document.querySelector("#dream-dialog"),
+  dreamForm: document.querySelector("#dream-form"),
+  dreamDialogTitle: document.querySelector("#dream-dialog-title"),
+  dreamIdInput: document.querySelector("#dream-id-input"),
+  dreamTitleInput: document.querySelector("#dream-title-input"),
+  dreamDateInput: document.querySelector("#dream-date-input"),
+  dreamTimeInput: document.querySelector("#dream-time-input"),
+  dreamTextInput: document.querySelector("#dream-text-input"),
+  dreamRelatedOptions: document.querySelector("#dream-related-options"),
+  printSheet: document.querySelector("#print-sheet"),
   storyList: document.querySelector("#story-list"),
   storyCount: document.querySelector("#story-count"),
   storyEmpty: document.querySelector("#story-empty"),
@@ -273,6 +286,7 @@ let announcements = [];
 let quandaries = [];
 let creativeWriting = loadArray(CREATIVE_WRITING_STORAGE_KEY);
 let wordhub = loadArray(WORDHUB_STORAGE_KEY);
+let dreams = loadArray(DREAMS_STORAGE_KEY);
 let storeItems = [];
 let equippedTheme = "";
 let equippedFrame = "";
@@ -339,7 +353,7 @@ function storeApiSession(token) {
 
 function adoptLocalAccount(localAccount, onlineAccount) {
   if (!localAccount || localAccount.id === onlineAccount.id) return;
-  [books, readingLog, passages, wishlist, creativeWriting, wordhub].forEach((items) => {
+  [books, readingLog, passages, wishlist, creativeWriting, wordhub, dreams].forEach((items) => {
     items.forEach((item) => {
       if (item.ownerId === localAccount.id) item.ownerId = onlineAccount.id;
     });
@@ -350,6 +364,7 @@ function adoptLocalAccount(localAccount, onlineAccount) {
   saveWishlist();
   saveCreativeWriting();
   saveWordhub();
+  saveDreams();
 }
 
 function loadArray(key) {
@@ -407,6 +422,12 @@ function saveWordhub() {
   return saved;
 }
 
+function saveDreams() {
+  const saved = saveCollection(DREAMS_STORAGE_KEY, dreams);
+  if (saved) scheduleDataSync();
+  return saved;
+}
+
 function saveAccounts() {
   return saveCollection(ACCOUNTS_STORAGE_KEY, accounts);
 }
@@ -455,7 +476,7 @@ function migrateAccountData() {
   );
   if (realAccount && testAccounts.length) {
     const testIds = new Set(testAccounts.map((account) => account.id));
-    [books, readingLog, passages, wishlist, creativeWriting, wordhub].forEach((items) => {
+    [books, readingLog, passages, wishlist, creativeWriting, wordhub, dreams].forEach((items) => {
       items.forEach((item) => {
         if (testIds.has(item.ownerId)) item.ownerId = realAccount.id;
       });
@@ -493,6 +514,7 @@ function migrateAccountData() {
   let wishlistChanged = false;
   let creativeWritingChanged = false;
   let wordhubChanged = false;
+  let dreamsChanged = false;
   books.forEach((item) => {
     if (!item.ownerId) {
       item.ownerId = admin.id;
@@ -529,6 +551,12 @@ function migrateAccountData() {
       wordhubChanged = true;
     }
   });
+  dreams.forEach((item) => {
+    if (!item.ownerId) {
+      item.ownerId = admin.id;
+      dreamsChanged = true;
+    }
+  });
   if (changedAccounts) saveAccounts();
   if (booksChanged) saveBooks();
   if (logsChanged) saveReadingLog();
@@ -536,6 +564,7 @@ function migrateAccountData() {
   if (wishlistChanged) saveWishlist();
   if (creativeWritingChanged) saveCreativeWriting();
   if (wordhubChanged) saveWordhub();
+  if (dreamsChanged) saveDreams();
 }
 
 function normalize(value) {
@@ -863,6 +892,9 @@ function cloudDataFor(accountId) {
     wordhub: wordhub
       .filter((item) => item.ownerId === accountId)
       .map(cloudSafeItem),
+    dreams: dreams
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
   };
 }
 
@@ -874,6 +906,7 @@ function hasCloudData(data) {
     "wishlist",
     "creativeWriting",
     "wordhub",
+    "dreams",
   ].some(
     (key) => Array.isArray(data[key]) && data[key].length > 0,
   );
@@ -957,12 +990,18 @@ async function loadAccountData() {
     currentAccount.id,
     cloud.wordhub || [],
   );
+  dreams = replaceAccountItems(
+    dreams,
+    currentAccount.id,
+    cloud.dreams || [],
+  );
   saveCollection(STORAGE_KEY, books);
   saveCollection(LOG_STORAGE_KEY, readingLog);
   saveCollection(PASSAGE_STORAGE_KEY, passages);
   saveCollection(WISHLIST_STORAGE_KEY, wishlist);
   saveCollection(CREATIVE_WRITING_STORAGE_KEY, creativeWriting);
   saveCollection(WORDHUB_STORAGE_KEY, wordhub);
+  saveCollection(DREAMS_STORAGE_KEY, dreams);
   isApplyingCloudData = false;
   await Promise.all(
     booksFor(currentAccount.id)
@@ -1104,6 +1143,7 @@ async function showAuthenticatedApp(account) {
   renderJournals();
   renderStories();
   renderWordhub();
+  renderDreams();
   renderCommunity();
   if (dailyStreakRewardEarned) {
     showDailyStreakReward();
@@ -2901,6 +2941,270 @@ function deleteWordhubEntry(id) {
   showToast(`"${entry.word}" removed.`);
 }
 
+function dreamDateLabel(value) {
+  return journalDateLabel(value);
+}
+
+function dreamTimeLabel(value) {
+  if (!value) return "";
+  const [hours, minutes] = value.split(":").map(Number);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+}
+
+function dreamNote(label, value) {
+  return value
+    ? `<div><strong>${label}</strong><p>${escapeHtml(value)}</p></div>`
+    : "";
+}
+
+function renderDreams() {
+  if (!currentAccount) return;
+  const accountDreams = ownedByCurrent(dreams).sort((first, second) =>
+    String(second.dreamDate).localeCompare(String(first.dreamDate)),
+  );
+  const dreamById = new Map(accountDreams.map((dream) => [dream.id, dream]));
+  elements.dreamList.innerHTML = accountDreams
+    .map((dream) => {
+      const related = (dream.relatedDreamIds || [])
+        .map((id) => dreamById.get(id))
+        .filter(Boolean);
+      return `
+        <article class="dream-card">
+          <div class="dream-card-heading">
+            <div>
+              <time datetime="${escapeHtml(dream.dreamDate)}">${escapeHtml(dreamDateLabel(dream.dreamDate))}</time>
+              <h4>${escapeHtml(dream.title)}</h4>
+            </div>
+            ${dream.rememberedTime ? `<span>Remembered around ${escapeHtml(dreamTimeLabel(dream.rememberedTime))}</span>` : ""}
+          </div>
+          <p class="dream-text">${escapeHtml(dream.dream)}</p>
+          <div class="dream-notes">
+            ${dreamNote("Archetypes", dream.archetypes)}
+            ${dreamNote("Motifs", dream.motifs)}
+            ${dreamNote("Symbols", dream.symbols)}
+          </div>
+          ${
+            related.length
+              ? `<div class="dream-connections"><strong>Connected dreams</strong>${related
+                  .map((item) => `<span>${escapeHtml(item.title)}</span>`)
+                  .join("")}</div>`
+              : ""
+          }
+          <div class="dream-card-actions">
+            <button type="button" data-dream-action="edit" data-id="${dream.id}">Edit</button>
+            <button type="button" data-dream-action="delete" data-id="${dream.id}">Delete</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+  elements.dreamList.hidden = accountDreams.length === 0;
+  elements.dreamEmpty.hidden = accountDreams.length > 0;
+}
+
+function openDreamForm(dreamId = "") {
+  const dream = dreams.find(
+    (item) => item.id === dreamId && item.ownerId === currentAccount?.id,
+  );
+  elements.dreamForm.reset();
+  elements.dreamIdInput.value = dream?.id || "";
+  elements.dreamDialogTitle.textContent = dream ? "Edit dream" : "Record a dream";
+  elements.dreamDateInput.value =
+    dream?.dreamDate || localDateString(new Date());
+  elements.dreamTitleInput.value = dream?.title || "";
+  elements.dreamTimeInput.value = dream?.rememberedTime || "";
+  elements.dreamTextInput.value = dream?.dream || "";
+  elements.dreamForm.elements.archetypes.value = dream?.archetypes || "";
+  elements.dreamForm.elements.motifs.value = dream?.motifs || "";
+  elements.dreamForm.elements.symbols.value = dream?.symbols || "";
+  const selected = new Set(dream?.relatedDreamIds || []);
+  const possibleConnections = ownedByCurrent(dreams)
+    .filter((item) => item.id !== dream?.id)
+    .sort((first, second) =>
+      String(second.dreamDate).localeCompare(String(first.dreamDate)),
+    );
+  elements.dreamRelatedOptions.innerHTML = possibleConnections.length
+    ? possibleConnections
+        .map(
+          (item) => `
+            <label>
+              <input type="checkbox" name="relatedDreamIds" value="${item.id}" ${selected.has(item.id) ? "checked" : ""} />
+              <span><strong>${escapeHtml(item.title)}</strong> ${escapeHtml(dreamDateLabel(item.dreamDate))}</span>
+            </label>
+          `,
+        )
+        .join("")
+    : "<p>Record another dream before adding a connection.</p>";
+  elements.dreamDialog.showModal();
+  window.setTimeout(() => elements.dreamTitleInput.focus(), 0);
+}
+
+function saveDreamEntry(formData) {
+  const id = formData.get("id");
+  const previous = dreams.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  const entry = {
+    id: previous?.id || crypto.randomUUID(),
+    title: formData.get("title").trim(),
+    dreamDate: formData.get("dreamDate"),
+    rememberedTime: formData.get("rememberedTime"),
+    dream: formData.get("dream").trim(),
+    archetypes: formData.get("archetypes").trim(),
+    motifs: formData.get("motifs").trim(),
+    symbols: formData.get("symbols").trim(),
+    relatedDreamIds: formData.getAll("relatedDreamIds"),
+    createdAt: previous?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ownerId: currentAccount.id,
+  };
+  if (previous) {
+    dreams = dreams.map((item) => (item.id === previous.id ? entry : item));
+  } else {
+    dreams.unshift(entry);
+  }
+  saveDreams();
+  renderDreams();
+  elements.dreamDialog.close();
+  showToast(previous ? `"${entry.title}" updated.` : `"${entry.title}" recorded.`);
+}
+
+function deleteDream(id) {
+  const dream = dreams.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!dream) return;
+  dreams = dreams
+    .filter((item) => item.id !== id)
+    .map((item) => ({
+      ...item,
+      relatedDreamIds: (item.relatedDreamIds || []).filter(
+        (relatedId) => relatedId !== id,
+      ),
+    }));
+  saveDreams();
+  renderDreams();
+  showToast(`"${dream.title}" deleted.`);
+}
+
+function printEmpty(message) {
+  return `<p class="print-empty">${escapeHtml(message)}</p>`;
+}
+
+function buildPrintContent(kind) {
+  if (kind === "collection") {
+    const entries = ownedByCurrent(books).sort((first, second) =>
+      first.title.localeCompare(second.title, undefined, { sensitivity: "base" }),
+    );
+    return {
+      title: "My Collection",
+      content: entries.length
+        ? `<ol>${entries
+            .map((book) => {
+              const status = {
+                read: "Read",
+                reading: "Busy reading",
+                unread: "To be read",
+              }[book.status] || "To be read";
+              return `<li><strong>${escapeHtml(book.title)}</strong><span>by ${escapeHtml(book.author)} / ${escapeHtml(book.genre || "Unspecified genre")} / ${status}${book.rating ? ` / ${book.rating} of 5 stars` : ""}</span></li>`;
+            })
+            .join("")}</ol>`
+        : printEmpty("No books have been added to this collection."),
+    };
+  }
+  if (kind === "passages") {
+    const entries = ownedByCurrent(passages);
+    return {
+      title: "Saved Passages",
+      content: entries.length
+        ? entries
+            .map(
+              (passage) => `
+                <article>
+                  <h2>${escapeHtml(passage.title)}</h2>
+                  <p class="print-meta">by ${escapeHtml(passage.author)} / page ${escapeHtml(passage.page)}</p>
+                  <blockquote>${escapeHtml(passage.text || "[Photographed passage]")}</blockquote>
+                  ${passage.reflection ? `<p><strong>Reflection:</strong> ${escapeHtml(passage.reflection)}</p>` : ""}
+                </article>
+              `,
+            )
+            .join("")
+        : printEmpty("No passages have been saved."),
+    };
+  }
+  if (kind === "journal") {
+    const entries = [...journals].sort((first, second) =>
+      String(second.entryDate).localeCompare(String(first.entryDate)),
+    );
+    return {
+      title: "Journal Entries",
+      content: entries.length
+        ? entries
+            .map(
+              (entry) => `
+                <article>
+                  <h2>${escapeHtml(journalDateLabel(entry.entryDate))}</h2>
+                  <p class="print-meta">${entry.books?.length ? entry.books.map((book) => escapeHtml(book.title)).join(", ") : "General reflection"} / ${entry.isShared ? "Shared" : "Private"}</p>
+                  <p>${escapeHtml(entry.reflection)}</p>
+                </article>
+              `,
+            )
+            .join("")
+        : printEmpty("No journal entries have been written."),
+    };
+  }
+  const entries = ownedByCurrent(creativeWriting).sort((first, second) =>
+    String(second.updatedAt).localeCompare(String(first.updatedAt)),
+  );
+  return {
+    title: "Writing Projects",
+    content: entries.length
+      ? entries
+          .map(
+            (story) => `
+              <article>
+                <h2>${escapeHtml(story.title || "Untitled story")}</h2>
+                <p class="print-meta">${escapeHtml(story.genre || "Unspecified genre")} / ${escapeHtml(story.pov || "Unspecified point of view")} / ${storyWordTotal(story.draft)} words</p>
+                ${story.premise ? `<p><strong>Premise:</strong> ${escapeHtml(story.premise)}</p>` : ""}
+                ${story.outline ? `<p><strong>Outline:</strong> ${escapeHtml(story.outline)}</p>` : ""}
+              </article>
+            `,
+          )
+          .join("")
+      : printEmpty("No writing projects have been created."),
+  };
+}
+
+function printList(kind) {
+  const printable = buildPrintContent(kind);
+  const previousTitle = document.title;
+  elements.printSheet.innerHTML = `
+    <header>
+      <p>MY LIBRARY</p>
+      <h1>${escapeHtml(printable.title)}</h1>
+      <span>${escapeHtml(currentAccount?.username || "Reader")} / Printed ${escapeHtml(new Date().toLocaleDateString())}</span>
+    </header>
+    <main>${printable.content}</main>
+  `;
+  elements.printSheet.setAttribute("aria-hidden", "false");
+  document.title = `${printable.title} - My Library`;
+  const cleanUp = () => {
+    document.title = previousTitle;
+    elements.printSheet.setAttribute("aria-hidden", "true");
+    window.removeEventListener("afterprint", cleanUp);
+  };
+  window.addEventListener("afterprint", cleanUp);
+  window.print();
+  window.setTimeout(cleanUp, 1000);
+}
+
 function avatarMarkup(account) {
   return account.profileImage
     ? `<img src="${account.profileImage}" alt="" />`
@@ -4337,6 +4641,12 @@ document
   .querySelector("#close-profile-button")
   .addEventListener("click", () => elements.profileDialog.close());
 document
+  .querySelector("#open-dream-button")
+  .addEventListener("click", () => openDreamForm());
+document
+  .querySelector("#close-dream-button")
+  .addEventListener("click", () => elements.dreamDialog.close());
+document
   .querySelector("#close-reader-profile-button")
   .addEventListener("click", () => elements.readerProfileDialog.close());
 document
@@ -4407,6 +4717,13 @@ elements.profileForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.profileForm.reportValidity()) {
     saveProfile(new FormData(elements.profileForm));
+  }
+});
+
+elements.dreamForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.dreamForm.reportValidity()) {
+    saveDreamEntry(new FormData(elements.dreamForm));
   }
 });
 
@@ -4574,6 +4891,10 @@ elements.journalDialog.addEventListener("click", (event) => {
   if (event.target === elements.journalDialog) elements.journalDialog.close();
 });
 
+elements.dreamDialog.addEventListener("click", (event) => {
+  if (event.target === elements.dreamDialog) elements.dreamDialog.close();
+});
+
 elements.debateInviteDialog.addEventListener("click", (event) => {
   if (event.target === elements.debateInviteDialog) {
     elements.debateInviteDialog.close();
@@ -4680,6 +5001,17 @@ elements.journalGrid.addEventListener("click", (event) => {
   if (button?.dataset.journalAction === "delete") {
     deleteJournalEntry(button.dataset.id);
   }
+});
+
+elements.dreamList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-dream-action]");
+  if (!button) return;
+  if (button.dataset.dreamAction === "edit") openDreamForm(button.dataset.id);
+  if (button.dataset.dreamAction === "delete") deleteDream(button.dataset.id);
+});
+
+document.querySelectorAll("[data-print-list]").forEach((button) => {
+  button.addEventListener("click", () => printList(button.dataset.printList));
 });
 
 function handleReaderAction(event) {
