@@ -61,6 +61,8 @@ const elements = {
   coverPreview: document.querySelector("#cover-preview"),
   passageDialog: document.querySelector("#passage-dialog"),
   passageForm: document.querySelector("#passage-form"),
+  passageDialogTitle: document.querySelector("#passage-dialog-title"),
+  passageSubmitButton: document.querySelector("#passage-submit-button"),
   passagePhotoInput: document.querySelector("#passage-photo-input"),
   passageTextInput: document.querySelector("#passage-text-input"),
   passageTitleInput: document.querySelector("#passage-title-input"),
@@ -121,6 +123,8 @@ const elements = {
   profileStreakBest: document.querySelector("#profile-streak-best"),
   learningRunesCount: document.querySelector("#learning-runes-count"),
   learningStreakCount: document.querySelector("#learning-streak-count"),
+  streakRewardDialog: document.querySelector("#streak-reward-dialog"),
+  streakRewardCount: document.querySelector("#streak-reward-count"),
   learningTaskGrid: document.querySelector("#learning-task-grid"),
   chippingsRunesCount: document.querySelector("#chippings-runes-count"),
   chippingsGrid: document.querySelector("#chippings-grid"),
@@ -239,6 +243,7 @@ let openMenuId = null;
 let activeCoverBookId = null;
 let pendingCoverImage = "";
 let passageMode = "photo";
+let activePassageId = null;
 let pageImage = null;
 let highlightRect = null;
 let highlightStart = null;
@@ -977,9 +982,6 @@ async function showAuthenticatedApp(account) {
   }
   elements.authScreen.hidden = true;
   elements.appShell.hidden = false;
-  if (dailyStreakRewardEarned) {
-    showToast(`Daily streak: +5 Runes. Day ${streakCurrent}!`);
-  }
   updateProfileDisplay();
   renderBooks();
   renderWishlist();
@@ -987,6 +989,9 @@ async function showAuthenticatedApp(account) {
   renderPassages();
   renderJournals();
   renderCommunity();
+  if (dailyStreakRewardEarned) {
+    showDailyStreakReward();
+  }
   await refreshCommunity();
   await refreshProfileActivity().catch((error) => showToast(error.message));
   window.clearInterval(notificationPollTimer);
@@ -1333,6 +1338,12 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => {
     elements.toast.classList.remove("visible");
   }, 2200);
+}
+
+function showDailyStreakReward() {
+  elements.streakRewardCount.textContent = streakCurrent;
+  elements.streakRewardDialog.showModal();
+  dailyStreakRewardEarned = false;
 }
 
 function ensureAudioContext() {
@@ -2244,12 +2255,48 @@ function fillPassageAuthor() {
   if (matchingBook) elements.passageAuthorInput.value = matchingBook.author;
 }
 
-function openPassageForm() {
+function openPassageForm(passageId = null) {
+  const passage = passageId
+    ? passages.find(
+        (item) =>
+          item.id === passageId && item.ownerId === currentAccount?.id,
+      )
+    : null;
+  activePassageId = passage?.id || null;
   elements.passageForm.reset();
   resetHighlightCanvas();
-  setPassageMode("photo");
+  elements.passageDialogTitle.textContent = passage
+    ? "Edit passage"
+    : "Save a passage";
+  elements.passageSubmitButton.textContent = passage
+    ? "Save changes"
+    : "Save passage";
+  if (passage) {
+    elements.passageTitleInput.value = passage.title;
+    elements.passageAuthorInput.value = passage.author;
+    elements.passagePageInput.value = passage.page;
+    elements.passageReflectionInput.value = passage.reflection || "";
+    elements.passageTextInput.value = passage.text || "";
+    setPassageMode(passage.mode);
+    if (passage.mode === "photo" && passage.image) {
+      loadPageImage(passage.image)
+        .then(() => {
+          elements.passagePhotoInput.required = false;
+        })
+        .catch((error) => showToast(error.message));
+    }
+  } else {
+    setPassageMode("photo");
+  }
   elements.passageDialog.showModal();
-  window.setTimeout(() => elements.passagePhotoInput.focus(), 0);
+  window.setTimeout(
+    () =>
+      (passage
+        ? elements.passageTitleInput
+        : elements.passagePhotoInput
+      ).focus(),
+    0,
+  );
 }
 
 function updatePassageBookOptions() {
@@ -2299,6 +2346,13 @@ function renderPassage(passage) {
           data-id="${passage.id}"
         >Share passage</button>
         <div class="passage-card-footer">
+          <button
+            class="passage-edit-button"
+            type="button"
+            data-passage-action="edit"
+            data-id="${passage.id}"
+            aria-label="Edit saved passage from ${escapeHtml(passage.title)}"
+          >Edit</button>
           <button
             class="passage-delete-button"
             type="button"
@@ -2350,15 +2404,22 @@ function renderPassages() {
   }
 }
 
-function addPassage(formData) {
+function savePassage(formData) {
   if (passageMode === "photo" && !pageImage) {
     elements.passagePhotoInput.setCustomValidity("Please add a page photo.");
     elements.passagePhotoInput.reportValidity();
     return;
   }
   elements.passagePhotoInput.setCustomValidity("");
+  const existingPassage = activePassageId
+    ? passages.find(
+        (item) =>
+          item.id === activePassageId &&
+          item.ownerId === currentAccount?.id,
+      )
+    : null;
   const passage = {
-    id: crypto.randomUUID(),
+    id: existingPassage?.id || crypto.randomUUID(),
     mode: passageMode,
     title: formData.get("title").trim(),
     author: formData.get("author").trim(),
@@ -2369,17 +2430,28 @@ function addPassage(formData) {
         ? elements.highlightCanvas.toDataURL("image/jpeg", 0.78)
         : "",
     reflection: formData.get("reflection").trim(),
-    createdAt: new Date().toISOString(),
+    createdAt: existingPassage?.createdAt || new Date().toISOString(),
     ownerId: currentAccount.id,
   };
-  passages.unshift(passage);
+  const previousPassages = [...passages];
+  if (existingPassage) {
+    passages = passages.map((item) =>
+      item.id === existingPassage.id ? passage : item,
+    );
+  } else {
+    passages.unshift(passage);
+  }
   if (!savePassages()) {
-    passages.shift();
+    passages = previousPassages;
     return;
   }
   renderPassages();
   elements.passageDialog.close();
-  showToast(`Passage from "${passage.title}" saved.`);
+  showToast(
+    existingPassage
+      ? `Passage from "${passage.title}" updated.`
+      : `Passage from "${passage.title}" saved.`,
+  );
   refreshProfileActivity().catch(() => {});
 }
 
@@ -3730,6 +3802,12 @@ document
   .querySelector("#close-passage-button")
   .addEventListener("click", () => elements.passageDialog.close());
 document
+  .querySelector("#close-streak-reward-button")
+  .addEventListener("click", () => elements.streakRewardDialog.close());
+document
+  .querySelector("#acknowledge-streak-reward")
+  .addEventListener("click", () => elements.streakRewardDialog.close());
+document
   .querySelector("#open-journal-button")
   .addEventListener("click", openJournalForm);
 document
@@ -3884,7 +3962,7 @@ elements.coverForm.addEventListener("submit", (event) => {
 elements.passageForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.passageForm.reportValidity()) {
-    addPassage(new FormData(elements.passageForm));
+    savePassage(new FormData(elements.passageForm));
   }
 });
 
@@ -3915,6 +3993,12 @@ elements.coverDialog.addEventListener("click", (event) => {
 
 elements.passageDialog.addEventListener("click", (event) => {
   if (event.target === elements.passageDialog) elements.passageDialog.close();
+});
+
+elements.streakRewardDialog.addEventListener("click", (event) => {
+  if (event.target === elements.streakRewardDialog) {
+    elements.streakRewardDialog.close();
+  }
 });
 
 elements.journalDialog.addEventListener("click", (event) => {
@@ -4009,6 +4093,9 @@ elements.passageGrid.addEventListener("click", (event) => {
   }
   if (button?.dataset.passageAction === "share") {
     openShareDialog("passage", button.dataset.id);
+  }
+  if (button?.dataset.passageAction === "edit") {
+    openPassageForm(button.dataset.id);
   }
 });
 
