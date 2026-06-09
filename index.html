@@ -1053,6 +1053,25 @@
               <p class="dream-journal-intro">
                 Capture remembered dreams, notice recurring imagery, and connect entries that belong together.
               </p>
+              <div class="dream-journal-stats" aria-label="Dream journal statistics">
+                <div><strong id="dream-profile-read-count">0</strong><span>Books read</span></div>
+                <div><strong id="dream-profile-entry-count">0</strong><span>Dreams recorded</span></div>
+              </div>
+              <aside
+                id="dream-fact-banner"
+                class="dream-fact-banner"
+                role="button"
+                tabindex="0"
+                aria-label="Dream fact. Click to dismiss."
+                hidden
+              >
+                <span class="dream-fact-orb" aria-hidden="true">&#9790;</span>
+                <div>
+                  <strong>DREAM NOTE</strong>
+                  <p id="dream-fact-text"></p>
+                </div>
+                <button id="dismiss-dream-fact" type="button" aria-label="Dismiss dream fact">X</button>
+              </aside>
               <div id="dream-list" class="dream-list" aria-live="polite"></div>
               <div id="dream-empty" class="dream-empty">
                 <strong>No dreams recorded yet.</strong>
@@ -1297,6 +1316,29 @@
                 <button class="primary-button" type="submit">Add fact</button>
               </form>
               <div id="admin-fact-list" class="admin-fact-list"></div>
+            </section>
+            <section class="admin-fact-panel admin-dream-fact-panel" aria-labelledby="admin-dream-fact-title">
+              <div>
+                <p class="eyebrow">DREAM JOURNAL NOTES</p>
+                <h3 id="admin-dream-fact-title">Dream facts</h3>
+                <p>Add careful, concise facts that rotate within every reader's Dream Journal.</p>
+              </div>
+              <form id="admin-dream-fact-form">
+                <label>
+                  <span>New dream fact</span>
+                  <textarea
+                    id="admin-dream-fact-input"
+                    name="fact"
+                    rows="3"
+                    maxlength="320"
+                    placeholder="For example: Dream recall is often strongest immediately after waking."
+                    required
+                  ></textarea>
+                </label>
+                <p class="form-error" id="admin-dream-fact-error" role="alert"></p>
+                <button class="primary-button" type="submit">Add dream fact</button>
+              </form>
+              <div id="admin-dream-fact-list" class="admin-fact-list"></div>
             </section>
             <section class="admin-quandary-panel" aria-labelledby="admin-quandary-title">
               <div>
