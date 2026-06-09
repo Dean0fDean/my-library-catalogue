@@ -1055,9 +1055,36 @@
                 Capture remembered dreams, notice recurring imagery, and connect entries that belong together.
               </p>
               <div class="dream-journal-stats" aria-label="Dream journal statistics">
-                <div><strong id="dream-profile-read-count">0</strong><span>Books read</span></div>
+                <div><strong id="dream-profile-symbol-count">0</strong><span>Est. number of symbols</span></div>
                 <div><strong id="dream-profile-entry-count">0</strong><span>Dreams recorded</span></div>
               </div>
+              <details class="archetype-guide">
+                <summary>
+                  <span>
+                    <strong>Consult the archetype guide</strong>
+                    <small>A searchable companion for your own reflections</small>
+                  </span>
+                </summary>
+                <div class="archetype-guide-body">
+                  <p>
+                    Archetypes are recurring patterns, not fixed definitions. Personal associations,
+                    culture, and the dream's context should guide your interpretation.
+                  </p>
+                  <label class="archetype-search">
+                    <span>Search archetypes</span>
+                    <input
+                      id="archetype-search-input"
+                      type="search"
+                      placeholder="Try shadow, guide, transformation..."
+                      autocomplete="off"
+                    />
+                  </label>
+                  <div id="archetype-reference-list" class="archetype-reference-list"></div>
+                  <p id="archetype-reference-empty" class="archetype-reference-empty" hidden>
+                    No archetypes match that search.
+                  </p>
+                </div>
+              </details>
               <aside
                 id="dream-fact-banner"
                 class="dream-fact-banner"
