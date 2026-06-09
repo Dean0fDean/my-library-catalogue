@@ -483,6 +483,28 @@ h1 {
   margin-bottom: 2.25rem;
 }
 
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-shrink: 0;
+}
+
+.print-list-button {
+  min-height: 48px;
+  padding: 0.8rem 1.1rem;
+  color: var(--forest);
+  background: transparent;
+  border: 1px solid rgba(23, 63, 49, 0.38);
+  font: 700 0.66rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.print-list-button:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
 h2 {
   margin-bottom: 0;
   font-size: clamp(2.4rem, 4vw, 4rem);
@@ -5820,5 +5842,319 @@ body.feature-menu-open::after {
   .writing-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+.dream-journal-panel {
+  grid-column: 1 / -1;
+}
+
+.dream-journal-intro {
+  max-width: 720px;
+  margin: -0.35rem 0 1.4rem;
+  color: rgba(23, 42, 34, 0.68);
+  line-height: 1.55;
+}
+
+.dream-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.dream-card {
+  min-width: 0;
+  padding: clamp(1.1rem, 3vw, 1.6rem);
+  background: rgba(255, 255, 255, 0.62);
+  border-left: 4px solid var(--terracotta);
+  box-shadow: 0 7px 20px rgba(23, 42, 34, 0.06);
+}
+
+.dream-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.dream-card-heading time,
+.dream-card-heading > span {
+  color: rgba(23, 42, 34, 0.62);
+  font: 700 0.6rem/1.4 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dream-card-heading h4 {
+  margin: 0.25rem 0 0;
+  font-size: 1.65rem;
+  font-weight: 400;
+}
+
+.dream-text {
+  margin: 1rem 0;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
+.dream-notes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.dream-notes > div {
+  min-width: 0;
+  padding: 0.9rem;
+  background: rgba(23, 63, 49, 0.055);
+}
+
+.dream-notes strong,
+.dream-connections > strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--forest);
+  font: 700 0.58rem/1.3 Arial, sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.dream-notes p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.dream-connections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.dream-connections > strong {
+  width: 100%;
+}
+
+.dream-connections span {
+  padding: 0.35rem 0.6rem;
+  color: var(--forest);
+  background: rgba(201, 137, 69, 0.18);
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.dream-card-actions {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.dream-card-actions button {
+  padding: 0.55rem 0.75rem;
+  color: var(--forest);
+  background: transparent;
+  border: 1px solid rgba(23, 63, 49, 0.28);
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dream-empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  border: 1px dashed rgba(23, 42, 34, 0.22);
+}
+
+.dream-empty[hidden],
+.dream-list[hidden] {
+  display: none;
+}
+
+.dream-empty p {
+  margin: 0.4rem 0 0;
+  color: rgba(23, 42, 34, 0.62);
+}
+
+#dream-form {
+  padding: clamp(1.5rem, 5vw, 2.75rem);
+}
+
+#dream-form > label,
+#dream-form .form-row,
+.dream-related-fieldset {
+  display: block;
+  margin-bottom: 1.2rem;
+}
+
+#dream-form .form-row {
+  display: grid;
+}
+
+#dream-form label > span,
+.dream-related-fieldset legend {
+  display: block;
+  margin-bottom: 0.5rem;
+  font: 700 0.66rem/1.3 Arial, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+#dream-form input[type="text"],
+#dream-form input[type="date"],
+#dream-form input[type="time"],
+#dream-form textarea {
+  width: 100%;
+  padding: 0.85rem 0.9rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(23, 42, 34, 0.25);
+  border-radius: 2px;
+  resize: vertical;
+}
+
+.dream-symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.dream-related-fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.dream-related-options {
+  max-height: 220px;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.65rem;
+  overflow-y: auto;
+  background: rgba(23, 63, 49, 0.045);
+  border: 1px solid var(--line);
+}
+
+.dream-related-options label {
+  display: flex;
+  align-items: start;
+  gap: 0.65rem;
+  padding: 0.5rem;
+}
+
+.dream-related-options label > span {
+  margin: 0 !important;
+  font: inherit !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.print-sheet {
+  display: none;
+}
+
+@media (max-width: 540px) {
+  .section-actions,
+  .dream-card-heading {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-actions button {
+    width: 100%;
+  }
+
+  .dream-notes,
+  .dream-symbol-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body {
+    color: #111;
+    background: #fff !important;
+  }
+
+  body > *:not(.print-sheet) {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block !important;
+    max-width: none;
+    color: #111;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  .print-sheet header {
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #111;
+  }
+
+  .print-sheet header p,
+  .print-sheet header span,
+  .print-sheet .print-meta {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    letter-spacing: 0.06em;
+  }
+
+  .print-sheet h1 {
+    margin: 0.3rem 0;
+    font-size: 26pt;
+  }
+
+  .print-sheet h2 {
+    margin: 0 0 0.2rem;
+    font-size: 15pt;
+  }
+
+  .print-sheet article,
+  .print-sheet li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-sheet article {
+    padding: 0 0 1rem;
+    margin: 0 0 1rem;
+    border-bottom: 1px solid #bbb;
+  }
+
+  .print-sheet ol {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+
+  .print-sheet li {
+    padding: 0 0 0.7rem 0.2rem;
+  }
+
+  .print-sheet li strong,
+  .print-sheet li span {
+    display: block;
+  }
+
+  .print-sheet li span,
+  .print-sheet .print-meta {
+    color: #444;
+  }
+
+  .print-sheet blockquote {
+    margin: 0.7rem 0;
+    padding-left: 1rem;
+    border-left: 3px solid #555;
+    white-space: pre-wrap;
   }
 }
