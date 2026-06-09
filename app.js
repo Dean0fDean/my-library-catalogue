@@ -13,6 +13,49 @@ const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
 const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 
+const DREAM_ARCHETYPES = [
+  { name: "The Self", group: "Central Jungian patterns", description: "Wholeness and the regulating centre of the psyche; often approached through mandalas, sacred centres, or unifying figures." },
+  { name: "The Persona", group: "Central Jungian patterns", description: "The social mask or role presented to the world, including tensions between public identity and private experience." },
+  { name: "The Shadow", group: "Central Jungian patterns", description: "Qualities the conscious personality rejects, hides, or has not yet recognised, including neglected strengths." },
+  { name: "Anima", group: "Central Jungian patterns", description: "A mediating inner figure traditionally described by Jung as feminine, connecting consciousness with feeling and the unconscious." },
+  { name: "Animus", group: "Central Jungian patterns", description: "A mediating inner figure traditionally described by Jung as masculine, connecting consciousness with meaning and conviction." },
+  { name: "The Ego", group: "Central Jungian patterns", description: "The dreamer's familiar conscious identity, often represented by the viewpoint or central character in a dream." },
+  { name: "The Mother", group: "Family and ancestral figures", description: "Nurture, origin, protection, containment, dependence, or an engulfing force; meaning depends on personal experience." },
+  { name: "The Father", group: "Family and ancestral figures", description: "Authority, order, law, inheritance, protection, judgement, or the principles by which life is organised." },
+  { name: "The Great Mother", group: "Family and ancestral figures", description: "The larger maternal pattern in its nourishing and terrible aspects: fertility, nature, shelter, devouring, and transformation." },
+  { name: "The Ancestor", group: "Family and ancestral figures", description: "Inherited memory, tradition, family patterns, cultural roots, or unfinished relationships with the past." },
+  { name: "The Divine Child", group: "Growth and development", description: "Vulnerability joined with future potential, renewal, new consciousness, and something small that may transform a life." },
+  { name: "The Orphan", group: "Growth and development", description: "Abandonment, exile, lost belonging, self-reliance, or the search for a dependable inner and outer home." },
+  { name: "Puer / Puella Aeternus", group: "Growth and development", description: "The eternal youth: imagination, possibility, spontaneity, and the difficulty of accepting limits or commitment." },
+  { name: "The Senex", group: "Growth and development", description: "Age, discipline, structure, responsibility, and wisdom, with a negative pole of rigidity, sterility, or excessive control." },
+  { name: "The Hero", group: "Journey and transformation", description: "The conscious personality confronting trials, separating from old dependencies, and seeking a larger way of being." },
+  { name: "The Seeker / Wanderer", group: "Journey and transformation", description: "Restlessness, pilgrimage, exploration, and the search for identity, truth, vocation, or a missing part of life." },
+  { name: "The Initiate", group: "Journey and transformation", description: "A person crossing into a new stage through testing, instruction, symbolic death, or acceptance into a community." },
+  { name: "The Sacrificed One", group: "Journey and transformation", description: "Necessary surrender, costly change, scapegoating, or the release of an identity that can no longer continue." },
+  { name: "Death and Rebirth", group: "Journey and transformation", description: "An archetypal process of ending, descent, dissolution, renewal, and the emergence of a changed personality." },
+  { name: "The Wise Old Man", group: "Guides and mediators", description: "Meaning, counsel, insight, and spiritual or intellectual guidance, sometimes appearing when conscious resources are exhausted." },
+  { name: "The Wise Old Woman", group: "Guides and mediators", description: "Embodied wisdom, intuition, healing knowledge, protection, or guidance rooted in nature, memory, and experience." },
+  { name: "The Guide / Mentor", group: "Guides and mediators", description: "A teacher, helper, or orienting presence that offers a tool, instruction, warning, or direction." },
+  { name: "The Psychopomp", group: "Guides and mediators", description: "A mediator between conscious and unconscious realms, often escorting the dreamer across boundaries or through descent." },
+  { name: "The Healer / Wounded Healer", group: "Guides and mediators", description: "Restoration that arises through attending to wounds, limits, compassion, and knowledge earned through suffering." },
+  { name: "The Trickster", group: "Disruptive figures", description: "Boundary-breaking instinct, humour, appetite, contradiction, deception, and creative disruption of a rigid attitude." },
+  { name: "The Double / Twin", group: "Disruptive figures", description: "An alternative identity, unlived possibility, rivalry, hidden similarity, or a split within the personality." },
+  { name: "The Adversary", group: "Disruptive figures", description: "Opposition, conflict, fear, or resistance that may guard something the dreamer needs to confront or integrate." },
+  { name: "The Outcast", group: "Disruptive figures", description: "Excluded experience, shame, difference, social rejection, or a neglected part seeking recognition and belonging." },
+  { name: "The Lover", group: "Relationship and creation", description: "Longing, union, attraction, devotion, beauty, and the urge to bridge separation within oneself or with another." },
+  { name: "The Companion", group: "Relationship and creation", description: "Loyalty, mutual support, shared endeavour, and qualities that accompany the ego through difficult territory." },
+  { name: "The Creator", group: "Relationship and creation", description: "The drive to give form to imagination through art, craft, work, parenthood, invention, or a new way of living." },
+  { name: "The Magician / Transformer", group: "Relationship and creation", description: "Knowledge of hidden processes, transformation, altered perspective, and the power or danger of influencing change." },
+  { name: "The Ruler", group: "Power and society", description: "Order, sovereignty, responsibility, control, leadership, and the question of who governs the inner or outer world." },
+  { name: "The Warrior", group: "Power and society", description: "Courage, boundaries, disciplined action, aggression, defence, and the focused pursuit of a difficult aim." },
+  { name: "The Rebel", group: "Power and society", description: "Resistance to authority, liberation from a dead system, protest, and the risk of defining oneself only through opposition." },
+  { name: "The Judge", group: "Power and society", description: "Conscience, discernment, guilt, evaluation, fairness, condemnation, or an internal authority deciding what is acceptable." },
+  { name: "The Animal", group: "Instinct and the more-than-human world", description: "Embodied instinct and species-specific qualities; the particular animal and the dreamer's associations are essential." },
+  { name: "The Tree / World Tree", group: "Instinct and the more-than-human world", description: "Growth, rootedness, ancestry, vertical connection, seasonal change, and the organisation of a living whole." },
+  { name: "The Mandala / Sacred Centre", group: "Instinct and the more-than-human world", description: "Images of centred wholeness, balance, enclosure, and psychic reorganisation, often appearing during disorientation." },
+  { name: "The Threshold Guardian", group: "Instinct and the more-than-human world", description: "A figure or obstacle at a boundary, testing readiness before the dreamer enters unfamiliar psychic territory." },
+];
+
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
   catalogueExpandButton: document.querySelector("#catalogue-expand-button"),
@@ -122,8 +165,11 @@ const elements = {
   profilePreviewImage: document.querySelector("#profile-preview-image"),
   profileError: document.querySelector("#profile-error"),
   profileInsightGrid: document.querySelector("#profile-insight-grid"),
-  dreamProfileReadCount: document.querySelector("#dream-profile-read-count"),
+  dreamProfileSymbolCount: document.querySelector("#dream-profile-symbol-count"),
   dreamProfileEntryCount: document.querySelector("#dream-profile-entry-count"),
+  archetypeSearchInput: document.querySelector("#archetype-search-input"),
+  archetypeReferenceList: document.querySelector("#archetype-reference-list"),
+  archetypeReferenceEmpty: document.querySelector("#archetype-reference-empty"),
   dreamFactBanner: document.querySelector("#dream-fact-banner"),
   dreamFactText: document.querySelector("#dream-fact-text"),
   profileNotificationCount: document.querySelector("#profile-notification-count"),
@@ -719,6 +765,21 @@ function readingSnapshot() {
   };
 }
 
+function listedDreamSymbols(value) {
+  return String(value || "")
+    .replace(/[•·]/g, ",")
+    .split(/[,;\n|]+/)
+    .map((symbol) => symbol.trim())
+    .filter(Boolean);
+}
+
+function estimatedDreamSymbolCount() {
+  return ownedByCurrent(dreams).reduce(
+    (total, dream) => total + listedDreamSymbols(dream.symbols).length,
+    0,
+  );
+}
+
 function renderProfileInsights() {
   if (!currentAccount) return;
   const snapshot = readingSnapshot();
@@ -732,7 +793,7 @@ function renderProfileInsights() {
     <div><strong>${formatDuration(snapshot.minutes)}</strong><span>Reading time</span></div>
     <div><strong>${averagePages}</strong><span>Pages per session</span></div>
   `;
-  elements.dreamProfileReadCount.textContent = snapshot.readBooks;
+  elements.dreamProfileSymbolCount.textContent = estimatedDreamSymbolCount();
   elements.dreamProfileEntryCount.textContent = snapshot.dreams;
 }
 
@@ -3022,6 +3083,42 @@ function dreamTimeLabel(value) {
         hour: "numeric",
         minute: "2-digit",
       });
+}
+
+function renderArchetypeReference() {
+  const query = elements.archetypeSearchInput.value.trim().toLowerCase();
+  const matches = DREAM_ARCHETYPES.filter((archetype) =>
+    [archetype.name, archetype.group, archetype.description]
+      .join(" ")
+      .toLowerCase()
+      .includes(query),
+  );
+  const groups = matches.reduce((result, archetype) => {
+    (result[archetype.group] ||= []).push(archetype);
+    return result;
+  }, {});
+  elements.archetypeReferenceList.innerHTML = Object.entries(groups)
+    .map(
+      ([group, archetypes]) => `
+        <section class="archetype-reference-group">
+          <h4>${escapeHtml(group)}</h4>
+          <div class="archetype-reference-grid">
+            ${archetypes
+              .map(
+                (archetype) => `
+                  <article>
+                    <strong>${escapeHtml(archetype.name)}</strong>
+                    <p>${escapeHtml(archetype.description)}</p>
+                  </article>
+                `,
+              )
+              .join("")}
+          </div>
+        </section>
+      `,
+    )
+    .join("");
+  elements.archetypeReferenceEmpty.hidden = matches.length > 0;
 }
 
 function dreamNote(label, value) {
@@ -5712,6 +5809,7 @@ elements.passageTitleInput.addEventListener("input", fillPassageAuthor);
 elements.passageSearchInput.addEventListener("input", renderPassages);
 elements.passageBookFilter.addEventListener("change", renderPassages);
 elements.profilePhotoInput.addEventListener("change", previewProfilePhoto);
+elements.archetypeSearchInput.addEventListener("input", renderArchetypeReference);
 document.querySelectorAll("[data-passage-mode]").forEach((button) => {
   button.addEventListener("click", () => {
     setPassageMode(button.dataset.passageMode);
@@ -5754,5 +5852,6 @@ document.addEventListener("keydown", (event) => {
 });
 window.addEventListener("hashchange", closeFeatureMenu);
 
+renderArchetypeReference();
 migrateAccountData();
 initializeAuthentication();
