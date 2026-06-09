@@ -2964,6 +2964,13 @@ function dreamNote(label, value) {
     : "";
 }
 
+function dreamAccent(dream) {
+  return colorForGenre(
+    [dream.archetypes, dream.motifs, dream.symbols, dream.title]
+      .find(Boolean) || "Dream",
+  );
+}
+
 function renderDreams() {
   if (!currentAccount) return;
   const accountDreams = ownedByCurrent(dreams).sort((first, second) =>
@@ -2976,27 +2983,38 @@ function renderDreams() {
         .map((id) => dreamById.get(id))
         .filter(Boolean);
       return `
-        <article class="dream-card">
-          <div class="dream-card-heading">
-            <div>
+        <article class="dream-card" style="--card-accent: ${dreamAccent(dream)}">
+          <div class="dream-card-top">
+            <p class="dream-date">
               <time datetime="${escapeHtml(dream.dreamDate)}">${escapeHtml(dreamDateLabel(dream.dreamDate))}</time>
-              <h4>${escapeHtml(dream.title)}</h4>
+            </p>
+            <span class="dream-mark" aria-hidden="true">D</span>
+          </div>
+          <h4>${escapeHtml(dream.title)}</h4>
+          ${dream.rememberedTime ? `<p class="dream-remembered-time">Remembered around ${escapeHtml(dreamTimeLabel(dream.rememberedTime))}</p>` : ""}
+          <p class="dream-preview">${escapeHtml(dream.dream)}</p>
+          <div class="dream-card-tags">
+            ${dream.archetypes ? "<span>Archetypes</span>" : ""}
+            ${dream.motifs ? "<span>Motifs</span>" : ""}
+            ${dream.symbols ? "<span>Symbols</span>" : ""}
+            ${related.length ? `<span>${related.length} connected</span>` : ""}
+          </div>
+          <details class="dream-card-details">
+            <summary>View dream</summary>
+            <p class="dream-text">${escapeHtml(dream.dream)}</p>
+            <div class="dream-notes">
+              ${dreamNote("Archetypes", dream.archetypes)}
+              ${dreamNote("Motifs", dream.motifs)}
+              ${dreamNote("Symbols", dream.symbols)}
             </div>
-            ${dream.rememberedTime ? `<span>Remembered around ${escapeHtml(dreamTimeLabel(dream.rememberedTime))}</span>` : ""}
-          </div>
-          <p class="dream-text">${escapeHtml(dream.dream)}</p>
-          <div class="dream-notes">
-            ${dreamNote("Archetypes", dream.archetypes)}
-            ${dreamNote("Motifs", dream.motifs)}
-            ${dreamNote("Symbols", dream.symbols)}
-          </div>
-          ${
-            related.length
-              ? `<div class="dream-connections"><strong>Connected dreams</strong>${related
-                  .map((item) => `<span>${escapeHtml(item.title)}</span>`)
-                  .join("")}</div>`
-              : ""
-          }
+            ${
+              related.length
+                ? `<div class="dream-connections"><strong>Connected dreams</strong>${related
+                    .map((item) => `<span>${escapeHtml(item.title)}</span>`)
+                    .join("")}</div>`
+                : ""
+            }
+          </details>
           <div class="dream-card-actions">
             <button type="button" data-dream-action="edit" data-id="${dream.id}">Edit</button>
             <button type="button" data-dream-action="delete" data-id="${dream.id}">Delete</button>
