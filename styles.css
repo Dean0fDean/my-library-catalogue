@@ -325,6 +325,18 @@ h1 {
   text-decoration: none;
 }
 
+.home-quandary-button {
+  padding: 0.8rem 0.3rem;
+  border: 0;
+  color: var(--terracotta);
+  background: transparent;
+  font: 700 0.68rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-transform: uppercase;
+}
+
 .home-owl-trio {
   width: fit-content;
   display: flex;
@@ -3052,10 +3064,12 @@ fieldset {
 
 .passage-card-footer {
   display: flex;
+  gap: 0.65rem;
   justify-content: flex-end;
   padding-top: 1rem;
 }
 
+.passage-edit-button,
 .passage-delete-button {
   padding: 0.4rem;
   border: 0;
@@ -3064,6 +3078,14 @@ fieldset {
   font: 700 0.6rem/1 Arial, sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.passage-edit-button {
+  color: var(--forest);
+}
+
+.passage-edit-button:hover {
+  color: var(--terracotta);
 }
 
 .passage-delete-button:hover {
@@ -3240,6 +3262,23 @@ fieldset {
   text-transform: uppercase;
 }
 
+.header-logout-button {
+  min-height: 42px;
+  padding: 0.7rem 0.8rem;
+  border: 0;
+  color: #76372a;
+  background: transparent;
+  font: 700 0.62rem/1 Arial, sans-serif;
+  letter-spacing: 0.09em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-transform: uppercase;
+}
+
+.header-logout-button:hover {
+  color: var(--terracotta);
+}
+
 .home-nav-link:hover,
 .menu-toggle:hover,
 .menu-toggle.open {
@@ -3280,6 +3319,80 @@ fieldset {
   background: rgba(244, 240, 231, 0.18);
   border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
   box-shadow: 0 24px 70px rgba(16, 31, 25, 0.28);
+}
+
+.streak-reward-dialog {
+  width: min(470px, calc(100% - 2rem));
+  overflow: hidden;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--gold) 58%, transparent);
+}
+
+.streak-reward-card {
+  padding: clamp(2rem, 7vw, 3.5rem);
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 0, rgba(201, 137, 69, 0.2), transparent 48%),
+    var(--paper);
+}
+
+.streak-reward-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.streak-reward-emblem {
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 1.3rem;
+  color: var(--paper);
+  background: var(--forest);
+  border: 5px double var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 12px 30px rgba(23, 63, 49, 0.2);
+  font-size: 2.4rem;
+  font-style: italic;
+}
+
+.streak-reward-card h2 {
+  margin-bottom: 0.8rem;
+  font-size: clamp(2.4rem, 8vw, 3.8rem);
+  font-weight: 400;
+}
+
+.streak-reward-card > p:not(.eyebrow) {
+  margin: 0 auto 1.4rem;
+  color: rgba(23, 42, 34, 0.68);
+  line-height: 1.6;
+}
+
+.streak-rune-reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.7rem;
+  padding: 0.7rem 1rem;
+  color: var(--forest);
+  background: rgba(201, 137, 69, 0.14);
+  border: 1px solid rgba(201, 137, 69, 0.4);
+}
+
+.streak-rune-reward span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: var(--paper);
+  background: var(--gold);
+  border-radius: 50%;
+  font-style: italic;
+}
+
+.streak-reward-card .primary-button {
+  width: 100%;
 }
 
 .feature-menu[hidden] {
@@ -5017,6 +5130,11 @@ body.feature-menu-open::after {
   .site-nav .menu-toggle {
     display: inline-flex;
     font-size: 0.58rem;
+  }
+
+  .header-logout-button {
+    padding: 0.65rem 0.35rem;
+    font-size: 0.54rem;
   }
 
   .site-nav .feature-menu {
