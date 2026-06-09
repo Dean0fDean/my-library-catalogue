@@ -5173,3 +5173,521 @@ body.feature-menu-open::after {
     min-height: 104px;
   }
 }
+
+/* Creative writing and WordHub */
+.creative-writing-section {
+  padding: 5.5rem clamp(1.25rem, 6vw, 6rem) 6rem;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(23, 63, 49, 0.035) 1px, transparent 1px)
+      0 0 / 42px 42px,
+    #eee7da;
+  border-top: 1px solid var(--line);
+}
+
+.creative-heading > div > p:last-child,
+.wordhub-heading > div > p:last-child {
+  max-width: 45rem;
+  margin-bottom: 0;
+  color: rgba(23, 42, 34, 0.66);
+  line-height: 1.65;
+}
+
+.writing-workspace {
+  min-height: 650px;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.28fr) minmax(0, 1fr);
+  margin-top: 2.5rem;
+  background: color-mix(in srgb, var(--paper) 94%, white);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(23, 42, 34, 0.1);
+}
+
+.story-library {
+  min-width: 0;
+  padding: 1.25rem;
+  background: var(--forest);
+  border-right: 1px solid var(--line);
+}
+
+.story-library-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: var(--paper);
+}
+
+.story-library-heading h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.story-library-heading span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--forest);
+  background: var(--gold);
+  border-radius: 50%;
+  font: 700 0.65rem/1 Arial, sans-serif;
+}
+
+.story-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.story-list-item {
+  width: 100%;
+  display: grid;
+  gap: 0.3rem;
+  padding: 1rem;
+  border: 1px solid rgba(244, 240, 231, 0.14);
+  color: var(--paper);
+  background: rgba(244, 240, 231, 0.055);
+  text-align: left;
+}
+
+.story-list-item:hover,
+.story-list-item.active {
+  background: rgba(244, 240, 231, 0.13);
+  border-color: var(--gold);
+}
+
+.story-list-item strong {
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.story-list-item span,
+.story-list-item small {
+  overflow: hidden;
+  color: rgba(244, 240, 231, 0.58);
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.story-empty {
+  padding: 2rem 0.7rem;
+  color: rgba(244, 240, 231, 0.55);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.story-empty[hidden],
+.story-editor[hidden],
+.story-editor-empty[hidden] {
+  display: none;
+}
+
+.story-editor {
+  min-width: 0;
+  padding: clamp(1.4rem, 4vw, 3rem);
+}
+
+.story-editor-topline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 1rem;
+}
+
+.story-title-field > span,
+.story-editor label > span,
+.wordhub-form label > span {
+  display: block;
+  margin-bottom: 0.5rem;
+  font: 700 0.62rem/1.3 Arial, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.story-title-field input {
+  width: 100%;
+  padding: 0.2rem 0 0.6rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  font: 400 clamp(2rem, 5vw, 3.5rem)/1 Georgia, serif;
+}
+
+.story-delete-button {
+  margin-bottom: 0.7rem;
+  padding: 0.55rem;
+  border: 0;
+  color: #76372a;
+  background: transparent;
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.writing-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin: 1.8rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.writing-tabs button {
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: rgba(23, 42, 34, 0.58);
+  background: transparent;
+  font: 700 0.62rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.writing-tabs button.active {
+  color: var(--forest);
+  border-bottom-color: var(--gold);
+}
+
+.story-plan-view > label,
+.story-plan-view .form-row,
+.wordhub-form > label,
+.wordhub-form .form-row {
+  margin-bottom: 1.15rem;
+}
+
+.story-editor input:not(.story-title-field input),
+.story-editor select,
+.story-editor textarea,
+.wordhub-form input,
+.wordhub-form textarea {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(23, 42, 34, 0.22);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.48);
+  border-radius: 2px;
+  resize: vertical;
+}
+
+.story-editor select,
+.wordhub-form input {
+  min-height: 48px;
+}
+
+.manuscript-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  color: rgba(23, 42, 34, 0.58);
+  font: 700 0.6rem/1 Arial, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.spellcheck-status {
+  color: var(--forest);
+}
+
+#story-draft-input {
+  min-height: 540px;
+  padding: 2rem clamp(1.2rem, 5vw, 4rem);
+  background:
+    linear-gradient(rgba(23, 42, 34, 0.07) 1px, transparent 1px)
+      0 2.75rem / 100% 2rem,
+    #fbf8f0;
+  font: 400 1.08rem/2rem Georgia, serif;
+}
+
+.story-editor-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.story-editor-empty > span {
+  width: 82px;
+  height: 82px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  color: var(--paper);
+  background: var(--terracotta);
+  border-radius: 50%;
+  font-size: 2.6rem;
+  font-style: italic;
+}
+
+.story-editor-empty h3 {
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.story-editor-empty p {
+  color: rgba(23, 42, 34, 0.62);
+}
+
+.wordhub-section {
+  padding: 5.5rem clamp(1.25rem, 6vw, 6rem) 6rem;
+  color: var(--paper);
+  background:
+    radial-gradient(circle at 87% 8%, rgba(201, 137, 69, 0.2), transparent 26rem),
+    #173f31;
+}
+
+.wordhub-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.wordhub-heading > div > p:last-child {
+  color: rgba(244, 240, 231, 0.68);
+}
+
+.wordhub-count {
+  min-width: 130px;
+  padding: 1rem;
+  text-align: center;
+  border-top: 1px solid rgba(244, 240, 231, 0.24);
+  border-bottom: 1px solid rgba(244, 240, 231, 0.24);
+}
+
+.wordhub-count strong,
+.wordhub-count span {
+  display: block;
+}
+
+.wordhub-count strong {
+  color: var(--gold);
+  font-size: 2.4rem;
+  font-weight: 400;
+}
+
+.wordhub-count span {
+  margin-top: 0.3rem;
+  color: rgba(244, 240, 231, 0.58);
+  font: 700 0.55rem/1 Arial, sans-serif;
+  letter-spacing: 0.12em;
+}
+
+.wordhub-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.36fr) minmax(0, 1fr);
+  gap: 1.2rem;
+  margin-top: 2.5rem;
+}
+
+.wordhub-form {
+  align-self: start;
+  padding: 1.5rem;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.wordhub-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.4rem;
+}
+
+.wordhub-form-heading h3 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 400;
+}
+
+.wordhub-form-heading button {
+  border: 0;
+  color: var(--terracotta);
+  background: transparent;
+  font: 700 0.58rem/1 Arial, sans-serif;
+  text-transform: uppercase;
+}
+
+.spellcheck-note {
+  margin: -0.35rem 0 1rem;
+  color: rgba(23, 42, 34, 0.56);
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.wordhub-collection {
+  min-width: 0;
+}
+
+.wordhub-search {
+  margin-bottom: 1rem;
+  background: rgba(244, 240, 231, 0.08);
+  border-color: rgba(244, 240, 231, 0.22);
+}
+
+.wordhub-search input {
+  color: var(--paper);
+}
+
+.wordhub-search input::placeholder {
+  color: rgba(244, 240, 231, 0.48);
+}
+
+.wordhub-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.wordhub-card {
+  min-width: 0;
+  padding: 1.35rem;
+  color: var(--ink);
+  background: var(--paper);
+  border-top: 4px solid var(--gold);
+}
+
+.wordhub-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wordhub-card-heading .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.wordhub-card h3 {
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.wordhub-card-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.wordhub-card-actions button {
+  padding: 0.35rem;
+  border: 0;
+  color: rgba(23, 42, 34, 0.58);
+  background: transparent;
+  font: 700 0.54rem/1 Arial, sans-serif;
+  text-transform: uppercase;
+}
+
+.wordhub-card-actions button:last-child {
+  color: #76372a;
+}
+
+.wordhub-meaning {
+  color: rgba(23, 42, 34, 0.74);
+  line-height: 1.55;
+}
+
+.wordhub-source {
+  padding-top: 0.8rem;
+  color: var(--terracotta);
+  border-top: 1px solid var(--line);
+  font-size: 0.86rem;
+  font-style: italic;
+}
+
+.wordhub-card blockquote {
+  margin: 1rem 0 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--forest);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.wordhub-empty {
+  min-height: 330px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  color: rgba(244, 240, 231, 0.65);
+  text-align: center;
+}
+
+.wordhub-empty[hidden] {
+  display: none;
+}
+
+.wordhub-empty > div {
+  width: 65px;
+  height: 65px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  color: var(--forest);
+  background: var(--gold);
+  border-radius: 50%;
+  font-size: 2rem;
+  font-style: italic;
+}
+
+.wordhub-empty h3 {
+  margin-bottom: 0.5rem;
+  color: var(--paper);
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+@media (max-width: 900px) {
+  .writing-workspace,
+  .wordhub-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .story-library {
+    border-right: 0;
+  }
+
+  .story-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .creative-writing-section,
+  .wordhub-section {
+    padding-top: 4rem;
+  }
+
+  .story-list,
+  .wordhub-list,
+  .story-editor-topline {
+    grid-template-columns: 1fr;
+  }
+
+  .story-delete-button {
+    justify-self: start;
+  }
+
+  .wordhub-heading,
+  .manuscript-toolbar {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .wordhub-count {
+    width: 100%;
+  }
+
+  .writing-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
