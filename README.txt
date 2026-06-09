@@ -142,6 +142,17 @@ The Dream Journal uses a distinctive night-sky theme and includes dismissible
 Dream Facts that rotate every 30 seconds. Administrators can add or remove
 community Dream Facts from the private Admin area.
 
+Dream entries can generate and save cautious Jungian reflections using
+concepts associated with compensation, prospective function, reductive
+function, and big or archetypal dreams. Prophetic-seeming imagery is never
+presented as verified prediction. Each interpretation records uncertainty,
+reflective questions, source works, and a clear statement that it cannot
+diagnose mental illness or replace professional support.
+
+The Dream Journal is linked from Home. The Parliament of Owls awards 50 Runes
+the first time each dream is recorded and another 50 when archetype, motif, or
+symbol notes are added. The Collection has a warmer library-shelf visual theme.
+
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
 once per signed-in browsing session, carries no reward or streak pressure, and
