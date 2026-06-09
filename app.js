@@ -7,6 +7,8 @@ const CURRENT_ACCOUNT_KEY = "my-library-current-account-v1";
 const FOLLOWS_STORAGE_KEY = "my-library-follows-v1";
 const SHARES_STORAGE_KEY = "my-library-shares-v1";
 const API_TOKEN_KEY = "my-library-api-token-v1";
+const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
+const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
 
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
@@ -118,6 +120,37 @@ const elements = {
   profileNotificationList: document.querySelector("#profile-notification-list"),
   markNotificationsRead: document.querySelector("#mark-notifications-read"),
   profileAchievementGrid: document.querySelector("#profile-achievement-grid"),
+  storyList: document.querySelector("#story-list"),
+  storyCount: document.querySelector("#story-count"),
+  storyEmpty: document.querySelector("#story-empty"),
+  storyEditor: document.querySelector("#story-editor"),
+  storyEditorEmpty: document.querySelector("#story-editor-empty"),
+  storyIdInput: document.querySelector("#story-id-input"),
+  storyTitleInput: document.querySelector("#story-title-input"),
+  storyGenreInput: document.querySelector("#story-genre-input"),
+  storyPovInput: document.querySelector("#story-pov-input"),
+  storyPremiseInput: document.querySelector("#story-premise-input"),
+  storyCharactersInput: document.querySelector("#story-characters-input"),
+  storySettingInput: document.querySelector("#story-setting-input"),
+  storyOutlineInput: document.querySelector("#story-outline-input"),
+  storyDraftInput: document.querySelector("#story-draft-input"),
+  storyPlanView: document.querySelector("#story-plan-view"),
+  storyDraftView: document.querySelector("#story-draft-view"),
+  storyWordCount: document.querySelector("#story-word-count"),
+  storySaveStatus: document.querySelector("#story-save-status"),
+  wordhubForm: document.querySelector("#wordhub-form"),
+  wordhubIdInput: document.querySelector("#wordhub-id-input"),
+  wordhubFormTitle: document.querySelector("#wordhub-form-title"),
+  wordhubCancelEdit: document.querySelector("#wordhub-cancel-edit"),
+  wordhubWordInput: document.querySelector("#wordhub-word-input"),
+  wordhubMeaningInput: document.querySelector("#wordhub-meaning-input"),
+  wordhubBookInput: document.querySelector("#wordhub-book-input"),
+  wordhubPageInput: document.querySelector("#wordhub-page-input"),
+  wordhubSentenceInput: document.querySelector("#wordhub-sentence-input"),
+  wordhubSearchInput: document.querySelector("#wordhub-search-input"),
+  wordhubList: document.querySelector("#wordhub-list"),
+  wordhubEmpty: document.querySelector("#wordhub-empty"),
+  wordhubCount: document.querySelector("#wordhub-count"),
   profileRunesCount: document.querySelector("#profile-runes-count"),
   profileStreakCount: document.querySelector("#profile-streak-count"),
   profileStreakBest: document.querySelector("#profile-streak-best"),
@@ -225,6 +258,8 @@ let learningTasks = [];
 let debates = [];
 let announcements = [];
 let quandaries = [];
+let creativeWriting = loadArray(CREATIVE_WRITING_STORAGE_KEY);
+let wordhub = loadArray(WORDHUB_STORAGE_KEY);
 let storeItems = [];
 let equippedTheme = "";
 let equippedFrame = "";
@@ -253,6 +288,7 @@ let pendingProfileImage = "";
 let toastTimer;
 let statsSyncTimer;
 let dataSyncTimer;
+let storySaveTimer;
 let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 let activeReaderCatalogue = [];
@@ -289,7 +325,7 @@ function storeApiSession(token) {
 
 function adoptLocalAccount(localAccount, onlineAccount) {
   if (!localAccount || localAccount.id === onlineAccount.id) return;
-  [books, readingLog, passages, wishlist].forEach((items) => {
+  [books, readingLog, passages, wishlist, creativeWriting, wordhub].forEach((items) => {
     items.forEach((item) => {
       if (item.ownerId === localAccount.id) item.ownerId = onlineAccount.id;
     });
@@ -298,6 +334,8 @@ function adoptLocalAccount(localAccount, onlineAccount) {
   saveReadingLog();
   savePassages();
   saveWishlist();
+  saveCreativeWriting();
+  saveWordhub();
 }
 
 function loadArray(key) {
@@ -339,6 +377,18 @@ function savePassages() {
 
 function saveWishlist() {
   const saved = saveCollection(WISHLIST_STORAGE_KEY, wishlist);
+  if (saved) scheduleDataSync();
+  return saved;
+}
+
+function saveCreativeWriting() {
+  const saved = saveCollection(CREATIVE_WRITING_STORAGE_KEY, creativeWriting);
+  if (saved) scheduleDataSync();
+  return saved;
+}
+
+function saveWordhub() {
+  const saved = saveCollection(WORDHUB_STORAGE_KEY, wordhub);
   if (saved) scheduleDataSync();
   return saved;
 }
@@ -391,7 +441,7 @@ function migrateAccountData() {
   );
   if (realAccount && testAccounts.length) {
     const testIds = new Set(testAccounts.map((account) => account.id));
-    [books, readingLog, passages, wishlist].forEach((items) => {
+    [books, readingLog, passages, wishlist, creativeWriting, wordhub].forEach((items) => {
       items.forEach((item) => {
         if (testIds.has(item.ownerId)) item.ownerId = realAccount.id;
       });
@@ -427,6 +477,8 @@ function migrateAccountData() {
   let logsChanged = false;
   let passagesChanged = false;
   let wishlistChanged = false;
+  let creativeWritingChanged = false;
+  let wordhubChanged = false;
   books.forEach((item) => {
     if (!item.ownerId) {
       item.ownerId = admin.id;
@@ -451,11 +503,25 @@ function migrateAccountData() {
       wishlistChanged = true;
     }
   });
+  creativeWriting.forEach((item) => {
+    if (!item.ownerId) {
+      item.ownerId = admin.id;
+      creativeWritingChanged = true;
+    }
+  });
+  wordhub.forEach((item) => {
+    if (!item.ownerId) {
+      item.ownerId = admin.id;
+      wordhubChanged = true;
+    }
+  });
   if (changedAccounts) saveAccounts();
   if (booksChanged) saveBooks();
   if (logsChanged) saveReadingLog();
   if (passagesChanged) savePassages();
   if (wishlistChanged) saveWishlist();
+  if (creativeWritingChanged) saveCreativeWriting();
+  if (wordhubChanged) saveWordhub();
 }
 
 function normalize(value) {
@@ -768,11 +834,24 @@ function cloudDataFor(accountId) {
     wishlist: wishlist
       .filter((item) => item.ownerId === accountId)
       .map(cloudSafeItem),
+    creativeWriting: creativeWriting
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
+    wordhub: wordhub
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
   };
 }
 
 function hasCloudData(data) {
-  return ["books", "readingLog", "passages", "wishlist"].some(
+  return [
+    "books",
+    "readingLog",
+    "passages",
+    "wishlist",
+    "creativeWriting",
+    "wordhub",
+  ].some(
     (key) => Array.isArray(data[key]) && data[key].length > 0,
   );
 }
@@ -845,10 +924,22 @@ async function loadAccountData() {
     currentAccount.id,
     cloud.wishlist || [],
   );
+  creativeWriting = replaceAccountItems(
+    creativeWriting,
+    currentAccount.id,
+    cloud.creativeWriting || [],
+  );
+  wordhub = replaceAccountItems(
+    wordhub,
+    currentAccount.id,
+    cloud.wordhub || [],
+  );
   saveCollection(STORAGE_KEY, books);
   saveCollection(LOG_STORAGE_KEY, readingLog);
   saveCollection(PASSAGE_STORAGE_KEY, passages);
   saveCollection(WISHLIST_STORAGE_KEY, wishlist);
+  saveCollection(CREATIVE_WRITING_STORAGE_KEY, creativeWriting);
+  saveCollection(WORDHUB_STORAGE_KEY, wordhub);
   isApplyingCloudData = false;
   await Promise.all(
     booksFor(currentAccount.id)
@@ -988,6 +1079,8 @@ async function showAuthenticatedApp(account) {
   renderReadingLog();
   renderPassages();
   renderJournals();
+  renderStories();
+  renderWordhub();
   renderCommunity();
   if (dailyStreakRewardEarned) {
     showDailyStreakReward();
@@ -2466,6 +2559,277 @@ function removePassage(id) {
   showToast(`Saved passage from "${passage.title}" removed.`);
 }
 
+function storyWordTotal(text) {
+  const words = String(text || "").trim().match(/\b[\w'-]+\b/g);
+  return words ? words.length : 0;
+}
+
+function currentStory() {
+  return creativeWriting.find(
+    (story) =>
+      story.id === elements.storyIdInput.value &&
+      story.ownerId === currentAccount?.id,
+  );
+}
+
+function storyDateLabel(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function renderStories() {
+  if (!currentAccount) return;
+  const stories = ownedByCurrent(creativeWriting).sort((first, second) =>
+    String(second.updatedAt).localeCompare(String(first.updatedAt)),
+  );
+  const activeId = elements.storyIdInput.value;
+  elements.storyCount.textContent = stories.length;
+  elements.storyList.innerHTML = stories
+    .map(
+      (story) => `
+        <button
+          class="story-list-item ${story.id === activeId ? "active" : ""}"
+          type="button"
+          data-story-id="${story.id}"
+        >
+          <strong>${escapeHtml(story.title || "Untitled story")}</strong>
+          <span>${escapeHtml(story.genre || "Unspecified genre")}</span>
+          <small>${storyWordTotal(story.draft)} words / ${escapeHtml(storyDateLabel(story.updatedAt))}</small>
+        </button>
+      `,
+    )
+    .join("");
+  elements.storyEmpty.hidden = stories.length > 0;
+}
+
+function setWritingView(view) {
+  elements.storyPlanView.hidden = view !== "plan";
+  elements.storyDraftView.hidden = view !== "draft";
+  document.querySelectorAll("[data-writing-view]").forEach((button) => {
+    const selected = button.dataset.writingView === view;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+  if (view === "draft") elements.storyDraftInput.focus();
+}
+
+function openStory(storyId) {
+  const story = creativeWriting.find(
+    (item) => item.id === storyId && item.ownerId === currentAccount?.id,
+  );
+  if (!story) return;
+  elements.storyIdInput.value = story.id;
+  elements.storyTitleInput.value = story.title || "";
+  elements.storyGenreInput.value = story.genre || "";
+  elements.storyPovInput.value = story.pov || "";
+  elements.storyPremiseInput.value = story.premise || "";
+  elements.storyCharactersInput.value = story.characters || "";
+  elements.storySettingInput.value = story.setting || "";
+  elements.storyOutlineInput.value = story.outline || "";
+  elements.storyDraftInput.value = story.draft || "";
+  elements.storyWordCount.textContent = storyWordTotal(story.draft);
+  elements.storySaveStatus.textContent = "All changes saved";
+  elements.storyEditor.hidden = false;
+  elements.storyEditorEmpty.hidden = true;
+  setWritingView("plan");
+  renderStories();
+}
+
+function createStory() {
+  if (!currentAccount) return;
+  const story = {
+    id: crypto.randomUUID(),
+    title: "Untitled story",
+    genre: "",
+    pov: "",
+    premise: "",
+    characters: "",
+    setting: "",
+    outline: "",
+    draft: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ownerId: currentAccount.id,
+  };
+  creativeWriting.unshift(story);
+  saveCreativeWriting();
+  openStory(story.id);
+  elements.storyTitleInput.select();
+}
+
+function saveOpenStory() {
+  const story = currentStory();
+  if (!story) return;
+  story.title = elements.storyTitleInput.value.trim() || "Untitled story";
+  story.genre = elements.storyGenreInput.value.trim();
+  story.pov = elements.storyPovInput.value;
+  story.premise = elements.storyPremiseInput.value.trim();
+  story.characters = elements.storyCharactersInput.value.trim();
+  story.setting = elements.storySettingInput.value.trim();
+  story.outline = elements.storyOutlineInput.value.trim();
+  story.draft = elements.storyDraftInput.value;
+  story.updatedAt = new Date().toISOString();
+  elements.storyWordCount.textContent = storyWordTotal(story.draft);
+  saveCreativeWriting();
+  renderStories();
+  elements.storySaveStatus.textContent = "All changes saved";
+}
+
+function scheduleStorySave() {
+  if (!currentStory()) return;
+  window.clearTimeout(storySaveTimer);
+  elements.storySaveStatus.textContent = "Saving...";
+  elements.storyWordCount.textContent = storyWordTotal(
+    elements.storyDraftInput.value,
+  );
+  storySaveTimer = window.setTimeout(saveOpenStory, 600);
+}
+
+function deleteOpenStory() {
+  const story = currentStory();
+  if (!story) return;
+  creativeWriting = creativeWriting.filter((item) => item.id !== story.id);
+  saveCreativeWriting();
+  elements.storyEditor.reset();
+  elements.storyIdInput.value = "";
+  elements.storyEditor.hidden = true;
+  elements.storyEditorEmpty.hidden = false;
+  renderStories();
+  showToast(`"${story.title || "Untitled story"}" deleted.`);
+}
+
+function resetWordhubForm() {
+  elements.wordhubForm.reset();
+  elements.wordhubIdInput.value = "";
+  elements.wordhubFormTitle.textContent = "Add a word";
+  elements.wordhubCancelEdit.hidden = true;
+  elements.wordhubForm.querySelector(".submit-button").textContent = "Save word";
+}
+
+function renderWordhub() {
+  if (!currentAccount) return;
+  const query = normalize(elements.wordhubSearchInput.value);
+  const entries = ownedByCurrent(wordhub)
+    .filter((entry) => {
+      const searchable = [
+        entry.word,
+        entry.meaning,
+        entry.book,
+        entry.sentence,
+      ]
+        .join(" ")
+        .toLocaleLowerCase();
+      return !query || searchable.includes(query);
+    })
+    .sort((first, second) =>
+      first.word.localeCompare(second.word, undefined, { sensitivity: "base" }),
+    );
+  const total = ownedByCurrent(wordhub).length;
+  elements.wordhubCount.textContent = total;
+  elements.wordhubList.innerHTML = entries
+    .map(
+      (entry) => `
+        <article class="wordhub-card">
+          <div class="wordhub-card-heading">
+            <div>
+              <p class="eyebrow">WORD</p>
+              <h3>${escapeHtml(entry.word)}</h3>
+            </div>
+            <div class="wordhub-card-actions">
+              <button type="button" data-wordhub-action="edit" data-id="${entry.id}">Edit</button>
+              <button type="button" data-wordhub-action="delete" data-id="${entry.id}">Remove</button>
+            </div>
+          </div>
+          <p class="wordhub-meaning">${escapeHtml(entry.meaning)}</p>
+          ${
+            entry.book
+              ? `<p class="wordhub-source">Found in <strong>${escapeHtml(entry.book)}</strong>${entry.page ? `, page ${escapeHtml(entry.page)}` : ""}</p>`
+              : ""
+          }
+          <blockquote>${escapeHtml(entry.sentence)}</blockquote>
+        </article>
+      `,
+    )
+    .join("");
+  elements.wordhubList.hidden = entries.length === 0;
+  elements.wordhubEmpty.hidden = entries.length > 0;
+  elements.wordhubEmpty.querySelector("h3").textContent =
+    total && !entries.length
+      ? "No matching words."
+      : "Build a living vocabulary.";
+}
+
+function saveWordhubEntry() {
+  const id = elements.wordhubIdInput.value;
+  const word = elements.wordhubWordInput.value.trim();
+  const existingDuplicate = ownedByCurrent(wordhub).find(
+    (entry) => normalize(entry.word) === normalize(word) && entry.id !== id,
+  );
+  if (existingDuplicate) {
+    elements.wordhubWordInput.setCustomValidity(
+      "That word is already in your alcove.",
+    );
+    elements.wordhubWordInput.reportValidity();
+    return;
+  }
+  elements.wordhubWordInput.setCustomValidity("");
+  const previous = wordhub.find(
+    (entry) => entry.id === id && entry.ownerId === currentAccount?.id,
+  );
+  const entry = {
+    id: previous?.id || crypto.randomUUID(),
+    word,
+    meaning: elements.wordhubMeaningInput.value.trim(),
+    book: elements.wordhubBookInput.value.trim(),
+    page: elements.wordhubPageInput.value.trim(),
+    sentence: elements.wordhubSentenceInput.value.trim(),
+    createdAt: previous?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ownerId: currentAccount.id,
+  };
+  if (previous) {
+    wordhub = wordhub.map((item) => (item.id === previous.id ? entry : item));
+  } else {
+    wordhub.unshift(entry);
+  }
+  saveWordhub();
+  resetWordhubForm();
+  renderWordhub();
+  showToast(previous ? `"${entry.word}" updated.` : `"${entry.word}" saved.`);
+}
+
+function editWordhubEntry(id) {
+  const entry = wordhub.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!entry) return;
+  elements.wordhubIdInput.value = entry.id;
+  elements.wordhubWordInput.value = entry.word;
+  elements.wordhubMeaningInput.value = entry.meaning;
+  elements.wordhubBookInput.value = entry.book || "";
+  elements.wordhubPageInput.value = entry.page || "";
+  elements.wordhubSentenceInput.value = entry.sentence;
+  elements.wordhubFormTitle.textContent = "Edit word";
+  elements.wordhubCancelEdit.hidden = false;
+  elements.wordhubForm.querySelector(".submit-button").textContent =
+    "Save changes";
+  elements.wordhubWordInput.focus();
+}
+
+function deleteWordhubEntry(id) {
+  const entry = wordhub.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!entry) return;
+  wordhub = wordhub.filter((item) => item.id !== id);
+  saveWordhub();
+  if (elements.wordhubIdInput.value === id) resetWordhubForm();
+  renderWordhub();
+  showToast(`"${entry.word}" removed.`);
+}
+
 function avatarMarkup(account) {
   return account.profileImage
     ? `<img src="${account.profileImage}" alt="" />`
@@ -3814,6 +4178,15 @@ document
   .querySelector("#empty-journal-button")
   .addEventListener("click", openJournalForm);
 document
+  .querySelector("#new-story-button")
+  .addEventListener("click", createStory);
+document
+  .querySelector("#empty-new-story-button")
+  .addEventListener("click", createStory);
+document
+  .querySelector("#delete-story-button")
+  .addEventListener("click", deleteOpenStory);
+document
   .querySelector("#close-journal-button")
   .addEventListener("click", () => elements.journalDialog.close());
 document
@@ -3866,6 +4239,7 @@ elements.readingFactBanner.addEventListener("keydown", (event) => {
   }
 });
 document.querySelector("#logout-button").addEventListener("click", () => {
+  saveOpenStory();
   elements.profileDialog.close();
   showLoginScreen();
 });
@@ -3972,6 +4346,49 @@ elements.journalForm.addEventListener("submit", (event) => {
     saveJournalEntry(new FormData(elements.journalForm));
   }
 });
+
+elements.storyEditor.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveOpenStory();
+});
+
+elements.storyEditor.addEventListener("input", scheduleStorySave);
+elements.storyEditor.addEventListener("change", scheduleStorySave);
+
+elements.storyList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-story-id]");
+  if (button) {
+    saveOpenStory();
+    openStory(button.dataset.storyId);
+  }
+});
+
+document.querySelectorAll("[data-writing-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setWritingView(button.dataset.writingView);
+  });
+});
+
+elements.wordhubForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.wordhubForm.reportValidity()) saveWordhubEntry();
+});
+
+elements.wordhubCancelEdit.addEventListener("click", resetWordhubForm);
+elements.wordhubSearchInput.addEventListener("input", renderWordhub);
+elements.wordhubWordInput.addEventListener("input", () => {
+  elements.wordhubWordInput.setCustomValidity("");
+});
+elements.wordhubList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-wordhub-action]");
+  if (!button) return;
+  if (button.dataset.wordhubAction === "edit") editWordhubEntry(button.dataset.id);
+  if (button.dataset.wordhubAction === "delete") {
+    deleteWordhubEntry(button.dataset.id);
+  }
+});
+
+window.addEventListener("beforeunload", saveOpenStory);
 
 elements.dialog.addEventListener("click", (event) => {
   if (event.target === elements.dialog) elements.dialog.close();
