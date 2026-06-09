@@ -38,6 +38,15 @@ const DEFAULT_READING_FACTS = [
   "Alternating demanding books with lighter ones can help sustain a regular reading habit.",
 ];
 
+const DEFAULT_DREAM_FACTS = [
+  "Dream recall is often clearest immediately after waking and may fade quickly if it is not recorded.",
+  "Dreams can occur throughout sleep, although vivid narrative dreams are often associated with REM sleep.",
+  "Keeping a dream journal can make recurring personal themes easier to notice over time.",
+  "There is no scientifically established universal meaning for every dream symbol; context and personal associations matter.",
+  "Stress, sleep disruption, medication, and daily experiences can all influence dream content or recall.",
+  "People who wake briefly during the night may remember dreams more often than people who sleep through without waking.",
+];
+
 const LEARNING_TASKS = [
   {
     key: "english-metaphor",
@@ -676,6 +685,14 @@ async function ensureSchema() {
         )
       `;
       await sql`
+        CREATE TABLE IF NOT EXISTS library_dream_facts (
+          id UUID PRIMARY KEY,
+          fact TEXT NOT NULL,
+          created_by UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
         CREATE TABLE IF NOT EXISTS library_market_listings (
           id UUID PRIMARY KEY,
           seller_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
@@ -1273,6 +1290,55 @@ export default async function handler(request, response) {
       }
       await sql`
         DELETE FROM library_reading_facts
+        WHERE id = ${String(body.id || "")}
+      `;
+      return json(response, 200, { ok: true });
+    }
+
+    if (action === "dream-facts" && request.method === "GET") {
+      const rows = await sql`
+        SELECT id, fact, created_at
+        FROM library_dream_facts
+        ORDER BY created_at DESC
+        LIMIT 100
+      `;
+      const facts = rows.length
+        ? rows.map((item) => ({
+            id: item.id,
+            fact: item.fact,
+            createdAt: item.created_at,
+            removable: true,
+          }))
+        : DEFAULT_DREAM_FACTS.map((fact, index) => ({
+            id: `dream-default-${index + 1}`,
+            fact,
+            createdAt: null,
+            removable: false,
+          }));
+      return json(response, 200, { facts });
+    }
+
+    if (action === "dream-fact-save" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      const fact = String(body.fact || "").trim().slice(0, 320);
+      if (fact.length < 10) {
+        return json(response, 400, { error: "Add a slightly longer dream fact." });
+      }
+      await sql`
+        INSERT INTO library_dream_facts (id, fact, created_by)
+        VALUES (${crypto.randomUUID()}, ${fact}, ${user.id})
+      `;
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "dream-fact-delete" && request.method === "POST") {
+      if (user.role !== "admin") {
+        return json(response, 403, { error: "Admin access required." });
+      }
+      await sql`
+        DELETE FROM library_dream_facts
         WHERE id = ${String(body.id || "")}
       `;
       return json(response, 200, { ok: true });
