@@ -132,4 +132,5 @@ formatted for printing from their respective sections.
 The Profile includes a private Dream Journal. Readers can record a titled,
 dated dream with an optional remembered time, add notes about archetypes,
 motifs, and symbols, and connect related dreams. Dream entries synchronize
-with the signed-in account across devices.
+with the signed-in account across devices. Entries are displayed in a
+responsive card catalogue with compact previews and expandable full details.
