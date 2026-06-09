@@ -125,3 +125,11 @@ Only the administrator can publish or remove these notices.
 New notifications are checked periodically and announced with a short musical
 chime after the reader has interacted with the page. Existing notifications do
 not trigger a sound when an account first signs in.
+
+Collection, saved passage, journal, and creative-writing project lists can be
+formatted for printing from their respective sections.
+
+The Profile includes a private Dream Journal. Readers can record a titled,
+dated dream with an optional remembered time, add notes about archetypes,
+motifs, and symbols, and connect related dreams. Dream entries synchronize
+with the signed-in account across devices.
