@@ -26,6 +26,9 @@ const elements = {
   dialog: document.querySelector("#book-dialog"),
   form: document.querySelector("#book-form"),
   titleInput: document.querySelector("#title-input"),
+  bookDialogEyebrow: document.querySelector("#book-dialog-eyebrow"),
+  bookDialogTitle: document.querySelector("#book-dialog-title"),
+  bookSubmitButton: document.querySelector("#book-submit-button"),
   authorSuggestions: document.querySelector("#author-suggestions"),
   toast: document.querySelector("#toast"),
   logDialog: document.querySelector("#log-dialog"),
@@ -117,6 +120,9 @@ const elements = {
   profileError: document.querySelector("#profile-error"),
   profileInsightGrid: document.querySelector("#profile-insight-grid"),
   profileNotificationCount: document.querySelector("#profile-notification-count"),
+  headerNotificationCount: document.querySelector("#header-notification-count"),
+  notificationChimeButton: document.querySelector("#notification-chime-button"),
+  notificationsPanel: document.querySelector("#notifications-panel"),
   profileNotificationList: document.querySelector("#profile-notification-list"),
   markNotificationsRead: document.querySelector("#mark-notifications-read"),
   profileAchievementGrid: document.querySelector("#profile-achievement-grid"),
@@ -199,6 +205,13 @@ const elements = {
   shareItemSummary: document.querySelector("#share-item-summary"),
   shareRecipientInput: document.querySelector("#share-recipient-input"),
   shareError: document.querySelector("#share-error"),
+  recommendationEditDialog: document.querySelector("#recommendation-edit-dialog"),
+  recommendationEditForm: document.querySelector("#recommendation-edit-form"),
+  recommendationEditId: document.querySelector("#recommendation-edit-id"),
+  recommendationEditTitle: document.querySelector("#recommendation-edit-title"),
+  recommendationEditAuthor: document.querySelector("#recommendation-edit-author"),
+  recommendationEditMessage: document.querySelector("#recommendation-edit-message"),
+  recommendationEditError: document.querySelector("#recommendation-edit-error"),
   communityReadersView: document.querySelector("#community-readers-view"),
   communityFollowersView: document.querySelector("#community-followers-view"),
   communityFollowingView: document.querySelector("#community-following-view"),
@@ -276,6 +289,7 @@ let notificationBaselineReady = false;
 let audioContext;
 let openMenuId = null;
 let activeCoverBookId = null;
+let activeEditingBookId = null;
 let pendingCoverImage = "";
 let passageMode = "photo";
 let activePassageId = null;
@@ -692,6 +706,15 @@ function renderProfileActivity() {
   if (!currentAccount) return;
   const unread = profileNotifications.filter((item) => !item.readAt).length;
   elements.profileNotificationCount.textContent = unread ? `(${unread})` : "";
+  elements.headerNotificationCount.textContent = unread;
+  elements.headerNotificationCount.hidden = unread === 0;
+  elements.notificationChimeButton.classList.toggle("has-unread", unread > 0);
+  elements.notificationChimeButton.setAttribute(
+    "aria-label",
+    unread
+      ? `Open notifications, ${unread} unread`
+      : "Open notifications",
+  );
   elements.markNotificationsRead.hidden = unread === 0;
   elements.profileNotificationList.innerHTML = profileNotifications.length
     ? profileNotifications
@@ -1333,6 +1356,9 @@ function renderBook(book) {
               <button type="button" data-action="cover" data-id="${book.id}">
                 ${book.coverImage ? "Change photo" : "Add photo"}
               </button>
+              <button type="button" data-action="edit" data-id="${book.id}">
+                Edit details
+              </button>
               <button type="button" data-action="sell" data-id="${book.id}">
                 List for sale
               </button>
@@ -1559,13 +1585,46 @@ async function completeLearningTask(form) {
 }
 
 function openBookForm() {
+  activeEditingBookId = null;
   elements.form.reset();
+  elements.bookDialogEyebrow.textContent = "A NEW STORY";
+  elements.bookDialogTitle.textContent = "Add a book";
+  elements.bookSubmitButton.textContent = "Add to my library";
   elements.dialog.showModal();
   window.setTimeout(() => elements.titleInput.focus(), 0);
 }
 
-async function addBook(formData) {
-  let coverImage = "";
+function openBookEditForm(id) {
+  const book = books.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!book) return;
+  activeEditingBookId = book.id;
+  elements.form.reset();
+  elements.titleInput.value = book.title;
+  document.querySelector("#author-input").value = book.author;
+  document.querySelector("#genre-input").value = book.genre;
+  const statusInput = elements.form.querySelector(
+    `input[name="status"][value="${book.status}"]`,
+  );
+  if (statusInput) statusInput.checked = true;
+  elements.bookDialogEyebrow.textContent = "BOOK DETAILS";
+  elements.bookDialogTitle.textContent = "Edit book";
+  elements.bookSubmitButton.textContent = "Save changes";
+  openMenuId = null;
+  elements.dialog.showModal();
+  window.setTimeout(() => elements.titleInput.focus(), 0);
+}
+
+async function saveBook(formData) {
+  const existingBook = activeEditingBookId
+    ? books.find(
+        (item) =>
+          item.id === activeEditingBookId &&
+          item.ownerId === currentAccount?.id,
+      )
+    : null;
+  let coverImage = existingBook?.coverImage || "";
   const coverFile = elements.coverInput.files[0];
   if (coverFile) {
     try {
@@ -1576,27 +1635,39 @@ async function addBook(formData) {
     }
   }
   const book = {
-    id: crypto.randomUUID(),
+    id: existingBook?.id || crypto.randomUUID(),
     title: formData.get("title").trim(),
     author: formData.get("author").trim(),
     genre: formData.get("genre").trim(),
     status: formData.get("status"),
     coverImage,
-    rating: 0,
+    rating: existingBook?.rating || 0,
     ownerId: currentAccount.id,
   };
-  books.unshift(book);
+  const previousBooks = [...books];
+  if (existingBook) {
+    books = books.map((item) => (item.id === existingBook.id ? book : item));
+  } else {
+    books.unshift(book);
+  }
   if (!saveBooks()) {
-    books.shift();
+    books = previousBooks;
     return;
   }
   renderBooks();
   scheduleStatsSync();
   elements.dialog.close();
-  showToast(`"${book.title}" added to your library.`);
-  saveCloudBookCover(book).catch(() => {
-    showToast("The book was saved, but its photo will sync when online.");
-  });
+  showToast(
+    existingBook
+      ? `Details for "${book.title}" updated.`
+      : `"${book.title}" added to your library.`,
+  );
+  if (coverFile || !existingBook) {
+    saveCloudBookCover(book).catch(() => {
+      showToast("The book was saved, but its photo will sync when online.");
+    });
+  }
+  activeEditingBookId = null;
   refreshProfileActivity().catch(() => {});
 }
 
@@ -3106,7 +3177,15 @@ function renderShareCard(share) {
       <div>
         <div class="share-card-heading">
           <h3>${isBook ? "Book recommendation" : "Shared passage"}</h3>
-          <span class="share-direction">${isSender ? (myReadAt ? "Sent" : "New reply") : myReadAt ? "Read" : "Unread"}</span>
+          <div class="share-heading-actions">
+            ${
+              isBook && isSender
+                ? `<button type="button" data-share-action="edit" data-id="${share.id}">Edit</button>
+                   <button class="share-delete-action" type="button" data-share-action="delete" data-id="${share.id}">Delete</button>`
+                : ""
+            }
+            <span class="share-direction">${isSender ? (myReadAt ? "Sent" : "New reply") : myReadAt ? "Read" : "Unread"}</span>
+          </div>
         </div>
         <p class="share-meta">${isSender ? `To ${escapeHtml(recipient.username)}` : `From ${escapeHtml(sender.username)}`} / ${new Date(share.createdAt).toLocaleDateString()}</p>
         <p class="share-content">${
@@ -3216,6 +3295,59 @@ async function commentOnRecommendation(shareId, comment) {
     await loadCommunity();
     renderCommunity();
     showToast("Your response was sent.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function openRecommendationEdit(shareId) {
+  const share = shares.find(
+    (item) =>
+      item.id === shareId &&
+      item.kind === "book" &&
+      item.senderId === currentAccount?.id,
+  );
+  if (!share) return;
+  elements.recommendationEditForm.reset();
+  elements.recommendationEditError.textContent = "";
+  elements.recommendationEditId.value = share.id;
+  elements.recommendationEditTitle.value = share.payload.title || "";
+  elements.recommendationEditAuthor.value = share.payload.author || "";
+  elements.recommendationEditMessage.value = share.message || "";
+  elements.recommendationEditDialog.showModal();
+}
+
+async function saveRecommendationEdit() {
+  elements.recommendationEditError.textContent = "";
+  try {
+    await apiRequest("share-edit", {
+      method: "POST",
+      body: {
+        shareId: elements.recommendationEditId.value,
+        title: elements.recommendationEditTitle.value.trim(),
+        author: elements.recommendationEditAuthor.value.trim(),
+        message: elements.recommendationEditMessage.value.trim(),
+      },
+    });
+    elements.recommendationEditDialog.close();
+    await loadCommunity();
+    renderCommunity();
+    showToast("Recommendation updated.");
+  } catch (error) {
+    elements.recommendationEditError.textContent = error.message;
+  }
+}
+
+async function deleteRecommendation(shareId) {
+  try {
+    await apiRequest("share-delete", {
+      method: "POST",
+      body: { shareId },
+    });
+    await loadCommunity();
+    renderCommunity();
+    await refreshProfileActivity().catch(() => {});
+    showToast("Recommendation deleted.");
   } catch (error) {
     showToast(error.message);
   }
@@ -4211,6 +4343,9 @@ document
   .querySelector("#close-share-button")
   .addEventListener("click", () => elements.shareDialog.close());
 document
+  .querySelector("#close-recommendation-edit")
+  .addEventListener("click", () => elements.recommendationEditDialog.close());
+document
   .querySelector("#close-debate-invite-button")
   .addEventListener("click", () => elements.debateInviteDialog.close());
 document
@@ -4227,6 +4362,16 @@ document
   .addEventListener("click", () => elements.marketListingDialog.close());
 elements.menuToggle.addEventListener("click", () => {
   setFeatureMenu(elements.featureMenu.hidden);
+});
+elements.notificationChimeButton.addEventListener("click", () => {
+  closeFeatureMenu();
+  window.location.hash = "notifications-panel";
+  window.setTimeout(() => {
+    elements.notificationsPanel.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 80);
 });
 elements.featureMenu.addEventListener("click", (event) => {
   if (event.target.closest("a[href^='#']")) closeFeatureMenu();
@@ -4272,6 +4417,13 @@ elements.shareForm.addEventListener("submit", (event) => {
   }
 });
 
+elements.recommendationEditForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.recommendationEditForm.reportValidity()) {
+    saveRecommendationEdit();
+  }
+});
+
 elements.debateInviteForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.debateInviteForm.reportValidity()) {
@@ -4310,7 +4462,7 @@ elements.marketListingForm.addEventListener("submit", (event) => {
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (elements.form.reportValidity()) {
-    await addBook(new FormData(elements.form));
+    await saveBook(new FormData(elements.form));
   }
 });
 
@@ -4448,6 +4600,12 @@ elements.shareDialog.addEventListener("click", (event) => {
   if (event.target === elements.shareDialog) elements.shareDialog.close();
 });
 
+elements.recommendationEditDialog.addEventListener("click", (event) => {
+  if (event.target === elements.recommendationEditDialog) {
+    elements.recommendationEditDialog.close();
+  }
+});
+
 elements.coverViewDialog.addEventListener("click", (event) => {
   if (event.target === elements.coverViewDialog) {
     elements.coverViewDialog.close();
@@ -4478,6 +4636,7 @@ elements.bookGrid.addEventListener("click", (event) => {
   if (action === "share") openShareDialog("book", id);
   if (action === "delete") removeBook(id);
   if (action === "cover") openCoverForm(id);
+  if (action === "edit") openBookEditForm(id);
   if (action === "sell") openMarketListingForm(id);
   if (action === "menu") {
     openMenuId = openMenuId === id ? null : id;
@@ -4568,6 +4727,12 @@ elements.shareFeed.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-share-action]");
   if (button?.dataset.shareAction === "wishlist") {
     addRecommendationToWishlist(button.dataset.id);
+  }
+  if (button?.dataset.shareAction === "edit") {
+    openRecommendationEdit(button.dataset.id);
+  }
+  if (button?.dataset.shareAction === "delete") {
+    deleteRecommendation(button.dataset.id);
   }
 });
 
