@@ -158,6 +158,8 @@
               <a href="#reading-log"><strong>Reading Log</strong><span>Sessions and insights</span></a>
               <a href="#passages"><strong>Passages</strong><span>Saved lines and reflections</span></a>
               <a href="#journal"><strong>Journal</strong><span>Your reading reflections</span></a>
+              <a href="#creative-writing"><strong>Creative Writing</strong><span>Plan and draft stories</span></a>
+              <a href="#wordhub"><strong>WordHub Alcove</strong><span>Collect and practise words</span></a>
             </div>
             <div class="menu-group">
               <p>Explore</p>
@@ -272,6 +274,16 @@
               <span aria-hidden="true">06</span>
               <strong>The Chippings</strong>
               <small>Spend Runes on your library style</small>
+            </a>
+            <a href="#creative-writing">
+              <span aria-hidden="true">07</span>
+              <strong>Creative Writing</strong>
+              <small>Plan characters and draft stories</small>
+            </a>
+            <a href="#wordhub">
+              <span aria-hidden="true">08</span>
+              <strong>WordHub Alcove</strong>
+              <small>Keep new words in active use</small>
             </a>
           </div>
         </section>
@@ -568,6 +580,274 @@
             <button class="text-button" id="empty-journal-button" type="button">
               Write your first entry <span aria-hidden="true">-&gt;</span>
             </button>
+          </div>
+        </section>
+
+        <section
+          class="creative-writing-section"
+          id="creative-writing"
+          aria-labelledby="creative-writing-title"
+        >
+          <div class="section-heading creative-heading">
+            <div>
+              <p class="eyebrow">THE WRITER'S DESK</p>
+              <h2 id="creative-writing-title">Creative Writing</h2>
+              <p>
+                Shape an idea, plan its world and characters, then write the
+                story in a private, automatically saved workspace.
+              </p>
+            </div>
+            <button class="primary-button" id="new-story-button" type="button">
+              <span aria-hidden="true">+</span> New story
+            </button>
+          </div>
+
+          <div class="writing-workspace">
+            <aside class="story-library" aria-labelledby="story-library-title">
+              <div class="story-library-heading">
+                <h3 id="story-library-title">My stories</h3>
+                <span id="story-count">0</span>
+              </div>
+              <div id="story-list" class="story-list" aria-live="polite"></div>
+              <div id="story-empty" class="story-empty">
+                <p>Your first unwritten story is waiting.</p>
+              </div>
+            </aside>
+
+            <form id="story-editor" class="story-editor" hidden>
+              <input id="story-id-input" type="hidden" />
+              <div class="story-editor-topline">
+                <label class="story-title-field">
+                  <span>Story title</span>
+                  <input
+                    id="story-title-input"
+                    type="text"
+                    maxlength="160"
+                    placeholder="Untitled story"
+                    spellcheck="true"
+                    required
+                  />
+                </label>
+                <button
+                  class="story-delete-button"
+                  id="delete-story-button"
+                  type="button"
+                >
+                  Delete story
+                </button>
+              </div>
+
+              <div class="writing-tabs" role="tablist" aria-label="Story workspace">
+                <button
+                  class="active"
+                  type="button"
+                  data-writing-view="plan"
+                  aria-selected="true"
+                >
+                  Story plan
+                </button>
+                <button
+                  type="button"
+                  data-writing-view="draft"
+                  aria-selected="false"
+                >
+                  Manuscript
+                </button>
+              </div>
+
+              <div id="story-plan-view" class="story-plan-view">
+                <div class="form-row two-columns">
+                  <label>
+                    <span>Genre</span>
+                    <input
+                      id="story-genre-input"
+                      type="text"
+                      maxlength="100"
+                      placeholder="Fantasy, mystery, memoir..."
+                      spellcheck="true"
+                    />
+                  </label>
+                  <label>
+                    <span>Point of view</span>
+                    <select id="story-pov-input">
+                      <option value="">Choose a perspective</option>
+                      <option>First person</option>
+                      <option>Second person</option>
+                      <option>Third person limited</option>
+                      <option>Third person omniscient</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  <span>Premise</span>
+                  <textarea
+                    id="story-premise-input"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="What is the central idea or conflict?"
+                    spellcheck="true"
+                  ></textarea>
+                </label>
+                <div class="form-row two-columns">
+                  <label>
+                    <span>Characters</span>
+                    <textarea
+                      id="story-characters-input"
+                      rows="7"
+                      maxlength="6000"
+                      placeholder="Names, desires, fears, relationships..."
+                      spellcheck="true"
+                    ></textarea>
+                  </label>
+                  <label>
+                    <span>Setting and world</span>
+                    <textarea
+                      id="story-setting-input"
+                      rows="7"
+                      maxlength="6000"
+                      placeholder="Where and when does the story unfold?"
+                      spellcheck="true"
+                    ></textarea>
+                  </label>
+                </div>
+                <label>
+                  <span>Plot outline</span>
+                  <textarea
+                    id="story-outline-input"
+                    rows="10"
+                    maxlength="12000"
+                    placeholder="Opening, turning points, climax, ending..."
+                    spellcheck="true"
+                  ></textarea>
+                </label>
+              </div>
+
+              <div id="story-draft-view" class="story-draft-view" hidden>
+                <div class="manuscript-toolbar">
+                  <span><strong id="story-word-count">0</strong> words</span>
+                  <span id="story-save-status">All changes saved</span>
+                  <span class="spellcheck-status">Spellcheck on</span>
+                </div>
+                <label>
+                  <span class="sr-only">Story manuscript</span>
+                  <textarea
+                    id="story-draft-input"
+                    rows="28"
+                    maxlength="200000"
+                    placeholder="Begin your story..."
+                    spellcheck="true"
+                  ></textarea>
+                </label>
+              </div>
+            </form>
+
+            <div id="story-editor-empty" class="story-editor-empty">
+              <span aria-hidden="true">W</span>
+              <h3>Open a fresh page.</h3>
+              <p>Create a story to begin planning and writing.</p>
+              <button class="text-button" id="empty-new-story-button" type="button">
+                Start a story <span aria-hidden="true">-&gt;</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="wordhub-section" id="wordhub" aria-labelledby="wordhub-title">
+          <div class="wordhub-heading">
+            <div>
+              <p class="eyebrow">A VOCABULARY COMMONPLACE</p>
+              <h2 id="wordhub-title">WordHub Alcove</h2>
+              <p>
+                Save unfamiliar or delightful words from your reading, record
+                where you found them, and make each one yours in a new sentence.
+              </p>
+            </div>
+            <div class="wordhub-count">
+              <strong id="wordhub-count">0</strong>
+              <span>WORDS KEPT</span>
+            </div>
+          </div>
+
+          <div class="wordhub-layout">
+            <form id="wordhub-form" class="wordhub-form">
+              <input id="wordhub-id-input" type="hidden" />
+              <div class="wordhub-form-heading">
+                <h3 id="wordhub-form-title">Add a word</h3>
+                <button id="wordhub-cancel-edit" type="button" hidden>Cancel edit</button>
+              </div>
+              <label>
+                <span>Word</span>
+                <input
+                  id="wordhub-word-input"
+                  type="text"
+                  maxlength="100"
+                  placeholder="e.g. liminal"
+                  spellcheck="true"
+                  required
+                />
+              </label>
+              <label>
+                <span>Meaning in your own words</span>
+                <textarea
+                  id="wordhub-meaning-input"
+                  rows="4"
+                  maxlength="1200"
+                  spellcheck="true"
+                  required
+                ></textarea>
+              </label>
+              <div class="form-row two-columns">
+                <label>
+                  <span>Book (optional)</span>
+                  <input
+                    id="wordhub-book-input"
+                    type="text"
+                    list="book-title-suggestions"
+                    maxlength="160"
+                    spellcheck="true"
+                  />
+                </label>
+                <label>
+                  <span>Page (optional)</span>
+                  <input id="wordhub-page-input" type="text" maxlength="30" />
+                </label>
+              </div>
+              <label>
+                <span>Your sentence</span>
+                <textarea
+                  id="wordhub-sentence-input"
+                  rows="5"
+                  maxlength="1600"
+                  placeholder="Use the word in an original sentence."
+                  spellcheck="true"
+                  required
+                ></textarea>
+              </label>
+              <p class="spellcheck-note">
+                Spellcheck is active in the word, meaning, and sentence fields.
+              </p>
+              <button class="primary-button submit-button" type="submit">
+                Save word
+              </button>
+            </form>
+
+            <div class="wordhub-collection">
+              <label class="search-box wordhub-search">
+                <span class="search-icon" aria-hidden="true"></span>
+                <span class="sr-only">Search saved words</span>
+                <input
+                  id="wordhub-search-input"
+                  type="search"
+                  placeholder="Search words, meanings, or books..."
+                />
+              </label>
+              <div id="wordhub-list" class="wordhub-list" aria-live="polite"></div>
+              <div id="wordhub-empty" class="wordhub-empty">
+                <div aria-hidden="true">A</div>
+                <h3>Build a living vocabulary.</h3>
+                <p>The next memorable word you meet can begin this collection.</p>
+              </div>
+            </div>
           </div>
         </section>
 
