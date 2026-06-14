@@ -158,6 +158,26 @@ explicitly list across their entries. A searchable reference presents central
 Jungian archetypes and related recurring patterns while emphasizing that their
 meaning depends on personal, cultural, and dream-specific context.
 
+Dream synchronization now merges entries by their unique identifier and latest
+edit time instead of replacing the entire journal. The Dream Journal also
+includes a searchable guide to Jung's wider concepts, a short historical
+comparison of Jung and Freud and their theoretical split, and a small
+non-distracting animated Jung figure.
+
+Reader profiles display public collections as full book cards, including cover
+photographs, ratings, reading status, genre, and print, e-book, or audiobook
+format. Readers can issue one another measurable challenges based on pages,
+minutes, or sessions, with progress calculated from the recipient's reading log.
+
+Reading Log insights now include thirty-day consistency, recent pace, average
+pages per session, strongest weekday, session range, most-read book, and an
+annual page projection. Sessions also store the page from which the reader
+plans to continue.
+
+The WordHub Alcove can request definitions from the Free Dictionary API for the
+reader to review and adapt. The Chippings includes additional celestial, ocean,
+autumn, and violet interface themes.
+
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
 once per signed-in browsing session, carries no reward or streak pressure, and
