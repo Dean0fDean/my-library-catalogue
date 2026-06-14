@@ -175,8 +175,17 @@ annual page projection. Sessions also store the page from which the reader
 plans to continue.
 
 The WordHub Alcove can request definitions from the Free Dictionary API for the
-reader to review and adapt. The Chippings includes additional celestial, ocean,
-autumn, and violet interface themes.
+reader to review and adapt. Its saved-word search covers words, definitions,
+source books, page references, and example sentences. The Chippings includes
+additional celestial, ocean, autumn, and violet interface themes.
+
+Notification read states now remain stable during activity refreshes, including
+both individual and Mark All Read actions. Achievement milestones now extend
+across collections, completed books, sessions, pages, reading time, passages,
+journals, dreams, and WordHub vocabulary.
+
+The animated Jung figure now wears glasses and a moustache and appears at a
+slower interval so that the Dream Journal remains calm and readable.
 
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
