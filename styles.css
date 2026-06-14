@@ -6414,7 +6414,7 @@ body.feature-menu-open::after {
   background: #f5efff;
   border: 1px solid rgba(234, 212, 134, 0.72);
   box-shadow: 0 12px 30px rgba(4, 2, 14, 0.24);
-  animation: jung-pop 9s ease-in-out infinite;
+  animation: jung-pop 28s ease-in-out infinite;
 }
 
 .jung-popover p {
@@ -6474,14 +6474,55 @@ body.feature-menu-open::after {
   right: 8px;
 }
 
-.jung-face b {
+.jung-glasses {
+  position: absolute;
+  top: 11px;
+  left: 3px;
+  width: 10px;
+  height: 8px;
+  border: 2px solid #3b3135;
+  border-radius: 50%;
+  box-shadow: 16px 0 0 -2px #d9b28d, 16px 0 0 0 #3b3135;
+}
+
+.jung-glasses::after {
+  position: absolute;
+  top: 2px;
+  left: 9px;
+  width: 7px;
+  height: 2px;
+  background: #3b3135;
+  content: "";
+}
+
+.jung-moustache {
   position: absolute;
   left: 8px;
-  bottom: 4px;
+  bottom: 7px;
   width: 16px;
-  height: 9px;
-  border-bottom: 3px solid #f0eee7;
-  border-radius: 50%;
+  height: 6px;
+}
+
+.jung-moustache::before,
+.jung-moustache::after {
+  position: absolute;
+  top: 0;
+  width: 9px;
+  height: 5px;
+  background: #e9e7df;
+  content: "";
+}
+
+.jung-moustache::before {
+  left: 0;
+  border-radius: 70% 25% 65% 30%;
+  transform: rotate(12deg);
+}
+
+.jung-moustache::after {
+  right: 0;
+  border-radius: 25% 70% 30% 65%;
+  transform: rotate(-12deg);
 }
 
 .jung-suit {
@@ -6493,8 +6534,8 @@ body.feature-menu-open::after {
 }
 
 @keyframes jung-pop {
-  0%, 72%, 100% { transform: translateY(15px) scale(0.96); opacity: 0; }
-  78%, 94% { transform: translateY(0) scale(1); opacity: 1; }
+  0%, 87%, 100% { transform: translateY(15px) scale(0.96); opacity: 0; }
+  91%, 97% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 .wordhub-lookup {
@@ -6506,6 +6547,46 @@ body.feature-menu-open::after {
 
 .wordhub-lookup button {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0.65rem 0.95rem;
+  color: #fffdf4;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, #254d3b, #173328);
+  border: 1px solid #b68a3a;
+  border-radius: 999px;
+  box-shadow: 0 7px 18px rgba(23, 51, 40, 0.2);
+}
+
+.wordhub-lookup button span {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  color: #253d31;
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  background: #f4dfaa;
+  border-radius: 50%;
+}
+
+.wordhub-lookup button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #30664d, #1b3b2e);
+  box-shadow: 0 9px 22px rgba(23, 51, 40, 0.28);
+  transform: translateY(-1px);
+}
+
+.wordhub-lookup button:focus-visible {
+  outline: 3px solid rgba(182, 138, 58, 0.34);
+  outline-offset: 3px;
+}
+
+.wordhub-lookup button:disabled {
+  cursor: wait;
+  opacity: 0.68;
 }
 
 .wordhub-lookup small {
