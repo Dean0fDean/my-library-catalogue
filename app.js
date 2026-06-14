@@ -56,6 +56,47 @@ const DREAM_ARCHETYPES = [
   { name: "The Threshold Guardian", group: "Instinct and the more-than-human world", description: "A figure or obstacle at a boundary, testing readiness before the dreamer enters unfamiliar psychic territory." },
 ];
 
+const JUNG_CONCEPTS = [
+  { name: "Analytical psychology", group: "Foundations", description: "Jung's school of psychology, emphasizing symbolic life, unconscious processes, psychological development, and movement toward a more integrated personality." },
+  { name: "Psyche", group: "Foundations", description: "The whole field of psychological life, including conscious and unconscious processes rather than consciousness alone." },
+  { name: "Ego", group: "Structure of the psyche", description: "The centre of conscious identity: the familiar sense of 'I' that organizes awareness but does not encompass the whole psyche." },
+  { name: "Personal unconscious", group: "Structure of the psyche", description: "Forgotten, repressed, subliminal, or not-yet-conscious material arising from an individual's experience." },
+  { name: "Collective unconscious", group: "Structure of the psyche", description: "Jung's hypothesis of a deeper, inherited layer of the psyche structured by universal predispositions called archetypes." },
+  { name: "Archetype", group: "Structure of the psyche", description: "An underlying pattern that can generate many images and behaviours; it is not a fixed symbol with one dictionary meaning." },
+  { name: "Archetypal image", group: "Structure of the psyche", description: "A culturally and personally shaped image through which an underlying archetypal pattern becomes perceptible." },
+  { name: "Complex", group: "Structure of the psyche", description: "An emotionally charged cluster of memories, ideas, and reactions that can temporarily behave like a partial personality." },
+  { name: "The Self", group: "Development", description: "The regulating archetype of psychic wholeness and the larger totality of conscious and unconscious life." },
+  { name: "Individuation", group: "Development", description: "The lifelong process of becoming a more differentiated and integrated individual by engaging neglected parts of the psyche." },
+  { name: "Integration", group: "Development", description: "Bringing previously unconscious attitudes or contents into a workable relationship with conscious life, without simply acting them out." },
+  { name: "Differentiation", group: "Development", description: "Developing a psychological function or attitude so it can operate distinctly rather than remaining fused with other reactions." },
+  { name: "Transcendent function", group: "Development", description: "A symbolic process through which tension between conscious and unconscious positions may produce a new, mediating standpoint." },
+  { name: "Enantiodromia", group: "Development", description: "The tendency of an extreme one-sided position to produce or turn into its opposite over time." },
+  { name: "Compensation", group: "Dreams and symbols", description: "The unconscious tendency to balance, correct, or supplement a one-sided conscious attitude, often through dreams." },
+  { name: "Prospective function", group: "Dreams and symbols", description: "The possibility that a dream sketches emerging tendencies or future psychological development without literally predicting events." },
+  { name: "Amplification", group: "Dreams and symbols", description: "Exploring a dream image through personal associations alongside parallels in myth, religion, art, folklore, and culture." },
+  { name: "Active imagination", group: "Dreams and symbols", description: "Deliberate engagement with images, fantasies, or inner figures while awake, often through writing, art, movement, or dialogue." },
+  { name: "Symbol", group: "Dreams and symbols", description: "An image or expression that points beyond what can be fully captured by a single rational definition." },
+  { name: "Sign", group: "Dreams and symbols", description: "A conventional pointer to a known meaning; Jung warned against reducing living dream images to fixed signs." },
+  { name: "Numinous", group: "Dreams and symbols", description: "An experience carrying an uncanny, sacred, fascinating, or overwhelming emotional charge." },
+  { name: "Synchronicity", group: "Meaning and relationship", description: "Jung's proposed principle of meaningful coincidence between inner and outer events without a demonstrated causal connection." },
+  { name: "Projection", group: "Meaning and relationship", description: "Unconsciously experiencing an aspect of one's own psyche as though it belonged primarily to another person or object." },
+  { name: "Withdrawal of projection", group: "Meaning and relationship", description: "Recognizing and taking responsibility for qualities previously attributed to someone or something outside oneself." },
+  { name: "Participation mystique", group: "Meaning and relationship", description: "Psychological identification in which the boundary between oneself and another person, group, or object is blurred." },
+  { name: "Libido", group: "Psychic energy", description: "In Jung's broader usage, general psychic energy or motivational intensity rather than sexual energy alone." },
+  { name: "Psychological type", group: "Psychological types", description: "A pattern of conscious orientation described through attitudes and functions; a map of preference, not a complete identity." },
+  { name: "Introversion", group: "Psychological types", description: "An attitude that tends to orient energy toward subjective factors and the inner world." },
+  { name: "Extraversion", group: "Psychological types", description: "An attitude that tends to orient energy toward people, objects, and circumstances in the outer world." },
+  { name: "Thinking", group: "Psychological types", description: "A judging function that evaluates through concepts, logic, and connections between ideas." },
+  { name: "Feeling", group: "Psychological types", description: "A judging function that evaluates worth, importance, acceptance, and rejection; it is not simply emotion." },
+  { name: "Sensation", group: "Psychological types", description: "A perceiving function concerned with concrete sensory information and what is presently given." },
+  { name: "Intuition", group: "Psychological types", description: "A perceiving function attentive to possibilities, patterns, origins, and likely developments beyond immediate sensory data." },
+  { name: "Inferior function", group: "Psychological types", description: "The least differentiated conscious function, often carrying vulnerability, spontaneity, and a bridge toward unconscious material." },
+  { name: "Persona", group: "Archetypal dynamics", description: "The adaptive social face or role through which a person meets collective expectations." },
+  { name: "Shadow", group: "Archetypal dynamics", description: "Qualities excluded from the conscious self-image, including difficult traits and neglected capacities." },
+  { name: "Anima and animus", group: "Archetypal dynamics", description: "Historically gendered inner figures; contemporary readers often approach them more flexibly as forms of otherness within the psyche." },
+  { name: "Coniunctio", group: "Archetypal dynamics", description: "The symbolic union of opposites, drawn especially from alchemical imagery, suggesting a new relationship between divided psychic factors." },
+];
+
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
   catalogueExpandButton: document.querySelector("#catalogue-expand-button"),
@@ -84,6 +125,7 @@ const elements = {
   pagesReadInput: document.querySelector("#pages-read-input"),
   startPageInput: document.querySelector("#start-page-input"),
   endPageInput: document.querySelector("#end-page-input"),
+  continuePageInput: document.querySelector("#continue-page-input"),
   sessionDateInput: document.querySelector("#session-date-input"),
   startTimeInput: document.querySelector("#start-time-input"),
   endTimeInput: document.querySelector("#end-time-input"),
@@ -99,6 +141,13 @@ const elements = {
   paceInsight: document.querySelector("#pace-insight"),
   averageInsight: document.querySelector("#average-insight"),
   streakInsight: document.querySelector("#streak-insight"),
+  pagesSessionInsight: document.querySelector("#pages-session-insight"),
+  topBookInsight: document.querySelector("#top-book-insight"),
+  topBookDetail: document.querySelector("#top-book-detail"),
+  activeDaysInsight: document.querySelector("#active-days-insight"),
+  activeDaysDetail: document.querySelector("#active-days-detail"),
+  projectedPagesInsight: document.querySelector("#projected-pages-insight"),
+  readingDeepInsights: document.querySelector("#reading-deep-insights"),
   weeklyChart: document.querySelector("#weekly-chart"),
   weeklyTotal: document.querySelector("#weekly-total"),
   habitTitle: document.querySelector("#habit-title"),
@@ -170,6 +219,9 @@ const elements = {
   archetypeSearchInput: document.querySelector("#archetype-search-input"),
   archetypeReferenceList: document.querySelector("#archetype-reference-list"),
   archetypeReferenceEmpty: document.querySelector("#archetype-reference-empty"),
+  jungConceptSearchInput: document.querySelector("#jung-concept-search-input"),
+  jungConceptReferenceList: document.querySelector("#jung-concept-reference-list"),
+  jungConceptReferenceEmpty: document.querySelector("#jung-concept-reference-empty"),
   dreamFactBanner: document.querySelector("#dream-fact-banner"),
   dreamFactText: document.querySelector("#dream-fact-text"),
   profileNotificationCount: document.querySelector("#profile-notification-count"),
@@ -219,6 +271,8 @@ const elements = {
   wordhubCancelEdit: document.querySelector("#wordhub-cancel-edit"),
   wordhubWordInput: document.querySelector("#wordhub-word-input"),
   wordhubMeaningInput: document.querySelector("#wordhub-meaning-input"),
+  wordhubLookupButton: document.querySelector("#wordhub-lookup-button"),
+  wordhubLookupStatus: document.querySelector("#wordhub-lookup-status"),
   wordhubBookInput: document.querySelector("#wordhub-book-input"),
   wordhubPageInput: document.querySelector("#wordhub-page-input"),
   wordhubSentenceInput: document.querySelector("#wordhub-sentence-input"),
@@ -272,6 +326,13 @@ const elements = {
   readerCatalogueExpandButton: document.querySelector(
     "#reader-catalogue-expand-button",
   ),
+  openReaderChallenge: document.querySelector("#open-reader-challenge"),
+  readingChallengeDialog: document.querySelector("#reading-challenge-dialog"),
+  readingChallengeForm: document.querySelector("#reading-challenge-form"),
+  readingChallengeInviteeId: document.querySelector("#reading-challenge-invitee-id"),
+  readingChallengeSummary: document.querySelector("#reading-challenge-summary"),
+  readingChallengeDeadline: document.querySelector("#reading-challenge-deadline"),
+  readingChallengeError: document.querySelector("#reading-challenge-error"),
   shareDialog: document.querySelector("#share-dialog"),
   shareForm: document.querySelector("#share-form"),
   shareKindInput: document.querySelector("#share-kind-input"),
@@ -303,6 +364,9 @@ const elements = {
     "#community-marketplace-view",
   ),
   communityDebatesView: document.querySelector("#community-debates-view"),
+  communityChallengesView: document.querySelector("#community-challenges-view"),
+  challengeList: document.querySelector("#challenge-list"),
+  challengeEmpty: document.querySelector("#challenge-empty"),
   debateList: document.querySelector("#debate-list"),
   debateEmpty: document.querySelector("#debate-empty"),
   debateInviteDialog: document.querySelector("#debate-invite-dialog"),
@@ -344,6 +408,7 @@ let dreamFacts = [];
 let marketplaceListings = [];
 let learningTasks = [];
 let debates = [];
+let readingChallenges = [];
 let announcements = [];
 let quandaries = [];
 let creativeWriting = loadArray(CREATIVE_WRITING_STORAGE_KEY);
@@ -385,6 +450,7 @@ let storySaveTimer;
 let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 let activeReaderCatalogue = [];
+let activeReaderId = "";
 let profileNotifications = [];
 let profileAchievements = [];
 let catalogueExpanded = false;
@@ -807,6 +873,7 @@ function notificationIcon(type) {
     marketplace: "$",
     learning: "R",
     debate: "D",
+    challenge: "C",
     announcement: "!",
     streak: "S",
     quandary: "?",
@@ -1021,6 +1088,19 @@ function replaceAccountItems(items, accountId, incoming) {
   ];
 }
 
+function mergeVersionedItems(localItems, incomingItems) {
+  const merged = new Map();
+  [...localItems, ...incomingItems].forEach((item) => {
+    if (!item?.id) return;
+    const previous = merged.get(item.id);
+    const previousTime =
+      Date.parse(previous?.updatedAt || previous?.createdAt || 0) || 0;
+    const nextTime = Date.parse(item.updatedAt || item.createdAt || 0) || 0;
+    if (!previous || nextTime >= previousTime) merged.set(item.id, item);
+  });
+  return [...merged.values()];
+}
+
 async function loadAccountData() {
   if (!currentAccount || !apiToken) return;
   const cloud = await apiRequest("data");
@@ -1077,7 +1157,13 @@ async function loadAccountData() {
   dreams = replaceAccountItems(
     dreams,
     currentAccount.id,
-    cloud.dreams || [],
+    mergeVersionedItems(
+      ownedByCurrent(dreams),
+      (cloud.dreams || []).map((dream) => ({
+        ...dream,
+        ownerId: currentAccount.id,
+      })),
+    ),
   );
   saveCollection(STORAGE_KEY, books);
   saveCollection(LOG_STORAGE_KEY, readingLog);
@@ -1190,12 +1276,14 @@ async function loadChippings() {
 
 async function loadSocialSpaces() {
   if (!apiToken) return;
-  const [debateData, announcementData, quandaryData] = await Promise.all([
+  const [debateData, challengeData, announcementData, quandaryData] = await Promise.all([
     apiRequest("debates"),
+    apiRequest("reading-challenges"),
     apiRequest("announcements"),
     apiRequest("quandaries"),
   ]);
   debates = debateData.debates || [];
+  readingChallenges = challengeData.challenges || [];
   announcements = announcementData.announcements || [];
   quandaries = quandaryData.quandaries || [];
 }
@@ -1466,6 +1554,14 @@ function updateStats() {
     accountBooks.length - readBooks - readingBooks;
 }
 
+function bookFormatLabel(format) {
+  return {
+    ebook: "E-book",
+    audiobook: "Audiobook",
+    print: "Printed book",
+  }[format] || "Printed book";
+}
+
 function renderBook(book) {
   const menuIsOpen = openMenuId === book.id;
   const rating = Number(book.rating) || 0;
@@ -1476,7 +1572,10 @@ function renderBook(book) {
     <article class="book-card" data-book-id="${book.id}" style="--card-accent: ${colorForGenre(book.genre)}">
       <div class="book-cover" title="${book.coverImage ? "View full picture" : "No picture added"}">${cover}</div>
       <div class="book-card-top">
-        <p class="genre-label">${escapeHtml(book.genre)}</p>
+        <div class="book-card-labels">
+          <p class="genre-label">${escapeHtml(book.genre)}</p>
+          <span class="book-format-badge ${escapeHtml(book.format || "print")}">${escapeHtml(bookFormatLabel(book.format))}</span>
+        </div>
         <button
           class="menu-button"
           type="button"
@@ -1771,6 +1870,7 @@ function openBookEditForm(id) {
   elements.titleInput.value = book.title;
   document.querySelector("#author-input").value = book.author;
   document.querySelector("#genre-input").value = book.genre;
+  document.querySelector("#book-format-input").value = book.format || "print";
   const statusInput = elements.form.querySelector(
     `input[name="status"][value="${book.status}"]`,
   );
@@ -1806,6 +1906,7 @@ async function saveBook(formData) {
     title: formData.get("title").trim(),
     author: formData.get("author").trim(),
     genre: formData.get("genre").trim(),
+    format: formData.get("format") || "print",
     status: formData.get("status"),
     coverImage,
     rating: existingBook?.rating || 0,
@@ -2205,7 +2306,57 @@ function renderReadingInsights() {
   const averageMinutes = sessionCount
     ? Math.round(totalMinutes / sessionCount)
     : 0;
+  const averagePages = sessionCount
+    ? Math.round(totalPages / sessionCount)
+    : 0;
   const streak = calculateStreak();
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(today.getDate() - 29);
+  const recentEntries = accountLog.filter((entry) => {
+    const date = new Date(`${entry.date}T12:00:00`);
+    return date >= thirtyDaysAgo && date <= today;
+  });
+  const recentPages = recentEntries.reduce(
+    (total, entry) => total + (Number(entry.pagesRead) || 0),
+    0,
+  );
+  const recentMinutes = recentEntries.reduce(
+    (total, entry) => total + (Number(entry.durationMinutes) || 0),
+    0,
+  );
+  const activeDays = new Set(recentEntries.map((entry) => entry.date)).size;
+  const projectedPages = recentPages
+    ? Math.round((recentPages / 30) * 365)
+    : 0;
+  const byBook = accountLog.reduce((totals, entry) => {
+    const key = `${entry.title}\u0000${entry.author}`;
+    totals[key] ||= { title: entry.title, author: entry.author, pages: 0, minutes: 0, sessions: 0 };
+    totals[key].pages += Number(entry.pagesRead) || 0;
+    totals[key].minutes += Number(entry.durationMinutes) || 0;
+    totals[key].sessions += 1;
+    return totals;
+  }, {});
+  const topBook = Object.values(byBook).sort(
+    (first, second) => second.minutes - first.minutes || second.pages - first.pages,
+  )[0];
+  const weekdayTotals = accountLog.reduce((totals, entry) => {
+    const label = new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(
+      new Date(`${entry.date}T12:00:00`),
+    );
+    totals[label] = (totals[label] || 0) + (Number(entry.durationMinutes) || 0);
+    return totals;
+  }, {});
+  const strongestWeekday = Object.entries(weekdayTotals).sort(
+    (first, second) => second[1] - first[1],
+  )[0];
+  const longestSession = sessionCount
+    ? Math.max(...accountLog.map((entry) => Number(entry.durationMinutes) || 0))
+    : 0;
+  const shortestSession = sessionCount
+    ? Math.min(...accountLog.map((entry) => Number(entry.durationMinutes) || 0))
+    : 0;
 
   elements.totalTimeInsight.textContent = formatDuration(totalMinutes);
   elements.sessionCountInsight.textContent = sessionCount
@@ -2221,6 +2372,24 @@ function renderReadingInsights() {
   elements.streakInsight.textContent = streak
     ? `${streak}-day current streak`
     : "Start your first streak";
+  elements.pagesSessionInsight.textContent = averagePages
+    ? averagePages.toLocaleString()
+    : "--";
+  elements.topBookInsight.textContent = topBook
+    ? topBook.title
+    : "--";
+  elements.topBookDetail.textContent = topBook
+    ? `${formatDuration(topBook.minutes)} across ${topBook.sessions} ${topBook.sessions === 1 ? "session" : "sessions"}`
+    : "Log sessions to compare books";
+  elements.activeDaysInsight.textContent = sessionCount
+    ? `${activeDays}/30`
+    : "--";
+  elements.activeDaysDetail.textContent = recentEntries.length
+    ? `${recentEntries.length} sessions and ${formatDuration(recentMinutes)}`
+    : "No sessions in the last 30 days";
+  elements.projectedPagesInsight.textContent = projectedPages
+    ? projectedPages.toLocaleString()
+    : "--";
   elements.weeklyTotal.textContent =
     `${weeklyMinutes} ${weeklyMinutes === 1 ? "minute" : "minutes"}`;
 
@@ -2249,6 +2418,8 @@ function renderReadingInsights() {
     elements.habitTitle.textContent = "Your insights will appear here.";
     elements.habitMessage.textContent =
       "Log a few reading sessions to learn when you read most and how your pace changes over time.";
+    elements.readingDeepInsights.innerHTML =
+      '<p class="reading-deep-empty">Detailed comparisons will appear after your first reading session.</p>';
     return;
   }
 
@@ -2260,15 +2431,34 @@ function renderReadingInsights() {
   const favoritePeriod = Object.entries(periodMinutes).sort(
     (a, b) => b[1] - a[1],
   )[0][0];
-  const longestSession = Math.max(
-    ...accountLog.map((entry) => entry.durationMinutes),
-  );
   elements.habitTitle.textContent = `You read most ${favoritePeriod}.`;
   elements.habitMessage.textContent =
     `Your average session is ${formatDuration(averageMinutes)}, and your longest is ${formatDuration(longestSession)}. ` +
     (streak > 1
       ? `You are on a ${streak}-day streak; protecting that time can help the habit stick.`
       : "A regular reading window can help turn individual sessions into a lasting habit.");
+  elements.readingDeepInsights.innerHTML = `
+    <article>
+      <span>Strongest weekday</span>
+      <strong>${escapeHtml(strongestWeekday?.[0] || "--")}</strong>
+      <p>${strongestWeekday ? `${formatDuration(strongestWeekday[1])} logged on that weekday overall.` : "More sessions will reveal a pattern."}</p>
+    </article>
+    <article>
+      <span>Session range</span>
+      <strong>${shortestSession ? `${formatDuration(shortestSession)} - ${formatDuration(longestSession)}` : "--"}</strong>
+      <p>Your shortest and longest logged reading sessions.</p>
+    </article>
+    <article>
+      <span>Recent consistency</span>
+      <strong>${activeDays ? `${Math.round((activeDays / 30) * 100)}%` : "--"}</strong>
+      <p>Percentage of the last 30 days containing at least one session.</p>
+    </article>
+    <article>
+      <span>Recent pace</span>
+      <strong>${recentMinutes ? `${Math.round((recentPages / recentMinutes) * 60)} p/h` : "--"}</strong>
+      <p>Calculated from the last 30 days rather than your lifetime average.</p>
+    </article>
+  `;
 }
 
 function updateBookSuggestions() {
@@ -2307,7 +2497,7 @@ function renderLogEntry(entry) {
       </div>
       <div class="log-metric">
         <strong>${entry.pagesRead} pages</strong>
-        <small>Pages ${entry.startPage}-${entry.endPage}</small>
+        <small>Pages ${entry.startPage}-${entry.endPage}; continue at ${entry.continuePage ?? entry.endPage + 1}</small>
       </div>
       <div class="log-metric">
         <strong>${formatDuration(entry.durationMinutes)}</strong>
@@ -2396,7 +2586,8 @@ function suggestPagesRead() {
     elements.endPageInput.value &&
     endPage >= startPage
   ) {
-    elements.pagesReadInput.value = endPage - startPage;
+    elements.pagesReadInput.value = endPage - startPage + 1;
+    elements.continuePageInput.value = endPage + 1;
   }
 }
 
@@ -2404,6 +2595,7 @@ function addReadingSession(formData) {
   const durationMinutes = updateDurationPreview();
   const startPage = Number(formData.get("startPage"));
   const endPage = Number(formData.get("endPage"));
+  const continuePage = Number(formData.get("continuePage"));
   if (!durationMinutes) return;
   if (endPage < startPage) {
     elements.endPageInput.setCustomValidity(
@@ -2413,6 +2605,14 @@ function addReadingSession(formData) {
     return;
   }
   elements.endPageInput.setCustomValidity("");
+  if (continuePage < endPage) {
+    elements.continuePageInput.setCustomValidity(
+      "The continuation page cannot be before the finishing page.",
+    );
+    elements.continuePageInput.reportValidity();
+    return;
+  }
+  elements.continuePageInput.setCustomValidity("");
 
   const entry = {
     id: crypto.randomUUID(),
@@ -2421,6 +2621,7 @@ function addReadingSession(formData) {
     pagesRead: Number(formData.get("pagesRead")),
     startPage,
     endPage,
+    continuePage,
     date: formData.get("date"),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
@@ -2433,6 +2634,9 @@ function addReadingSession(formData) {
   elements.logDialog.close();
   showToast(`Reading session for "${entry.title}" saved.`);
   refreshProfileActivity().catch(() => {});
+  loadSocialSpaces()
+    .then(renderReadingChallenges)
+    .catch(() => {});
 }
 
 function removeReadingSession(id) {
@@ -2944,6 +3148,43 @@ function resetWordhubForm() {
   elements.wordhubFormTitle.textContent = "Add a word";
   elements.wordhubCancelEdit.hidden = true;
   elements.wordhubForm.querySelector(".submit-button").textContent = "Save word";
+  elements.wordhubLookupStatus.textContent =
+    "Uses the Free Dictionary API. Review and adapt the result before saving.";
+}
+
+async function lookupWordDefinition() {
+  const word = elements.wordhubWordInput.value.trim();
+  if (!word) {
+    elements.wordhubWordInput.focus();
+    elements.wordhubLookupStatus.textContent = "Enter a word first.";
+    return;
+  }
+  elements.wordhubLookupButton.disabled = true;
+  elements.wordhubLookupStatus.textContent = `Looking up "${word}"...`;
+  try {
+    const data = await apiRequest("dictionary", {
+      method: "POST",
+      body: { word },
+    });
+    const first = data.definitions?.[0];
+    if (!first) throw new Error("No definition was returned.");
+    const alternatives = data.definitions
+      .slice(1, 3)
+      .map((item) => `${item.partOfSpeech ? `${item.partOfSpeech}: ` : ""}${item.definition}`)
+      .join("\n");
+    elements.wordhubMeaningInput.value = [
+      `${first.partOfSpeech ? `${first.partOfSpeech}: ` : ""}${first.definition}`,
+      alternatives,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    elements.wordhubLookupStatus.textContent =
+      `${data.source}. Review the wording and make it your own before saving.`;
+  } catch (error) {
+    elements.wordhubLookupStatus.textContent = error.message;
+  } finally {
+    elements.wordhubLookupButton.disabled = false;
+  }
 }
 
 function renderWordhub() {
@@ -3119,6 +3360,42 @@ function renderArchetypeReference() {
     )
     .join("");
   elements.archetypeReferenceEmpty.hidden = matches.length > 0;
+}
+
+function renderJungConceptReference() {
+  const query = elements.jungConceptSearchInput.value.trim().toLowerCase();
+  const matches = JUNG_CONCEPTS.filter((concept) =>
+    [concept.name, concept.group, concept.description]
+      .join(" ")
+      .toLowerCase()
+      .includes(query),
+  );
+  const groups = matches.reduce((result, concept) => {
+    (result[concept.group] ||= []).push(concept);
+    return result;
+  }, {});
+  elements.jungConceptReferenceList.innerHTML = Object.entries(groups)
+    .map(
+      ([group, concepts]) => `
+        <section class="archetype-reference-group">
+          <h4>${escapeHtml(group)}</h4>
+          <div class="archetype-reference-grid">
+            ${concepts
+              .map(
+                (concept) => `
+                  <article>
+                    <strong>${escapeHtml(concept.name)}</strong>
+                    <p>${escapeHtml(concept.description)}</p>
+                  </article>
+                `,
+              )
+              .join("")}
+          </div>
+        </section>
+      `,
+    )
+    .join("");
+  elements.jungConceptReferenceEmpty.hidden = matches.length > 0;
 }
 
 function dreamNote(label, value) {
@@ -4712,6 +4989,111 @@ async function postDebateMessage(debateId, message) {
   }
 }
 
+function challengeUnit(type, value) {
+  if (type === "minutes") return formatDuration(value);
+  if (type === "sessions") {
+    return `${value} ${value === 1 ? "session" : "sessions"}`;
+  }
+  return `${Number(value).toLocaleString()} ${value === 1 ? "page" : "pages"}`;
+}
+
+function renderReadingChallenges() {
+  elements.challengeList.innerHTML = readingChallenges
+    .map((challenge) => {
+      const received = challenge.inviteeId === currentAccount?.id;
+      const progress = Math.min(challenge.progress, challenge.target);
+      const percent = Math.min(
+        100,
+        Math.round((progress / challenge.target) * 100),
+      );
+      return `
+        <article class="challenge-card ${escapeHtml(challenge.status)}">
+          <div class="challenge-card-heading">
+            <div>
+              <p class="eyebrow">${received ? `FROM ${escapeHtml(challenge.inviter)}` : `FOR ${escapeHtml(challenge.invitee)}`}</p>
+              <h3>${escapeHtml(challenge.title)}</h3>
+            </div>
+            <span>${escapeHtml(challenge.status)}</span>
+          </div>
+          ${challenge.message ? `<p>${escapeHtml(challenge.message)}</p>` : ""}
+          <div class="challenge-progress">
+            <div><span style="width:${percent}%"></span></div>
+            <strong>${escapeHtml(challengeUnit(challenge.type, progress))} / ${escapeHtml(challengeUnit(challenge.type, challenge.target))}</strong>
+          </div>
+          <footer>Deadline: ${escapeHtml(formatDate(challenge.deadline))}</footer>
+          ${
+            received && challenge.status === "pending"
+              ? `<div class="challenge-actions">
+                  <button type="button" data-challenge-action="respond" data-decision="accepted" data-id="${challenge.id}">Accept</button>
+                  <button type="button" data-challenge-action="respond" data-decision="declined" data-id="${challenge.id}">Decline</button>
+                </div>`
+              : ""
+          }
+        </article>
+      `;
+    })
+    .join("");
+  elements.challengeList.hidden = readingChallenges.length === 0;
+  elements.challengeEmpty.hidden = readingChallenges.length > 0;
+}
+
+function openReadingChallenge(accountId = activeReaderId) {
+  const account = accounts.find((item) => item.id === accountId);
+  if (!account || account.id === currentAccount?.id) return;
+  elements.readingChallengeForm.reset();
+  elements.readingChallengeError.textContent = "";
+  elements.readingChallengeInviteeId.value = account.id;
+  elements.readingChallengeSummary.textContent =
+    `Set a friendly, measurable reading goal for ${account.username}.`;
+  const deadline = new Date();
+  deadline.setDate(deadline.getDate() + 7);
+  elements.readingChallengeDeadline.value = localDateString(deadline);
+  elements.readerProfileDialog.close();
+  elements.readingChallengeDialog.showModal();
+}
+
+async function sendReadingChallenge(formData) {
+  elements.readingChallengeError.textContent = "";
+  try {
+    await apiRequest("reading-challenge-invite", {
+      method: "POST",
+      body: {
+        inviteeId: formData.get("inviteeId"),
+        title: formData.get("title").trim(),
+        type: formData.get("type"),
+        target: Number(formData.get("target")),
+        deadline: formData.get("deadline"),
+        message: formData.get("message").trim(),
+      },
+    });
+    elements.readingChallengeDialog.close();
+    await loadSocialSpaces();
+    renderReadingChallenges();
+    setCommunityView("challenges");
+    showToast("Reading challenge sent.");
+  } catch (error) {
+    elements.readingChallengeError.textContent = error.message;
+  }
+}
+
+async function respondToReadingChallenge(challengeId, decision) {
+  try {
+    await apiRequest("reading-challenge-respond", {
+      method: "POST",
+      body: { challengeId, decision },
+    });
+    await loadSocialSpaces();
+    renderReadingChallenges();
+    showToast(
+      decision === "accepted"
+        ? "Reading challenge accepted."
+        : "Reading challenge declined.",
+    );
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
 function renderAnnouncements() {
   if (!currentAccount) return;
   elements.announcementForm.hidden = currentAccount.role !== "admin";
@@ -4864,6 +5246,7 @@ function setCommunityView(view) {
   elements.communityJournalsView.hidden = view !== "journals";
   elements.communityMarketplaceView.hidden = view !== "marketplace";
   elements.communityDebatesView.hidden = view !== "debates";
+  elements.communityChallengesView.hidden = view !== "challenges";
   elements.communityBulletinView.hidden = view !== "bulletin";
   elements.communityAdminView.hidden = view !== "admin";
   document.querySelectorAll("[data-community-view]").forEach((button) => {
@@ -4889,6 +5272,7 @@ function renderCommunity() {
   renderSharedJournals();
   renderMarketplace();
   renderDebates();
+  renderReadingChallenges();
   renderAnnouncements();
   renderAdminFacts();
   renderAdminQuandaries();
@@ -4909,7 +5293,7 @@ async function toggleFollow(accountId) {
   }
 }
 
-function renderReaderCatalogue() {
+function renderReaderCatalogueLegacy() {
   const query = elements.readerCatalogueSearch.value.trim().toLowerCase();
   const status = elements.readerCatalogueStatus.value;
   const filteredBooks = activeReaderCatalogue
@@ -4966,9 +5350,70 @@ function renderReaderCatalogue() {
       }</p>`;
 }
 
+function renderReaderCatalogue() {
+  const query = elements.readerCatalogueSearch.value.trim().toLowerCase();
+  const status = elements.readerCatalogueStatus.value;
+  const filteredBooks = activeReaderCatalogue
+    .filter((book) => {
+      const matchesQuery = [book.title, book.author, book.genre, book.format]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+      return matchesQuery && (status === "all" || book.status === status);
+    })
+    .sort((first, second) =>
+      first.title.localeCompare(second.title, undefined, {
+        sensitivity: "base",
+      }),
+    );
+  const displayedBooks = readerCatalogueExpanded
+    ? filteredBooks
+    : filteredBooks.slice(0, CATALOGUE_PREVIEW_LIMIT);
+  elements.readerCatalogueCount.textContent = `${filteredBooks.length} ${
+    filteredBooks.length === 1 ? "book" : "books"
+  }${filteredBooks.length !== activeReaderCatalogue.length ? ` of ${activeReaderCatalogue.length}` : ""}`;
+  elements.readerCatalogueExpandButton.hidden =
+    filteredBooks.length <= CATALOGUE_PREVIEW_LIMIT;
+  elements.readerCatalogueExpandButton.textContent = readerCatalogueExpanded
+    ? "Show fewer books"
+    : `Show all ${filteredBooks.length} books`;
+  elements.readerProfileBookList.innerHTML = filteredBooks.length
+    ? `<div class="reader-public-book-grid">${displayedBooks
+        .map((book) => {
+          const rating = Number(book.rating) || 0;
+          const cover = book.coverImage
+            ? `<img src="${book.coverImage}" alt="The user's copy of ${escapeHtml(book.title)}" />`
+            : `<div class="book-cover-placeholder" aria-hidden="true">${escapeHtml(book.title.charAt(0).toUpperCase())}</div>`;
+          return `
+            <article class="book-card reader-public-book-card" data-public-book-id="${escapeHtml(book.id)}" style="--card-accent: ${colorForGenre(book.genre)}">
+              <div class="book-cover" title="${book.coverImage ? "View full picture" : "No picture added"}">${cover}</div>
+              <div class="book-card-labels">
+                <p class="genre-label">${escapeHtml(book.genre || "Uncategorized")}</p>
+                <span class="book-format-badge ${escapeHtml(book.format || "print")}">${escapeHtml(bookFormatLabel(book.format))}</span>
+              </div>
+              <h3 class="book-title">${escapeHtml(book.title)}</h3>
+              <p class="book-author">by ${escapeHtml(book.author)}</p>
+              <div class="reader-public-rating" aria-label="${rating ? `${rating} out of 5 stars` : "Not rated"}">
+                ${rating ? `${"&#9733;".repeat(rating)}${"&#9734;".repeat(5 - rating)}` : "Not rated"}
+              </div>
+              <span class="reader-book-status ${book.status}">
+                ${book.status === "read" ? "Read" : book.status === "reading" ? "Busy reading" : "To be read"}
+              </span>
+            </article>
+          `;
+        })
+        .join("")}</div>`
+    : `<p class="reader-catalogue-empty">${
+        activeReaderCatalogue.length
+          ? "No books match this search."
+          : "No books added yet."
+      }</p>`;
+}
+
 async function openReaderProfile(accountId) {
   const account = accounts.find((item) => item.id === accountId);
   if (!account) return;
+  activeReaderId = account.id;
   const stats = statsFor(account.id);
   elements.readerProfileName.textContent = account.username;
   elements.readerProfileAvatar.innerHTML = avatarMarkup(account);
@@ -5207,6 +5652,12 @@ document
 document
   .querySelector("#close-reader-profile-button")
   .addEventListener("click", () => elements.readerProfileDialog.close());
+elements.openReaderChallenge.addEventListener("click", () =>
+  openReadingChallenge(),
+);
+document
+  .querySelector("#close-reading-challenge")
+  .addEventListener("click", () => elements.readingChallengeDialog.close());
 document
   .querySelector("#close-share-button")
   .addEventListener("click", () => elements.shareDialog.close());
@@ -5317,6 +5768,13 @@ elements.debateInviteForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.debateInviteForm.reportValidity()) {
     sendDebateInvite(new FormData(elements.debateInviteForm));
+  }
+});
+
+elements.readingChallengeForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.readingChallengeForm.reportValidity()) {
+    sendReadingChallenge(new FormData(elements.readingChallengeForm));
   }
 });
 
@@ -5642,6 +6100,14 @@ elements.readerCatalogueExpandButton.addEventListener("click", () => {
   readerCatalogueExpanded = !readerCatalogueExpanded;
   renderReaderCatalogue();
 });
+elements.readerProfileBookList.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-public-book-id]");
+  if (!card) return;
+  const book = activeReaderCatalogue.find(
+    (item) => item.id === card.dataset.publicBookId,
+  );
+  if (book) openFullCover(book);
+});
 
 elements.shareFeed.addEventListener("submit", (event) => {
   const form = event.target.closest(".recommendation-reply-form");
@@ -5736,6 +6202,13 @@ elements.debateList.addEventListener("submit", (event) => {
   if (message) postDebateMessage(form.dataset.debateId, message);
 });
 
+elements.challengeList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-challenge-action]");
+  if (button?.dataset.challengeAction === "respond") {
+    respondToReadingChallenge(button.dataset.id, button.dataset.decision);
+  }
+});
+
 elements.announcementList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-announcement-action]");
   if (button?.dataset.announcementAction === "delete") {
@@ -5810,6 +6283,8 @@ elements.passageSearchInput.addEventListener("input", renderPassages);
 elements.passageBookFilter.addEventListener("change", renderPassages);
 elements.profilePhotoInput.addEventListener("change", previewProfilePhoto);
 elements.archetypeSearchInput.addEventListener("input", renderArchetypeReference);
+elements.jungConceptSearchInput.addEventListener("input", renderJungConceptReference);
+elements.wordhubLookupButton.addEventListener("click", lookupWordDefinition);
 document.querySelectorAll("[data-passage-mode]").forEach((button) => {
   button.addEventListener("click", () => {
     setPassageMode(button.dataset.passageMode);
@@ -5853,5 +6328,6 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("hashchange", closeFeatureMenu);
 
 renderArchetypeReference();
+renderJungConceptReference();
 migrateAccountData();
 initializeAuthentication();
