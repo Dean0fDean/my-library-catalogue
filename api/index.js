@@ -529,9 +529,7 @@ async function addNotification(userId, type, title, message, dedupeKey = null) {
     ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL
     DO UPDATE SET
       title = EXCLUDED.title,
-      message = EXCLUDED.message,
-      read_at = NULL,
-      created_at = NOW()
+      message = EXCLUDED.message
   `;
 }
 
@@ -2283,29 +2281,55 @@ export default async function handler(request, response) {
     }
 
     if (action === "activity-snapshot" && request.method === "POST") {
+      const ownedBooks = Math.max(0, Number(body.ownedBooks) || 0);
       const readBooks = Math.max(0, Number(body.readBooks) || 0);
       const passages = Math.max(0, Number(body.passages) || 0);
       const sessions = Math.max(0, Number(body.sessions) || 0);
       const pages = Math.max(0, Number(body.pages) || 0);
       const minutes = Math.max(0, Number(body.minutes) || 0);
       const journals = Math.max(0, Number(body.journals) || 0);
-      if (readBooks >= 1) {
-        await unlockAchievement(user.id, "first-finish", "First finish", "Finished your first book.");
-      }
-      if (readBooks >= 5) {
-        await unlockAchievement(user.id, "five-finishes", "Five finished", "Finished five books in your catalogue.");
-      }
-      if (passages >= 1) {
-        await unlockAchievement(user.id, "first-passage", "Line keeper", "Saved your first passage.");
-      }
-      if (passages >= 10) {
-        await unlockAchievement(user.id, "passage-collector", "Passage collector", "Saved ten passages for future reference.");
-      }
-      if (sessions >= 1) {
-        await unlockAchievement(user.id, "first-session", "Reading rhythm", "Logged your first reading session.");
+      const dreams = Math.max(0, Number(body.dreams) || 0);
+      const words = Math.max(0, Number(body.words) || 0);
+      const milestones = [
+        [ownedBooks, 10, "ten-book-library", "Shelf starter", "Built a collection of ten books."],
+        [ownedBooks, 25, "twenty-five-book-library", "Home librarian", "Built a collection of twenty-five books."],
+        [ownedBooks, 50, "fifty-book-library", "Grand shelves", "Built a collection of fifty books."],
+        [ownedBooks, 100, "hundred-book-library", "Hundred-volume library", "Built a collection of one hundred books."],
+        [readBooks, 1, "first-finish", "First finish", "Finished your first book."],
+        [readBooks, 5, "five-finishes", "Five finished", "Finished five books in your catalogue."],
+        [readBooks, 10, "ten-finishes", "Double figures", "Finished ten books in your catalogue."],
+        [readBooks, 25, "twenty-five-finishes", "Seasoned reader", "Finished twenty-five books in your catalogue."],
+        [readBooks, 50, "fifty-finishes", "Fifty-book voyage", "Finished fifty books in your catalogue."],
+        [passages, 1, "first-passage", "Line keeper", "Saved your first passage."],
+        [passages, 10, "passage-collector", "Passage collector", "Saved ten passages for future reference."],
+        [passages, 25, "twenty-five-passages", "Commonplace keeper", "Saved twenty-five passages."],
+        [sessions, 1, "first-session", "Reading rhythm", "Logged your first reading session."],
+        [sessions, 10, "ten-sessions", "Steady rhythm", "Logged ten reading sessions."],
+        [sessions, 50, "fifty-sessions", "Dedicated practice", "Logged fifty reading sessions."],
+        [pages, 100, "hundred-pages", "Century reader", "Logged 100 pages of reading."],
+        [pages, 500, "five-hundred-pages", "Page turner", "Logged 500 pages of reading."],
+        [pages, 1000, "thousand-pages", "Thousand-page trail", "Logged 1,000 pages of reading."],
+        [pages, 5000, "five-thousand-pages", "Long road reader", "Logged 5,000 pages of reading."],
+        [minutes, 60, "reading-hour", "Focused hour", "Logged at least one hour of reading."],
+        [minutes, 600, "ten-reading-hours", "Ten focused hours", "Logged ten hours of reading."],
+        [minutes, 3000, "fifty-reading-hours", "Deep focus", "Logged fifty hours of reading."],
+        [journals, 1, "first-journal", "Reflective reader", "Wrote your first reading journal entry."],
+        [journals, 5, "five-journals", "Thoughtful reader", "Wrote five reading journal entries."],
+        [journals, 25, "twenty-five-journals", "Reading chronicler", "Wrote twenty-five reading journal entries."],
+        [dreams, 1, "first-dream", "Dream keeper", "Recorded your first dream."],
+        [dreams, 10, "ten-dreams", "Night archivist", "Recorded ten dreams."],
+        [dreams, 25, "twenty-five-dreams", "Symbol cartographer", "Recorded twenty-five dreams."],
+        [words, 1, "first-word", "Word finder", "Saved your first word in the WordHub Alcove."],
+        [words, 10, "ten-words", "Vocabulary gardener", "Saved ten words in the WordHub Alcove."],
+        [words, 25, "twenty-five-words", "Lexicon builder", "Saved twenty-five words in the WordHub Alcove."],
+        [words, 50, "fifty-words", "Word connoisseur", "Saved fifty words in the WordHub Alcove."],
+      ];
+      for (const [value, target, key, title, description] of milestones) {
+        if (value >= target) {
+          await unlockAchievement(user.id, key, title, description);
+        }
       }
       if (pages >= 100) {
-        await unlockAchievement(user.id, "hundred-pages", "Century reader", "Logged 100 pages of reading.");
         await addNotification(
           user.id, "insight", "Reading insight",
           `You have logged ${pages} pages across ${sessions} reading sessions.`,
@@ -2313,19 +2337,10 @@ export default async function handler(request, response) {
         );
       }
       if (minutes >= 60) {
-        await unlockAchievement(user.id, "reading-hour", "Focused hour", "Logged at least one hour of reading.");
         await addNotification(
           user.id, "insight", "Time well read",
           `Your reading log now contains ${minutes} minutes of focused reading.`,
           "insight:minutes-60",
-        );
-      }
-      if (journals >= 5) {
-        await unlockAchievement(
-          user.id,
-          "five-journals",
-          "Thoughtful reader",
-          "Wrote five reading journal entries.",
         );
       }
       return json(response, 200, { ok: true });
