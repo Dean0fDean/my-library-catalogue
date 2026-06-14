@@ -1173,6 +1173,7 @@ async function loadAccountData() {
   saveCollection(WORDHUB_STORAGE_KEY, wordhub);
   saveCollection(DREAMS_STORAGE_KEY, dreams);
   isApplyingCloudData = false;
+  await syncAccountData();
   await Promise.all(
     booksFor(currentAccount.id)
       .filter((book) => localCovers.has(book.id))
