@@ -699,7 +699,12 @@ function migrateAccountData() {
 }
 
 function normalize(value) {
-  return value.trim().toLocaleLowerCase();
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase();
 }
 
 function escapeHtml(value) {
@@ -828,6 +833,7 @@ function readingSnapshot() {
     minutes: accountLog.reduce((total, entry) => total + (Number(entry.durationMinutes) || 0), 0),
     journals: journals.length,
     dreams: ownedByCurrent(dreams).length,
+    words: ownedByCurrent(wordhub).length,
   };
 }
 
@@ -933,13 +939,15 @@ function renderProfileActivity() {
     : '<p class="profile-panel-empty">Your reading milestones will appear here.</p>';
 }
 
-async function refreshProfileActivity() {
+async function refreshProfileActivity({ syncSnapshot = true } = {}) {
   if (!currentAccount || !apiToken) return;
-  const snapshot = readingSnapshot();
-  await apiRequest("activity-snapshot", {
-    method: "POST",
-    body: snapshot,
-  });
+  if (syncSnapshot) {
+    const snapshot = readingSnapshot();
+    await apiRequest("activity-snapshot", {
+      method: "POST",
+      body: snapshot,
+    });
+  }
   const data = await apiRequest("profile-activity");
   const nextNotifications = data.notifications || [];
   const newlyReceived = notificationBaselineReady
@@ -959,13 +967,23 @@ async function refreshProfileActivity() {
 }
 
 async function markNotificationsRead(notificationId = "") {
+  const previousNotifications = profileNotifications;
+  const readAt = new Date().toISOString();
+  profileNotifications = profileNotifications.map((item) =>
+    !notificationId || item.id === notificationId
+      ? { ...item, readAt }
+      : item,
+  );
+  renderProfileActivity();
   try {
     await apiRequest("notification-read", {
       method: "POST",
       body: notificationId ? { notificationId } : { all: true },
     });
-    await refreshProfileActivity();
+    await refreshProfileActivity({ syncSnapshot: false });
   } catch (error) {
+    profileNotifications = previousNotifications;
+    renderProfileActivity();
     showToast(error.message);
   }
 }
@@ -3197,10 +3215,11 @@ function renderWordhub() {
         entry.word,
         entry.meaning,
         entry.book,
+        entry.page,
         entry.sentence,
       ]
-        .join(" ")
-        .toLocaleLowerCase();
+        .map((value) => normalize(value))
+        .join(" ");
       return !query || searchable.includes(query);
     })
     .sort((first, second) =>
