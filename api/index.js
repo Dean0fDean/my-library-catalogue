@@ -440,6 +440,38 @@ const CHIPPINGS_ITEMS = [
     preview: ["#26382c", "#e9e2ca", "#8da071"],
   },
   {
+    key: "theme-celestial",
+    type: "theme",
+    name: "Celestial Observatory",
+    description: "Indigo skies, starlight, and pale lunar parchment.",
+    price: 95,
+    preview: ["#1c1c46", "#ecebff", "#9b8ee8"],
+  },
+  {
+    key: "theme-ocean",
+    type: "theme",
+    name: "Tidebound Study",
+    description: "Deep teal shelves with sea-glass and foam-white accents.",
+    price: 85,
+    preview: ["#123b42", "#e6f1ed", "#54a7a2"],
+  },
+  {
+    key: "theme-autumn",
+    type: "theme",
+    name: "Autumn Folio",
+    description: "Russet leaves, dark oak, and softly aged paper.",
+    price: 75,
+    preview: ["#512d22", "#f0dfbf", "#c4773c"],
+  },
+  {
+    key: "theme-violet",
+    type: "theme",
+    name: "Violet Cabinet",
+    description: "Plum velvet, lilac paper, and antique brass details.",
+    price: 100,
+    preview: ["#3b2345", "#eee3f1", "#a982b5"],
+  },
+  {
     key: "frame-laurel",
     type: "frame",
     name: "Laurel Reader",
@@ -795,6 +827,22 @@ async function ensureSchema() {
         )
       `;
       await sql`
+        CREATE TABLE IF NOT EXISTS library_reading_challenges (
+          id UUID PRIMARY KEY,
+          inviter_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          invitee_id UUID NOT NULL REFERENCES library_users(id) ON DELETE CASCADE,
+          challenge_type TEXT NOT NULL,
+          target_value INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL DEFAULT '',
+          deadline DATE NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          responded_at TIMESTAMPTZ,
+          completed_at TIMESTAMPTZ
+        )
+      `;
+      await sql`
         CREATE TABLE IF NOT EXISTS library_debate_messages (
           id UUID PRIMARY KEY,
           debate_id UUID NOT NULL REFERENCES library_debates(id) ON DELETE CASCADE,
@@ -1079,6 +1127,23 @@ export default async function handler(request, response) {
     if (action === "data" && request.method === "POST") {
       const cleanArray = (value) =>
         Array.isArray(value) ? value.slice(0, 5000) : [];
+      const existingRows = await sql`
+        SELECT dreams FROM library_data WHERE user_id = ${user.id}
+      `;
+      const existingDreams = Array.isArray(existingRows[0]?.dreams)
+        ? existingRows[0].dreams
+        : [];
+      const incomingDreams = cleanArray(body.dreams);
+      const dreamMap = new Map();
+      [...existingDreams, ...incomingDreams].forEach((dream) => {
+        const id = String(dream?.id || "");
+        if (!id) return;
+        const previous = dreamMap.get(id);
+        const previousTime = Date.parse(previous?.updatedAt || previous?.createdAt || 0) || 0;
+        const nextTime = Date.parse(dream?.updatedAt || dream?.createdAt || 0) || 0;
+        if (!previous || nextTime >= previousTime) dreamMap.set(id, dream);
+      });
+      const mergedDreams = [...dreamMap.values()].slice(0, 5000);
       await sql`
         INSERT INTO library_data (
           user_id, books, reading_log, passages, wishlist, creative_writing,
@@ -1091,7 +1156,7 @@ export default async function handler(request, response) {
           ${JSON.stringify(cleanArray(body.wishlist))}::jsonb,
           ${JSON.stringify(cleanArray(body.creativeWriting))}::jsonb,
           ${JSON.stringify(cleanArray(body.wordhub))}::jsonb,
-          ${JSON.stringify(cleanArray(body.dreams))}::jsonb, NOW()
+          ${JSON.stringify(mergedDreams)}::jsonb, NOW()
         )
         ON CONFLICT (user_id) DO UPDATE SET
           books = EXCLUDED.books,
@@ -2423,19 +2488,201 @@ export default async function handler(request, response) {
         return json(response, 404, { error: "That reader could not be found." });
       }
       const sourceBooks = Array.isArray(rows[0].books) ? rows[0].books : [];
+      const covers = await sql`
+        SELECT book_id, image_data
+        FROM library_book_covers
+        WHERE user_id = ${accountId}
+      `;
+      const coverByBook = new Map(
+        covers.map((cover) => [String(cover.book_id), cover.image_data]),
+      );
       const books = sourceBooks.slice(0, 5000).map((book) => ({
         id: String(book.id || ""),
         title: String(book.title || "Untitled"),
         author: String(book.author || "Unknown author"),
         genre: String(book.genre || "Uncategorized"),
+        format: ["ebook", "audiobook"].includes(book.format)
+          ? book.format
+          : "print",
         status: ["read", "reading"].includes(book.status)
           ? book.status
           : "unread",
         rating: Math.round(
           Math.min(5, Math.max(0, Number(book.rating) || 0)),
         ),
+        coverImage: String(coverByBook.get(String(book.id || "")) || ""),
       }));
       return json(response, 200, { books });
+    }
+
+    if (action === "dictionary" && request.method === "POST") {
+      const word = String(body.word || "").trim().toLowerCase().slice(0, 100);
+      if (!/^[a-z][a-z '-]*$/i.test(word)) {
+        return json(response, 400, { error: "Enter a valid English word." });
+      }
+      const dictionaryResponse = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+      );
+      if (!dictionaryResponse.ok) {
+        return json(response, 404, { error: `No online definition was found for "${word}".` });
+      }
+      const entries = await dictionaryResponse.json();
+      const definitions = [];
+      for (const entry of Array.isArray(entries) ? entries : []) {
+        for (const meaning of entry.meanings || []) {
+          for (const definition of meaning.definitions || []) {
+            if (!definition.definition) continue;
+            definitions.push({
+              partOfSpeech: String(meaning.partOfSpeech || ""),
+              definition: String(definition.definition || "").slice(0, 700),
+              example: String(definition.example || "").slice(0, 500),
+            });
+            if (definitions.length >= 8) break;
+          }
+          if (definitions.length >= 8) break;
+        }
+        if (definitions.length >= 8) break;
+      }
+      if (!definitions.length) {
+        return json(response, 404, { error: `No online definition was found for "${word}".` });
+      }
+      return json(response, 200, {
+        word: String(entries[0]?.word || word),
+        phonetic: String(entries[0]?.phonetic || ""),
+        definitions,
+        source: "Free Dictionary API",
+      });
+    }
+
+    if (action === "reading-challenges" && request.method === "GET") {
+      const rows = await sql`
+        SELECT
+          c.*, inviter.username AS inviter_name,
+          invitee.username AS invitee_name,
+          COALESCE(d.reading_log, '[]'::jsonb) AS invitee_log
+        FROM library_reading_challenges c
+        JOIN library_users inviter ON inviter.id = c.inviter_id
+        JOIN library_users invitee ON invitee.id = c.invitee_id
+        LEFT JOIN library_data d ON d.user_id = c.invitee_id
+        WHERE c.inviter_id = ${user.id} OR c.invitee_id = ${user.id}
+        ORDER BY c.created_at DESC
+        LIMIT 150
+      `;
+      const challenges = rows.map((item) => {
+        const log = Array.isArray(item.invitee_log) ? item.invitee_log : [];
+        const createdDate = new Date(item.created_at).toISOString().slice(0, 10);
+        const deadlineDate = String(item.deadline).slice(0, 10);
+        const relevant = log.filter((entry) => {
+          const entryDate = String(entry.date || "");
+          return entryDate >= createdDate && entryDate <= deadlineDate;
+        });
+        const progress = item.challenge_type === "minutes"
+          ? relevant.reduce((total, entry) => total + (Number(entry.durationMinutes) || 0), 0)
+          : item.challenge_type === "sessions"
+            ? relevant.length
+            : relevant.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0);
+        return {
+          id: item.id,
+          inviterId: item.inviter_id,
+          inviteeId: item.invitee_id,
+          inviter: item.inviter_name,
+          invitee: item.invitee_name,
+          type: item.challenge_type,
+          target: item.target_value,
+          title: item.title,
+          message: item.message,
+          deadline: item.deadline,
+          status:
+            item.status === "accepted" && progress >= item.target_value
+              ? "completed"
+              : item.status,
+          progress,
+          createdAt: item.created_at,
+        };
+      });
+      await Promise.all(
+        challenges
+          .filter((challenge) => challenge.status === "completed")
+          .map((challenge) => sql`
+            UPDATE library_reading_challenges
+            SET status = 'completed', completed_at = COALESCE(completed_at, NOW())
+            WHERE id = ${challenge.id} AND status = 'accepted'
+          `),
+      );
+      return json(response, 200, { challenges });
+    }
+
+    if (action === "reading-challenge-invite" && request.method === "POST") {
+      const inviteeId = String(body.inviteeId || "");
+      const type = String(body.type || "");
+      const target = Math.round(Number(body.target) || 0);
+      const title = String(body.title || "").trim().slice(0, 180);
+      const message = String(body.message || "").trim().slice(0, 1200);
+      const deadline = String(body.deadline || "");
+      if (inviteeId === user.id) {
+        return json(response, 400, { error: "You cannot challenge yourself." });
+      }
+      if (!["pages", "minutes", "sessions"].includes(type) || target < 1 || target > 100000) {
+        return json(response, 400, { error: "Choose a valid challenge target." });
+      }
+      if (title.length < 3 || !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
+        return json(response, 400, { error: "Add a title and deadline." });
+      }
+      if (new Date(`${deadline}T23:59:59`) < new Date()) {
+        return json(response, 400, { error: "The deadline must be in the future." });
+      }
+      const invitees = await sql`
+        SELECT id FROM library_users WHERE id = ${inviteeId} LIMIT 1
+      `;
+      if (!invitees.length) {
+        return json(response, 404, { error: "That reader could not be found." });
+      }
+      const id = crypto.randomUUID();
+      await sql`
+        INSERT INTO library_reading_challenges (
+          id, inviter_id, invitee_id, challenge_type, target_value,
+          title, message, deadline
+        )
+        VALUES (
+          ${id}, ${user.id}, ${inviteeId}, ${type}, ${target},
+          ${title}, ${message}, ${deadline}
+        )
+      `;
+      await addNotification(
+        inviteeId,
+        "challenge",
+        "New reading challenge",
+        `${user.username} challenged you: ${title}`,
+        `reading-challenge:${id}`,
+      );
+      return json(response, 201, { ok: true });
+    }
+
+    if (action === "reading-challenge-respond" && request.method === "POST") {
+      const challengeId = String(body.challengeId || "");
+      const decision = String(body.decision || "");
+      if (!["accepted", "declined"].includes(decision)) {
+        return json(response, 400, { error: "Choose whether to accept or decline." });
+      }
+      const rows = await sql`
+        UPDATE library_reading_challenges
+        SET status = ${decision}, responded_at = NOW()
+        WHERE id = ${challengeId}
+          AND invitee_id = ${user.id}
+          AND status = 'pending'
+        RETURNING inviter_id, title
+      `;
+      if (!rows.length) {
+        return json(response, 404, { error: "That challenge is no longer pending." });
+      }
+      await addNotification(
+        rows[0].inviter_id,
+        "challenge",
+        decision === "accepted" ? "Challenge accepted" : "Challenge declined",
+        `${user.username} ${decision} your reading challenge: ${rows[0].title}`,
+        `reading-challenge-response:${challengeId}`,
+      );
+      return json(response, 200, { ok: true });
     }
 
     if (action === "follow" && request.method === "POST") {
