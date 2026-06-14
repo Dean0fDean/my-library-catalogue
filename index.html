@@ -457,6 +457,26 @@
               <strong id="average-insight">--</strong>
               <small id="streak-insight">Start your first streak</small>
             </article>
+            <article class="insight-card">
+              <span>Pages per session</span>
+              <strong id="pages-session-insight">--</strong>
+              <small>Average across your log</small>
+            </article>
+            <article class="insight-card">
+              <span>Most-read book</span>
+              <strong id="top-book-insight">--</strong>
+              <small id="top-book-detail">Log sessions to compare books</small>
+            </article>
+            <article class="insight-card">
+              <span>30-day activity</span>
+              <strong id="active-days-insight">--</strong>
+              <small id="active-days-detail">Days containing a session</small>
+            </article>
+            <article class="insight-card">
+              <span>Projected year</span>
+              <strong id="projected-pages-insight">--</strong>
+              <small>At your recent 30-day pace</small>
+            </article>
           </div>
 
           <div class="habit-panel">
@@ -483,6 +503,7 @@
               </p>
             </aside>
           </div>
+          <div id="reading-deep-insights" class="reading-deep-insights" aria-label="Detailed reading insights"></div>
 
           <div class="log-history-heading">
             <div>
@@ -826,6 +847,12 @@
                   required
                 ></textarea>
               </label>
+              <div class="wordhub-lookup">
+                <button id="wordhub-lookup-button" type="button">Find definition online</button>
+                <small id="wordhub-lookup-status" aria-live="polite">
+                  Uses the Free Dictionary API. Review and adapt the result before saving.
+                </small>
+              </div>
               <div class="form-row two-columns">
                 <label>
                   <span>Book (optional)</span>
@@ -1085,6 +1112,83 @@
                   </p>
                 </div>
               </details>
+              <details class="archetype-guide jung-concept-guide">
+                <summary>
+                  <span>
+                    <strong>Search Jung's concepts</strong>
+                    <small>Key ideas from analytical psychology</small>
+                  </span>
+                </summary>
+                <div class="archetype-guide-body">
+                  <p>
+                    These concise descriptions are for study and reflection, not diagnosis.
+                    Jung's concepts remain historically influential and are also debated.
+                  </p>
+                  <label class="archetype-search">
+                    <span>Search concepts</span>
+                    <input
+                      id="jung-concept-search-input"
+                      type="search"
+                      placeholder="Try individuation, complex, synchronicity..."
+                      autocomplete="off"
+                    />
+                  </label>
+                  <div id="jung-concept-reference-list" class="archetype-reference-list"></div>
+                  <p id="jung-concept-reference-empty" class="archetype-reference-empty" hidden>
+                    No concepts match that search.
+                  </p>
+                </div>
+              </details>
+              <details class="archetype-guide depth-history-guide">
+                <summary>
+                  <span>
+                    <strong>Jung, Freud, and their split</strong>
+                    <small>Biographical context for two influential thinkers</small>
+                  </span>
+                </summary>
+                <div class="depth-history-body">
+                  <article>
+                    <h4>Carl Gustav Jung (1875-1961)</h4>
+                    <p>
+                      A Swiss psychiatrist who worked at the Burgholzli hospital and founded
+                      analytical psychology. His work explored complexes, psychological types,
+                      archetypes, the collective unconscious, individuation, dreams, religion,
+                      myth, and synchronicity.
+                    </p>
+                  </article>
+                  <article>
+                    <h4>Sigmund Freud (1856-1939)</h4>
+                    <p>
+                      An Austrian neurologist and the founder of psychoanalysis. Freud emphasized
+                      unconscious conflict, repression, childhood experience, sexuality, dreams,
+                      and the clinical use of free association.
+                    </p>
+                  </article>
+                  <article class="split-history">
+                    <h4>Why they separated</h4>
+                    <p>
+                      Jung became Freud's close collaborator after they met in 1907, but their
+                      theories and temperaments diverged. Jung resisted Freud's insistence that
+                      libido and neurosis should be understood chiefly through sexuality, broadened
+                      libido into a more general psychic energy, and gave religion, mythology, and
+                      symbolic material a larger constructive role. Jung's 1912 work
+                      <em>Symbols of Transformation</em> made the break unmistakable; their
+                      professional relationship ended soon afterward.
+                    </p>
+                  </article>
+                  <p class="history-source-note">
+                    Historical overview based on Encyclopaedia Britannica and the Freud Museum.
+                  </p>
+                </div>
+              </details>
+              <aside class="jung-popover" aria-label="Animated Carl Jung">
+                <div class="jung-character" aria-hidden="true">
+                  <span class="jung-hair"></span>
+                  <span class="jung-face"><i></i><i></i><b></b></span>
+                  <span class="jung-suit"></span>
+                </div>
+                <p><strong>A small Jungian interruption:</strong> What does the image mean to you?</p>
+              </aside>
               <aside
                 id="dream-fact-banner"
                 class="dream-fact-banner"
@@ -1181,6 +1285,14 @@
               aria-selected="false"
             >
               Debate club
+            </button>
+            <button
+              class="community-tab"
+              type="button"
+              data-community-view="challenges"
+              aria-selected="false"
+            >
+              Reading challenges
             </button>
             <button
               class="community-tab"
@@ -1283,6 +1395,20 @@
             <div id="debate-list" class="debate-list" aria-live="polite"></div>
             <div id="debate-empty" class="community-empty">
               <p>No debate invitations or public debates yet.</p>
+            </div>
+          </div>
+
+          <div id="community-challenges-view" hidden>
+            <div class="debate-club-heading">
+              <div>
+                <p class="eyebrow">A FRIENDLY READING QUEST</p>
+                <h3>Reading challenges</h3>
+                <p>Challenge another reader to log pages, minutes, or sessions before a chosen deadline.</p>
+              </div>
+            </div>
+            <div id="challenge-list" class="challenge-list" aria-live="polite"></div>
+            <div id="challenge-empty" class="community-empty">
+              <p>No reading challenges have been issued yet. Open a reader's profile to begin one.</p>
             </div>
           </div>
 
@@ -1610,6 +1736,9 @@
           <div class="mini-avatar" id="reader-profile-avatar"></div>
           <div class="reader-profile-stats" id="reader-profile-stats"></div>
         </div>
+        <button class="primary-button reader-challenge-button" id="open-reader-challenge" type="button">
+          Issue a reading challenge
+        </button>
         <div class="reader-profile-books">
           <div class="reader-catalogue-heading">
             <div>
@@ -1647,6 +1776,48 @@
           </button>
         </div>
       </div>
+    </dialog>
+
+    <dialog id="reading-challenge-dialog">
+      <form id="reading-challenge-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">READ TOGETHER</p>
+            <h2>Issue a reading challenge</h2>
+          </div>
+          <button class="icon-button" id="close-reading-challenge" type="button" aria-label="Close reading challenge">X</button>
+        </div>
+        <input id="reading-challenge-invitee-id" name="inviteeId" type="hidden" />
+        <p id="reading-challenge-summary" class="dialog-copy"></p>
+        <label>
+          <span>Challenge title</span>
+          <input name="title" maxlength="180" placeholder="A week among the pages" required />
+        </label>
+        <div class="form-row two-columns">
+          <label>
+            <span>Measure</span>
+            <select name="type" required>
+              <option value="pages">Pages logged</option>
+              <option value="minutes">Reading minutes</option>
+              <option value="sessions">Reading sessions</option>
+            </select>
+          </label>
+          <label>
+            <span>Target</span>
+            <input name="target" type="number" min="1" max="100000" step="1" required />
+          </label>
+        </div>
+        <label>
+          <span>Deadline</span>
+          <input id="reading-challenge-deadline" name="deadline" type="date" required />
+        </label>
+        <label>
+          <span>Encouragement (optional)</span>
+          <textarea name="message" rows="4" maxlength="1200"></textarea>
+        </label>
+        <p class="form-error" id="reading-challenge-error" role="alert"></p>
+        <button class="primary-button submit-button" type="submit">Send challenge</button>
+      </form>
     </dialog>
 
     <dialog id="share-dialog">
@@ -1918,6 +2089,15 @@
         </label>
 
         <label>
+          <span>Book format</span>
+          <select id="book-format-input" name="format" required>
+            <option value="print">Printed book</option>
+            <option value="ebook">E-book</option>
+            <option value="audiobook">Audiobook</option>
+          </select>
+        </label>
+
+        <label>
           <span>Photo of your copy (optional)</span>
           <input
             id="cover-input"
@@ -2175,6 +2355,19 @@
             />
           </label>
         </div>
+        <label>
+          <span>Continue from page next time</span>
+          <input
+            id="continue-page-input"
+            name="continuePage"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="26"
+            required
+          />
+          <small class="field-help">This is normally the page after the one where you stopped.</small>
+        </label>
 
         <div class="form-row three-columns">
           <label>
