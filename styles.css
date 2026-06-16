@@ -232,7 +232,6 @@ textarea:focus-visible {
 .site-header,
 .hero,
 .collection-section,
-.hollywood-section,
 footer {
   padding-left: clamp(1.25rem, 6vw, 6rem);
   padding-right: clamp(1.25rem, 6vw, 6rem);
@@ -578,257 +577,232 @@ h1 {
     inset 0 -5px 0 rgba(91, 53, 31, 0.08);
 }
 
-.hollywood-section {
-  padding-top: 4.5rem;
-  padding-bottom: 5.5rem;
-  color: #f8f2e6;
+.bookshelf-map {
+  margin: 0 0 2.5rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
   background:
-    radial-gradient(circle at 15% 12%, rgba(255, 211, 112, 0.18), transparent 18rem),
-    radial-gradient(circle at 86% 18%, rgba(194, 76, 55, 0.16), transparent 22rem),
-    linear-gradient(135deg, #19151f, #2d1d24 48%, #0f1622);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+    linear-gradient(rgba(255, 248, 232, 0.72), rgba(242, 226, 195, 0.8)),
+    rgba(86, 49, 28, 0.08);
+  border: 1px solid rgba(82, 48, 29, 0.22);
+  box-shadow: 0 16px 36px rgba(70, 43, 26, 0.1);
 }
 
-.hollywood-heading {
-  align-items: center;
-  padding: 1.3rem;
-  background: rgba(255, 244, 215, 0.08);
-  border: 1px solid rgba(255, 244, 215, 0.16);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.24);
-}
-
-.hollywood-heading .section-intro {
-  max-width: 48rem;
-  color: rgba(248, 242, 230, 0.72);
-}
-
-.hollywood-count {
-  display: grid;
-  place-items: center;
-  min-width: 140px;
-  min-height: 110px;
-  color: #1d1720;
-  background: linear-gradient(135deg, #f1c86b, #ffe9ad);
-  border-radius: 50% 50% 45% 45%;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.26);
-}
-
-.hollywood-count strong {
-  font-size: 2.6rem;
-  font-weight: 400;
-}
-
-.hollywood-count span {
-  font: 800 0.58rem/1.2 Arial, sans-serif;
-  letter-spacing: 0.12em;
-}
-
-.hollywood-search-panel {
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) minmax(180px, 0.7fr) 170px auto;
+.bookshelf-map-heading {
+  display: flex;
   align-items: end;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 1.2rem;
-  background: rgba(255, 244, 215, 0.075);
-  border: 1px solid rgba(255, 244, 215, 0.14);
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
 }
 
-.hollywood-search-panel > div {
-  align-self: center;
-}
-
-.hollywood-search-panel h3 {
-  margin-bottom: 0.35rem;
-  font-size: 1.6rem;
+.bookshelf-map-heading h3 {
+  margin-bottom: 0.4rem;
+  font-size: clamp(1.7rem, 4vw, 2.45rem);
   font-weight: 400;
 }
 
-.hollywood-search-panel p,
-.hollywood-search-status {
-  margin: 0;
-  color: rgba(248, 242, 230, 0.66);
-  line-height: 1.45;
+.bookshelf-map-heading p {
+  max-width: 54rem;
+  color: rgba(52, 34, 23, 0.72);
+  line-height: 1.55;
 }
 
-.hollywood-search-panel label span {
+.bookshelf-sort-control {
+  flex: 0 0 210px;
+}
+
+.bookshelf-sort-control span {
   display: block;
-  margin-bottom: 0.45rem;
-  color: #f1c86b;
-  font: 800 0.62rem/1 Arial, sans-serif;
+  margin-bottom: 0.4rem;
+  color: var(--terracotta);
+  font: 800 0.6rem/1 Arial, sans-serif;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.hollywood-search-panel input,
-.hollywood-search-panel select {
+.bookshelf-sort-control select {
   width: 100%;
-  min-height: 48px;
-  padding: 0 0.85rem;
-  color: #fff8e8;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 244, 215, 0.18);
+  min-height: 44px;
+  padding: 0 0.7rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(82, 48, 29, 0.24);
 }
 
-.hollywood-search-status {
-  grid-column: 1 / -1;
-}
-
-.hollywood-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 0.85rem;
-  margin-bottom: 2rem;
-}
-
-.hollywood-results[hidden],
-.hollywood-grid[hidden],
-.hollywood-empty[hidden] {
-  display: none;
-}
-
-.hollywood-result-card,
-.hollywood-card {
-  display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  gap: 1rem;
-  padding: 0.9rem;
-  background: rgba(255, 244, 215, 0.08);
-  border: 1px solid rgba(255, 244, 215, 0.14);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
-}
-
-.hollywood-result-card h3,
-.hollywood-card h3 {
-  margin: 0.2rem 0 0.35rem;
-  color: #fff8e8;
-  font-size: 1.28rem;
-  font-weight: 400;
-}
-
-.hollywood-result-card p,
-.hollywood-card p,
-.hollywood-result-card small,
-.hollywood-card small {
-  color: rgba(248, 242, 230, 0.66);
-  line-height: 1.45;
-}
-
-.hollywood-result-card button,
-.hollywood-remove {
-  margin-top: 0.75rem;
-  padding: 0.58rem 0.72rem;
-  color: #1d1720;
-  background: #f1c86b;
-  border: 0;
-  font: 800 0.58rem/1 Arial, sans-serif;
+.bookshelf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  margin-bottom: 1rem;
+  color: rgba(52, 34, 23, 0.72);
+  font: 700 0.62rem/1 Arial, sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.hollywood-result-card button:disabled {
-  opacity: 0.55;
-}
-
-.hollywood-poster {
-  display: grid;
-  place-items: center;
-  min-height: 155px;
-  overflow: hidden;
-  color: rgba(255, 244, 215, 0.72);
-  background:
-    linear-gradient(135deg, rgba(241, 200, 107, 0.18), rgba(0, 0, 0, 0.2)),
-    #15121b;
-  border: 1px solid rgba(255, 244, 215, 0.15);
-}
-
-.hollywood-poster img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hollywood-poster span {
-  font-size: 3rem;
-  font-style: italic;
-}
-
-.hollywood-toolbar {
-  grid-template-columns: minmax(240px, 1fr) 220px;
-  margin-top: 0.5rem;
-}
-
-.hollywood-toolbar input,
-.hollywood-toolbar select {
-  color: #fff8e8;
-  background: rgba(255, 244, 215, 0.08);
-  border-color: rgba(255, 244, 215, 0.18);
-}
-
-.hollywood-toolbar input::placeholder {
-  color: rgba(248, 242, 230, 0.5);
-}
-
-.hollywood-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 1rem;
-}
-
-.hollywood-card {
-  grid-template-columns: 132px minmax(0, 1fr);
-}
-
-.hollywood-card-kicker,
-.hollywood-status-buttons {
-  display: flex;
-  flex-wrap: wrap;
+.bookshelf-legend span {
+  display: inline-flex;
+  align-items: center;
   gap: 0.4rem;
 }
 
-.hollywood-card-kicker span,
-.hollywood-status-buttons button {
-  padding: 0.35rem 0.5rem;
-  color: #f1c86b;
-  background: rgba(241, 200, 107, 0.1);
-  border: 1px solid rgba(241, 200, 107, 0.22);
-  font: 800 0.55rem/1 Arial, sans-serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.bookshelf-legend i {
+  width: 14px;
+  height: 18px;
+  display: inline-block;
+  border: 1px solid rgba(52, 34, 23, 0.28);
 }
 
-.hollywood-status-buttons {
-  margin-top: 0.85rem;
+.legend-read {
+  background: linear-gradient(135deg, #c98945, #f1d184);
 }
 
-.hollywood-status-buttons button.active {
-  color: #1d1720;
-  background: #f1c86b;
+.legend-reading {
+  background: linear-gradient(135deg, #7b7b78, #c8c4b8);
 }
 
-.hollywood-remove {
-  color: #ffd8cf;
-  background: transparent;
-  border: 1px solid rgba(255, 216, 207, 0.28);
+.legend-unread {
+  background: #f7efe1;
 }
 
-.hollywood-empty {
-  padding: 2rem;
-  text-align: center;
-  color: rgba(248, 242, 230, 0.72);
-  border: 1px dashed rgba(255, 244, 215, 0.2);
+.bookshelf-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.34fr);
+  gap: 1rem;
+  align-items: stretch;
 }
 
-.hollywood-empty > div {
-  width: 62px;
-  height: 62px;
+.bookshelf-diagram {
+  min-height: 210px;
+  display: flex;
+  align-content: flex-end;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.3rem;
+  padding: 1.2rem 1rem 1.65rem;
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 88px,
+      rgba(85, 48, 27, 0.78) 88px 98px,
+      rgba(47, 26, 17, 0.88) 98px 103px
+    ),
+    linear-gradient(180deg, rgba(255, 248, 232, 0.52), rgba(208, 176, 129, 0.22));
+  border: 1px solid rgba(82, 48, 29, 0.26);
+}
+
+.bookshelf-spine {
+  width: clamp(26px, 3.1vw, 38px);
+  height: calc(74px + (var(--book-height, 1) * 1px));
+  min-height: 78px;
+  max-height: 118px;
   display: grid;
   place-items: center;
-  margin: 0 auto 1rem;
-  color: #1d1720;
-  background: #f1c86b;
-  border-radius: 50%;
-  font-size: 2rem;
+  align-content: center;
+  padding: 0.35rem 0.15rem;
+  position: relative;
+  color: #2c2117;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.32), transparent 38%),
+    #f7efe1;
+  border: 1px solid rgba(52, 34, 23, 0.28);
+  border-bottom-width: 4px;
+  border-radius: 3px 3px 1px 1px;
+  box-shadow:
+    inset 4px 0 0 color-mix(in srgb, var(--spine-accent) 70%, transparent),
+    0 8px 14px rgba(64, 38, 23, 0.12);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.bookshelf-spine:nth-child(3n) {
+  --book-height: 18;
+}
+
+.bookshelf-spine:nth-child(4n) {
+  --book-height: 30;
+}
+
+.bookshelf-spine:nth-child(5n) {
+  --book-height: 8;
+}
+
+.bookshelf-spine.read {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.38), transparent 38%),
+    linear-gradient(180deg, #f4d689, #c98945);
+  border-color: rgba(118, 74, 28, 0.45);
+}
+
+.bookshelf-spine.reading {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.34), transparent 38%),
+    linear-gradient(180deg, #d5d1c7, #777775);
+  border-color: rgba(66, 64, 60, 0.38);
+}
+
+.bookshelf-spine:hover,
+.bookshelf-spine:focus-visible {
+  z-index: 2;
+  transform: translateY(-7px) scale(1.04);
+  box-shadow:
+    inset 4px 0 0 color-mix(in srgb, var(--spine-accent) 70%, transparent),
+    0 14px 24px rgba(64, 38, 23, 0.2);
+}
+
+.bookshelf-spine span {
+  font: 800 0.66rem/1 Arial, sans-serif;
+  letter-spacing: -0.04em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.bookshelf-spine small {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.bookshelf-details {
+  display: grid;
+  align-content: center;
+  gap: 0.45rem;
+  min-height: 160px;
+  padding: 1rem;
+  color: #3c2b1d;
+  background: rgba(255, 248, 232, 0.72);
+  border: 1px solid rgba(82, 48, 29, 0.2);
+}
+
+.bookshelf-details strong {
+  color: var(--terracotta);
+  font-size: 1.9rem;
+  font-weight: 400;
+}
+
+.bookshelf-details span {
+  font-size: 1.2rem;
+}
+
+.bookshelf-details small {
+  color: rgba(52, 34, 23, 0.64);
+  line-height: 1.45;
+}
+
+.bookshelf-details.active {
+  border-color: rgba(201, 137, 69, 0.48);
+}
+
+.bookshelf-count,
+.bookshelf-empty {
+  margin: 0.85rem 0 0;
+  color: rgba(52, 34, 23, 0.64);
+  font-style: italic;
 }
 
 .section-heading {
@@ -1476,6 +1450,19 @@ fieldset {
 
   .feature-menu {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bookshelf-map-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bookshelf-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .bookshelf-sort-control {
+    flex-basis: auto;
   }
 
   .hero {
