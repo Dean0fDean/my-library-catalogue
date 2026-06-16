@@ -187,6 +187,19 @@ journals, dreams, and WordHub vocabulary.
 The animated Jung figure now wears glasses and a moustache and appears at a
 slower interval so that the Dream Journal remains calm and readable.
 
+The Flag a Quandary dialog now has a clearer, warmer admin-review style with
+focused guidance, stronger fields, and a calmer backdrop.
+
+Dream analysis has been expanded with richer Jungian reflection: saved analyses
+now include category reasoning, emotional tone, symbolic clusters, possible
+inner tensions, metrics, integration practices, reflection questions, sources,
+and the existing uncertainty and non-diagnostic cautions.
+
+A Hollywood section now lets readers search public Apple/iTunes movie and TV
+series data, add results with poster artwork to a personal screen collection,
+filter saved titles, and mark each title as to watch, watching, or watched. The
+Hollywood list synchronizes with the user's account.
+
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
 once per signed-in browsing session, carries no reward or streak pressure, and
