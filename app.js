@@ -10,7 +10,6 @@ const API_TOKEN_KEY = "my-library-api-token-v1";
 const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
 const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
 const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
-const HOLLYWOOD_STORAGE_KEY = "my-library-hollywood-v1";
 const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 
@@ -100,6 +99,13 @@ const JUNG_CONCEPTS = [
 
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
+  bookshelfSort: document.querySelector("#bookshelf-sort"),
+  bookshelfDiagram: document.querySelector("#bookshelf-diagram"),
+  bookshelfCount: document.querySelector("#bookshelf-count"),
+  bookshelfDetails: document.querySelector("#bookshelf-details"),
+  bookshelfDetailCode: document.querySelector("#bookshelf-detail-code"),
+  bookshelfDetailTitle: document.querySelector("#bookshelf-detail-title"),
+  bookshelfDetailMeta: document.querySelector("#bookshelf-detail-meta"),
   catalogueExpandButton: document.querySelector("#catalogue-expand-button"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
@@ -281,16 +287,6 @@ const elements = {
   wordhubList: document.querySelector("#wordhub-list"),
   wordhubEmpty: document.querySelector("#wordhub-empty"),
   wordhubCount: document.querySelector("#wordhub-count"),
-  hollywoodSearchForm: document.querySelector("#hollywood-search-form"),
-  hollywoodQueryInput: document.querySelector("#hollywood-query-input"),
-  hollywoodTypeFilter: document.querySelector("#hollywood-type-filter"),
-  hollywoodSearchStatus: document.querySelector("#hollywood-search-status"),
-  hollywoodResults: document.querySelector("#hollywood-results"),
-  hollywoodGrid: document.querySelector("#hollywood-grid"),
-  hollywoodEmpty: document.querySelector("#hollywood-empty"),
-  hollywoodCount: document.querySelector("#hollywood-count"),
-  hollywoodCollectionSearch: document.querySelector("#hollywood-collection-search"),
-  hollywoodCollectionFilter: document.querySelector("#hollywood-collection-filter"),
   profileRunesCount: document.querySelector("#profile-runes-count"),
   profileStreakCount: document.querySelector("#profile-streak-count"),
   profileStreakBest: document.querySelector("#profile-streak-best"),
@@ -425,8 +421,6 @@ let quandaries = [];
 let creativeWriting = loadArray(CREATIVE_WRITING_STORAGE_KEY);
 let wordhub = loadArray(WORDHUB_STORAGE_KEY);
 let dreams = loadArray(DREAMS_STORAGE_KEY);
-let hollywoodItems = loadArray(HOLLYWOOD_STORAGE_KEY);
-let hollywoodSearchResults = [];
 let storeItems = [];
 let equippedTheme = "";
 let equippedFrame = "";
@@ -509,7 +503,6 @@ function adoptLocalAccount(localAccount, onlineAccount) {
   saveCreativeWriting();
   saveWordhub();
   saveDreams();
-  saveHollywood();
 }
 
 function loadArray(key) {
@@ -569,12 +562,6 @@ function saveWordhub() {
 
 function saveDreams() {
   const saved = saveCollection(DREAMS_STORAGE_KEY, dreams);
-  if (saved) scheduleDataSync();
-  return saved;
-}
-
-function saveHollywood() {
-  const saved = saveCollection(HOLLYWOOD_STORAGE_KEY, hollywoodItems);
   if (saved) scheduleDataSync();
   return saved;
 }
@@ -666,7 +653,6 @@ function migrateAccountData() {
   let creativeWritingChanged = false;
   let wordhubChanged = false;
   let dreamsChanged = false;
-  let hollywoodChanged = false;
   books.forEach((item) => {
     if (!item.ownerId) {
       item.ownerId = admin.id;
@@ -709,12 +695,6 @@ function migrateAccountData() {
       dreamsChanged = true;
     }
   });
-  hollywoodItems.forEach((item) => {
-    if (!item.ownerId) {
-      item.ownerId = admin.id;
-      hollywoodChanged = true;
-    }
-  });
   if (changedAccounts) saveAccounts();
   if (booksChanged) saveBooks();
   if (logsChanged) saveReadingLog();
@@ -723,7 +703,6 @@ function migrateAccountData() {
   if (creativeWritingChanged) saveCreativeWriting();
   if (wordhubChanged) saveWordhub();
   if (dreamsChanged) saveDreams();
-  if (hollywoodChanged) saveHollywood();
 }
 
 function normalize(value) {
@@ -1092,9 +1071,6 @@ function cloudDataFor(accountId) {
     dreams: dreams
       .filter((item) => item.ownerId === accountId)
       .map(cloudSafeItem),
-    hollywood: hollywoodItems
-      .filter((item) => item.ownerId === accountId)
-      .map(cloudSafeItem),
   };
 }
 
@@ -1107,7 +1083,6 @@ function hasCloudData(data) {
     "creativeWriting",
     "wordhub",
     "dreams",
-    "hollywood",
   ].some(
     (key) => Array.isArray(data[key]) && data[key].length > 0,
   );
@@ -1215,11 +1190,6 @@ async function loadAccountData() {
       })),
     ),
   );
-  hollywoodItems = replaceAccountItems(
-    hollywoodItems,
-    currentAccount.id,
-    cloud.hollywood || [],
-  );
   saveCollection(STORAGE_KEY, books);
   saveCollection(LOG_STORAGE_KEY, readingLog);
   saveCollection(PASSAGE_STORAGE_KEY, passages);
@@ -1227,7 +1197,6 @@ async function loadAccountData() {
   saveCollection(CREATIVE_WRITING_STORAGE_KEY, creativeWriting);
   saveCollection(WORDHUB_STORAGE_KEY, wordhub);
   saveCollection(DREAMS_STORAGE_KEY, dreams);
-  saveCollection(HOLLYWOOD_STORAGE_KEY, hollywoodItems);
   isApplyingCloudData = false;
   await syncAccountData();
   await Promise.all(
@@ -1381,7 +1350,6 @@ async function showAuthenticatedApp(account) {
   renderJournals();
   renderStories();
   renderWordhub();
-  renderHollywood();
   renderDreams();
   renderCommunity();
   if (dailyStreakRewardEarned) {
@@ -1567,6 +1535,80 @@ function filteredBooks() {
     );
 }
 
+function sortedBookshelfBooks() {
+  const sortMode = elements.bookshelfSort?.value || "title";
+  return ownedByCurrent(books).sort((first, second) => {
+    if (sortMode === "genre") {
+      return (
+        String(first.genre || "").localeCompare(String(second.genre || ""), undefined, {
+          sensitivity: "base",
+        }) ||
+        first.title.localeCompare(second.title, undefined, { sensitivity: "base" }) ||
+        first.author.localeCompare(second.author, undefined, { sensitivity: "base" })
+      );
+    }
+    return (
+      first.title.localeCompare(second.title, undefined, { sensitivity: "base" }) ||
+      first.author.localeCompare(second.author, undefined, { sensitivity: "base" })
+    );
+  });
+}
+
+function bookStatusLabel(status) {
+  return {
+    read: "Read",
+    reading: "Busy reading",
+    unread: "To be read",
+  }[status] || "To be read";
+}
+
+function showBookshelfDetails(book, code) {
+  if (!book || !elements.bookshelfDetails) return;
+  elements.bookshelfDetailCode.textContent = code;
+  elements.bookshelfDetailTitle.textContent = book.title;
+  elements.bookshelfDetailMeta.textContent =
+    `${book.author} · ${book.genre || "Uncategorized"} · ${bookStatusLabel(book.status)}`;
+  elements.bookshelfDetails.classList.add("active");
+}
+
+function renderBookshelfDiagram() {
+  if (!elements.bookshelfDiagram) return;
+  const shelfBooks = sortedBookshelfBooks();
+  elements.bookshelfCount.textContent = `${shelfBooks.length} ${
+    shelfBooks.length === 1 ? "book" : "books"
+  } on the shelf`;
+  elements.bookshelfDiagram.innerHTML = shelfBooks.length
+    ? shelfBooks
+        .map((book, index) => {
+          const code = `#${index + 1}`;
+          const title = `${code} ${book.title} by ${book.author}`;
+          return `
+            <button
+              class="bookshelf-spine ${escapeHtml(book.status || "unread")}"
+              type="button"
+              data-book-id="${book.id}"
+              data-code="${code}"
+              title="${escapeHtml(title)}"
+              aria-label="${escapeHtml(title)}"
+              style="--spine-accent: ${colorForGenre(book.genre)}"
+            >
+              <span>${code}</span>
+              <small>${escapeHtml(book.title)}</small>
+            </button>
+          `;
+        })
+        .join("")
+    : '<p class="bookshelf-empty">Add books to your Collection to fill this shelf.</p>';
+  if (shelfBooks.length) {
+    showBookshelfDetails(shelfBooks[0], "#1");
+  } else {
+    elements.bookshelfDetailCode.textContent = "#";
+    elements.bookshelfDetailTitle.textContent = "Hover or tap a book spine.";
+    elements.bookshelfDetailMeta.textContent = "The full title will appear here.";
+    elements.bookshelfDetails.classList.remove("active");
+  }
+}
+
 function updateGenreOptions() {
   const currentValue = elements.genreFilter.value;
   const genres = [
@@ -1716,6 +1758,7 @@ function renderBooks() {
   updateAuthorSuggestions();
   updateStats();
   updateBookSuggestions();
+  renderBookshelfDiagram();
 
   const matchingBooks = filteredBooks();
   const visibleBooks = catalogueExpanded
@@ -3297,193 +3340,6 @@ function renderWordhub() {
     total && !entries.length
       ? "No matching words."
       : "Build a living vocabulary.";
-}
-
-function hollywoodTypeLabel(type) {
-  return type === "series" ? "TV series" : "Movie";
-}
-
-function hollywoodStatusLabel(status) {
-  return {
-    toWatch: "To watch",
-    watching: "Watching",
-    watched: "Watched",
-  }[status] || "To watch";
-}
-
-function hollywoodPoster(item) {
-  return item.poster
-    ? `<img src="${escapeHtml(item.poster)}" alt="Poster for ${escapeHtml(item.title)}" loading="lazy" />`
-    : `<span>${escapeHtml(item.title.slice(0, 1).toUpperCase() || "H")}</span>`;
-}
-
-function renderHollywoodSearchResults() {
-  if (!elements.hollywoodResults) return;
-  elements.hollywoodResults.innerHTML = hollywoodSearchResults
-    .map((item) => {
-      const duplicate = ownedByCurrent(hollywoodItems).some(
-        (saved) =>
-          normalize(saved.title) === normalize(item.title) &&
-          saved.type === item.type,
-      );
-      return `
-        <article class="hollywood-result-card">
-          <div class="hollywood-poster">${hollywoodPoster(item)}</div>
-          <div>
-            <p class="eyebrow">${escapeHtml(hollywoodTypeLabel(item.type))}</p>
-            <h3>${escapeHtml(item.title)}</h3>
-            <p>${escapeHtml([item.year, item.genre].filter(Boolean).join(" · "))}</p>
-            ${item.description ? `<small>${escapeHtml(item.description)}</small>` : ""}
-            <button type="button" data-hollywood-add="${escapeHtml(item.lookupId)}" ${duplicate ? "disabled" : ""}>
-              ${duplicate ? "Already added" : "Add to Hollywood"}
-            </button>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-  elements.hollywoodResults.hidden = hollywoodSearchResults.length === 0;
-}
-
-function renderHollywood() {
-  if (!currentAccount || !elements.hollywoodGrid) return;
-  const query = normalize(elements.hollywoodCollectionSearch.value);
-  const typeFilter = elements.hollywoodCollectionFilter.value;
-  const accountItems = ownedByCurrent(hollywoodItems);
-  const visibleItems = accountItems
-    .filter((item) => {
-      const searchable = normalize([
-        item.title,
-        item.genre,
-        item.type,
-        item.year,
-        item.description,
-      ].join(" "));
-      return (
-        (!query || searchable.includes(query)) &&
-        (typeFilter === "all" || item.type === typeFilter || item.status === typeFilter)
-      );
-    })
-    .sort((first, second) =>
-      first.title.localeCompare(second.title, undefined, { sensitivity: "base" }),
-    );
-  elements.hollywoodCount.textContent = accountItems.length;
-  elements.hollywoodGrid.innerHTML = visibleItems
-    .map(
-      (item) => `
-        <article class="hollywood-card">
-          <div class="hollywood-poster">${hollywoodPoster(item)}</div>
-          <div class="hollywood-card-body">
-            <div class="hollywood-card-kicker">
-              <span>${escapeHtml(hollywoodTypeLabel(item.type))}</span>
-              <span>${escapeHtml(hollywoodStatusLabel(item.status))}</span>
-            </div>
-            <h3>${escapeHtml(item.title)}</h3>
-            <p>${escapeHtml([item.year, item.genre].filter(Boolean).join(" · ") || "Uncatalogued")}</p>
-            ${item.description ? `<small>${escapeHtml(item.description)}</small>` : ""}
-            <div class="hollywood-status-buttons" aria-label="Set watch status">
-              ${["toWatch", "watching", "watched"]
-                .map(
-                  (status) => `
-                    <button
-                      class="${item.status === status ? "active" : ""}"
-                      type="button"
-                      data-hollywood-status="${status}"
-                      data-id="${item.id}"
-                    >
-                      ${escapeHtml(hollywoodStatusLabel(status))}
-                    </button>
-                  `,
-                )
-                .join("")}
-            </div>
-            <button class="hollywood-remove" type="button" data-hollywood-remove="${item.id}">
-              Remove
-            </button>
-          </div>
-        </article>
-      `,
-    )
-    .join("");
-  elements.hollywoodGrid.hidden = visibleItems.length === 0;
-  elements.hollywoodEmpty.hidden = visibleItems.length > 0;
-  elements.hollywoodEmpty.querySelector("h3").textContent =
-    accountItems.length && !visibleItems.length
-      ? "No Hollywood matches found."
-      : "Your Hollywood shelf is empty.";
-}
-
-async function searchHollywood(formData) {
-  const query = formData.get("query").trim();
-  const type = formData.get("type");
-  if (query.length < 2) {
-    elements.hollywoodSearchStatus.textContent = "Enter at least two characters.";
-    return;
-  }
-  elements.hollywoodSearchStatus.textContent = "Searching posters and titles...";
-  try {
-    const data = await apiRequest("hollywood-search", {
-      method: "POST",
-      body: { query, type },
-    });
-    hollywoodSearchResults = data.results || [];
-    elements.hollywoodSearchStatus.textContent = hollywoodSearchResults.length
-      ? `Found ${hollywoodSearchResults.length} result${hollywoodSearchResults.length === 1 ? "" : "s"}.`
-      : "No matching movies or series were found.";
-    renderHollywoodSearchResults();
-  } catch (error) {
-    hollywoodSearchResults = [];
-    renderHollywoodSearchResults();
-    elements.hollywoodSearchStatus.textContent = error.message;
-  }
-}
-
-function addHollywoodItem(lookupId) {
-  const result = hollywoodSearchResults.find((item) => item.lookupId === lookupId);
-  if (!result || !currentAccount) return;
-  const duplicate = ownedByCurrent(hollywoodItems).some(
-    (item) =>
-      normalize(item.title) === normalize(result.title) &&
-      item.type === result.type,
-  );
-  if (duplicate) {
-    showToast("That title is already in your Hollywood section.");
-    return;
-  }
-  hollywoodItems.unshift({
-    ...result,
-    id: crypto.randomUUID(),
-    status: "toWatch",
-    ownerId: currentAccount.id,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
-  saveHollywood();
-  renderHollywood();
-  renderHollywoodSearchResults();
-  showToast(`"${result.title}" added to Hollywood.`);
-}
-
-function setHollywoodStatus(id, status) {
-  const item = hollywoodItems.find(
-    (entry) => entry.id === id && entry.ownerId === currentAccount?.id,
-  );
-  if (!item || !["toWatch", "watching", "watched"].includes(status)) return;
-  item.status = status;
-  item.updatedAt = new Date().toISOString();
-  saveHollywood();
-  renderHollywood();
-}
-
-function removeHollywoodItem(id) {
-  const item = hollywoodItems.find(
-    (entry) => entry.id === id && entry.ownerId === currentAccount?.id,
-  );
-  if (!item) return;
-  hollywoodItems = hollywoodItems.filter((entry) => entry.id !== id);
-  saveHollywood();
-  renderHollywood();
-  showToast(`"${item.title}" removed from Hollywood.`);
 }
 
 function saveWordhubEntry() {
@@ -6282,27 +6138,6 @@ elements.wordhubForm.addEventListener("submit", (event) => {
 
 elements.wordhubCancelEdit.addEventListener("click", resetWordhubForm);
 elements.wordhubSearchInput.addEventListener("input", renderWordhub);
-elements.hollywoodSearchForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (elements.hollywoodSearchForm.reportValidity()) {
-    searchHollywood(new FormData(elements.hollywoodSearchForm));
-  }
-});
-elements.hollywoodCollectionSearch.addEventListener("input", renderHollywood);
-elements.hollywoodCollectionFilter.addEventListener("change", renderHollywood);
-elements.hollywoodResults.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-hollywood-add]");
-  if (button) addHollywoodItem(button.dataset.hollywoodAdd);
-});
-elements.hollywoodGrid.addEventListener("click", (event) => {
-  const statusButton = event.target.closest("button[data-hollywood-status]");
-  if (statusButton) {
-    setHollywoodStatus(statusButton.dataset.id, statusButton.dataset.hollywoodStatus);
-    return;
-  }
-  const removeButton = event.target.closest("button[data-hollywood-remove]");
-  if (removeButton) removeHollywoodItem(removeButton.dataset.hollywoodRemove);
-});
 elements.wordhubWordInput.addEventListener("input", () => {
   elements.wordhubWordInput.setCustomValidity("");
 });
@@ -6435,6 +6270,38 @@ elements.bookGrid.addEventListener("click", (event) => {
     openMenuId = openMenuId === id ? null : id;
     renderBooks();
   }
+});
+
+elements.bookshelfSort.addEventListener("change", renderBookshelfDiagram);
+elements.bookshelfDiagram.addEventListener("mouseover", (event) => {
+  const spine = event.target.closest(".bookshelf-spine");
+  if (!spine) return;
+  const book = books.find(
+    (item) =>
+      item.id === spine.dataset.bookId &&
+      item.ownerId === currentAccount?.id,
+  );
+  showBookshelfDetails(book, spine.dataset.code);
+});
+elements.bookshelfDiagram.addEventListener("focusin", (event) => {
+  const spine = event.target.closest(".bookshelf-spine");
+  if (!spine) return;
+  const book = books.find(
+    (item) =>
+      item.id === spine.dataset.bookId &&
+      item.ownerId === currentAccount?.id,
+  );
+  showBookshelfDetails(book, spine.dataset.code);
+});
+elements.bookshelfDiagram.addEventListener("click", (event) => {
+  const spine = event.target.closest(".bookshelf-spine");
+  if (!spine) return;
+  const book = books.find(
+    (item) =>
+      item.id === spine.dataset.bookId &&
+      item.ownerId === currentAccount?.id,
+  );
+  showBookshelfDetails(book, spine.dataset.code);
 });
 
 elements.logList.addEventListener("click", (event) => {
