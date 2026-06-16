@@ -2525,6 +2525,9 @@ export default async function handler(request, response) {
         rating: Math.round(
           Math.min(5, Math.max(0, Number(book.rating) || 0)),
         ),
+        firstPage: Math.max(0, Math.floor(Number(book.firstPage) || 0)),
+        lastPage: Math.max(0, Math.floor(Number(book.lastPage) || 0)),
+        currentPage: Math.max(0, Math.floor(Number(book.currentPage) || 0)),
         coverImage: String(coverByBook.get(String(book.id || "")) || ""),
       }));
       return json(response, 200, { books });
