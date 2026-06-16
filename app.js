@@ -97,6 +97,51 @@ const JUNG_CONCEPTS = [
   { name: "Coniunctio", group: "Archetypal dynamics", description: "The symbolic union of opposites, drawn especially from alchemical imagery, suggesting a new relationship between divided psychic factors." },
 ];
 
+const WRITING_PROMPT_BANK = {
+  genre: [
+    "Write a mystery in which the clue everyone ignored was sitting in a library all along.",
+    "Write a quiet literary scene where two people realise they have been reading the same life differently.",
+    "Write a fantasy premise shaped by a rule hidden inside an old catalogue card.",
+    "Write a memoir fragment about a book that changed how someone speaks to themselves.",
+  ],
+  character: [
+    "A meticulous archivist who cannot remember their own childhood.",
+    "A bookseller who recommends the wrong book on purpose for the right reason.",
+    "A poet who only writes when copying words from someone else's margins.",
+    "A stubborn scholar trying to prove a family myth false.",
+  ],
+  setting: [
+    "A library wing that opens only during storms.",
+    "A boarding house above a second-hand bookshop.",
+    "A reading room where every desk is reserved for someone who has not arrived yet.",
+    "A city train line where commuters leave annotated paperbacks for strangers.",
+  ],
+  object: [
+    "A pressed flower used as a bookmark for three generations.",
+    "A cracked fountain pen that writes only when its owner tells the truth.",
+    "A library card with one name crossed out and another written beneath it.",
+    "A key hidden inside a hollowed-out dictionary.",
+  ],
+  "first line": [
+    "\"By the time the library bell rang, I had already lied twice.\"",
+    "\"No one noticed the missing page until it began changing the ending.\"",
+    "\"The book was returned seventy years late, still warm.\"",
+    "\"My grandmother told me to read the margins before I trusted the story.\"",
+  ],
+  "library-inspired": [
+    "Write a story in which the act of shelving books becomes a map of someone's inner life.",
+    "Write about two readers who meet only through notes left inside borrowed books.",
+    "Write a scene where a catalogue system reveals a hidden relationship between strangers.",
+    "Write about an overdue book that keeps returning by itself.",
+  ],
+  "book-inspired": [
+    "Take a beloved novel's emotional atmosphere and place it in a completely different setting.",
+    "Write about the reader rather than the hero: how a difficult book changes the one reading it.",
+    "Imagine a side character from a classic text secretly keeping a private journal.",
+    "Write a scene where a recommendation changes the course of someone's week.",
+  ],
+};
+
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
   bookshelfSort: document.querySelector("#bookshelf-sort"),
@@ -123,6 +168,9 @@ const elements = {
   bookDialogEyebrow: document.querySelector("#book-dialog-eyebrow"),
   bookDialogTitle: document.querySelector("#book-dialog-title"),
   bookSubmitButton: document.querySelector("#book-submit-button"),
+  bookFirstPageInput: document.querySelector("#book-first-page-input"),
+  bookLastPageInput: document.querySelector("#book-last-page-input"),
+  bookCurrentPageInput: document.querySelector("#book-current-page-input"),
   authorSuggestions: document.querySelector("#author-suggestions"),
   toast: document.querySelector("#toast"),
   logDialog: document.querySelector("#log-dialog"),
@@ -260,18 +308,177 @@ const elements = {
   storyEditor: document.querySelector("#story-editor"),
   storyEditorEmpty: document.querySelector("#story-editor-empty"),
   storyIdInput: document.querySelector("#story-id-input"),
+  writingDashboard: document.querySelector("#writing-dashboard"),
+  storySearchInput: document.querySelector("#story-search-input"),
+  storySortInput: document.querySelector("#story-sort-input"),
+  storyStatusFilter: document.querySelector("#story-status-filter"),
   storyTitleInput: document.querySelector("#story-title-input"),
+  storyTypeInput: document.querySelector("#story-type-input"),
   storyGenreInput: document.querySelector("#story-genre-input"),
-  storyPovInput: document.querySelector("#story-pov-input"),
+  storyStatusInput: document.querySelector("#story-status-input"),
+  storyTargetInput: document.querySelector("#story-target-input"),
+  storyCurrentCountInput: document.querySelector("#story-current-count-input"),
+  storyCreatedInput: document.querySelector("#story-created-input"),
+  storyUpdatedInput: document.querySelector("#story-updated-input"),
+  storyMoodInput: document.querySelector("#story-mood-input"),
+  storyThemeInput: document.querySelector("#story-theme-input"),
+  storySymbolInput: document.querySelector("#story-symbol-input"),
+  storyConflictInput: document.querySelector("#story-conflict-input"),
   storyPremiseInput: document.querySelector("#story-premise-input"),
-  storyCharactersInput: document.querySelector("#story-characters-input"),
-  storySettingInput: document.querySelector("#story-setting-input"),
   storyOutlineInput: document.querySelector("#story-outline-input"),
+  writingProjectForm: document.querySelector("#writing-project-form"),
   storyDraftInput: document.querySelector("#story-draft-input"),
-  storyPlanView: document.querySelector("#story-plan-view"),
-  storyDraftView: document.querySelector("#story-draft-view"),
+  storyPlanView: document.querySelector("#story-overview-view"),
+  storyDraftView: document.querySelector("#story-manuscript-view"),
+  storyChaptersView: document.querySelector("#story-chapters-view"),
+  storyCharactersView: document.querySelector("#story-characters-view"),
+  storyWorldbuildingView: document.querySelector("#story-worldbuilding-view"),
+  storyTimelineView: document.querySelector("#story-timeline-view"),
+  storyResearchView: document.querySelector("#story-research-view"),
+  storyQuotesView: document.querySelector("#story-quotes-view"),
+  storyGoalsView: document.querySelector("#story-goals-view"),
+  storyPromptsView: document.querySelector("#story-prompts-view"),
+  storyRevisionView: document.querySelector("#story-revision-view"),
+  storyExportView: document.querySelector("#story-export-view"),
   storyWordCount: document.querySelector("#story-word-count"),
+  storyCharacterCount: document.querySelector("#story-character-count"),
   storySaveStatus: document.querySelector("#story-save-status"),
+  storyLastSaved: document.querySelector("#story-last-saved"),
+  storyManualSaveButton: document.querySelector("#story-manual-save-button"),
+  storyFocusButton: document.querySelector("#story-focus-button"),
+  writingProjectMeta: document.querySelector("#writing-project-meta"),
+  storyProgressBarFill: document.querySelector("#story-progress-bar-fill"),
+  storyProgressLabel: document.querySelector("#story-progress-label"),
+  storyDraftNotesInput: document.querySelector("#story-draft-notes-input"),
+  storyManuscriptSearchInput: document.querySelector("#story-manuscript-search-input"),
+  storySearchResults: document.querySelector("#story-search-results"),
+  storyRepeatedWords: document.querySelector("#story-repeated-words"),
+  duplicateStoryButton: document.querySelector("#duplicate-story-button"),
+  chapterForm: document.querySelector("#chapter-form"),
+  chapterIdInput: document.querySelector("#chapter-id-input"),
+  chapterFormTitle: document.querySelector("#chapter-form-title"),
+  chapterCancelEdit: document.querySelector("#chapter-cancel-edit"),
+  chapterTitleInput: document.querySelector("#chapter-title-input"),
+  chapterOrderInput: document.querySelector("#chapter-order-input"),
+  chapterStatusInput: document.querySelector("#chapter-status-input"),
+  chapterSummaryInput: document.querySelector("#chapter-summary-input"),
+  chapterWordCountInput: document.querySelector("#chapter-word-count-input"),
+  chapterThemeInput: document.querySelector("#chapter-theme-input"),
+  chapterSymbolInput: document.querySelector("#chapter-symbol-input"),
+  chapterList: document.querySelector("#chapter-list"),
+  sceneForm: document.querySelector("#scene-form"),
+  sceneIdInput: document.querySelector("#scene-id-input"),
+  sceneFormTitle: document.querySelector("#scene-form-title"),
+  sceneCancelEdit: document.querySelector("#scene-cancel-edit"),
+  sceneChapterInput: document.querySelector("#scene-chapter-input"),
+  sceneTitleInput: document.querySelector("#scene-title-input"),
+  sceneOrderInput: document.querySelector("#scene-order-input"),
+  sceneSummaryInput: document.querySelector("#scene-summary-input"),
+  scenePovInput: document.querySelector("#scene-pov-input"),
+  sceneSettingInput: document.querySelector("#scene-setting-input"),
+  sceneConflictInput: document.querySelector("#scene-conflict-input"),
+  sceneGoalInput: document.querySelector("#scene-goal-input"),
+  sceneOutcomeInput: document.querySelector("#scene-outcome-input"),
+  sceneWordCountInput: document.querySelector("#scene-word-count-input"),
+  sceneStatusInput: document.querySelector("#scene-status-input"),
+  sceneCharactersInput: document.querySelector("#scene-characters-input"),
+  sceneMoodInput: document.querySelector("#scene-mood-input"),
+  sceneThemeInput: document.querySelector("#scene-theme-input"),
+  sceneSymbolInput: document.querySelector("#scene-symbol-input"),
+  writingTagFilterInput: document.querySelector("#writing-tag-filter-input"),
+  characterForm: document.querySelector("#character-form"),
+  characterIdInput: document.querySelector("#character-id-input"),
+  characterFormTitle: document.querySelector("#character-form-title"),
+  characterCancelEdit: document.querySelector("#character-cancel-edit"),
+  characterNameInput: document.querySelector("#character-name-input"),
+  characterAgeInput: document.querySelector("#character-age-input"),
+  characterRoleInput: document.querySelector("#character-role-input"),
+  characterAppearanceInput: document.querySelector("#character-appearance-input"),
+  characterPersonalityInput: document.querySelector("#character-personality-input"),
+  characterStrengthsInput: document.querySelector("#character-strengths-input"),
+  characterWeaknessesInput: document.querySelector("#character-weaknesses-input"),
+  characterGoalInput: document.querySelector("#character-goal-input"),
+  characterFearInput: document.querySelector("#character-fear-input"),
+  characterBackstoryInput: document.querySelector("#character-backstory-input"),
+  characterArcInput: document.querySelector("#character-arc-input"),
+  characterRelationshipsInput: document.querySelector("#character-relationships-input"),
+  characterNotesInput: document.querySelector("#character-notes-input"),
+  characterList: document.querySelector("#character-list"),
+  worldbuildingForm: document.querySelector("#worldbuilding-form"),
+  worldbuildingIdInput: document.querySelector("#worldbuilding-id-input"),
+  worldbuildingFormTitle: document.querySelector("#worldbuilding-form-title"),
+  worldbuildingCancelEdit: document.querySelector("#worldbuilding-cancel-edit"),
+  worldbuildingTitleInput: document.querySelector("#worldbuilding-title-input"),
+  worldbuildingCategoryInput: document.querySelector("#worldbuilding-category-input"),
+  worldbuildingCharactersInput: document.querySelector("#worldbuilding-characters-input"),
+  worldbuildingDescriptionInput: document.querySelector("#worldbuilding-description-input"),
+  worldbuildingScenesInput: document.querySelector("#worldbuilding-scenes-input"),
+  worldbuildingNotesInput: document.querySelector("#worldbuilding-notes-input"),
+  worldbuildingList: document.querySelector("#worldbuilding-list"),
+  timelineForm: document.querySelector("#timeline-form"),
+  timelineIdInput: document.querySelector("#timeline-id-input"),
+  timelineFormTitle: document.querySelector("#timeline-form-title"),
+  timelineCancelEdit: document.querySelector("#timeline-cancel-edit"),
+  timelineTitleInput: document.querySelector("#timeline-title-input"),
+  timelineDateInput: document.querySelector("#timeline-date-input"),
+  timelineTypeInput: document.querySelector("#timeline-type-input"),
+  timelineDescriptionInput: document.querySelector("#timeline-description-input"),
+  timelineCharactersInput: document.querySelector("#timeline-characters-input"),
+  timelineScenesInput: document.querySelector("#timeline-scenes-input"),
+  timelineList: document.querySelector("#timeline-list"),
+  researchForm: document.querySelector("#research-form"),
+  researchIdInput: document.querySelector("#research-id-input"),
+  researchFormTitle: document.querySelector("#research-form-title"),
+  researchCancelEdit: document.querySelector("#research-cancel-edit"),
+  researchCatalogueSelect: document.querySelector("#research-catalogue-select"),
+  researchTagsInput: document.querySelector("#research-tags-input"),
+  researchChapterInput: document.querySelector("#research-chapter-input"),
+  researchSceneInput: document.querySelector("#research-scene-input"),
+  researchNotesInput: document.querySelector("#research-notes-input"),
+  researchList: document.querySelector("#research-list"),
+  quoteForm: document.querySelector("#quote-form"),
+  quoteIdInput: document.querySelector("#quote-id-input"),
+  quoteFormTitle: document.querySelector("#quote-form-title"),
+  quoteCancelEdit: document.querySelector("#quote-cancel-edit"),
+  quoteTextInput: document.querySelector("#quote-text-input"),
+  quoteSourceTitleInput: document.querySelector("#quote-source-title-input"),
+  quoteAuthorInput: document.querySelector("#quote-author-input"),
+  quotePageInput: document.querySelector("#quote-page-input"),
+  quoteTagsInput: document.querySelector("#quote-tags-input"),
+  quoteChapterInput: document.querySelector("#quote-chapter-input"),
+  quoteSceneInput: document.querySelector("#quote-scene-input"),
+  quoteNoteInput: document.querySelector("#quote-note-input"),
+  quoteList: document.querySelector("#quote-list"),
+  writingGoalsForm: document.querySelector("#writing-goals-form"),
+  writingDailyGoalInput: document.querySelector("#writing-daily-goal-input"),
+  writingWeeklyGoalInput: document.querySelector("#writing-weekly-goal-input"),
+  writingProjectGoalInput: document.querySelector("#writing-project-goal-input"),
+  writingDeadlineInput: document.querySelector("#writing-deadline-input"),
+  writingGoalSummary: document.querySelector("#writing-goal-summary"),
+  promptTypeInput: document.querySelector("#prompt-type-input"),
+  promptGeneratedText: document.querySelector("#prompt-generated-text"),
+  generatePromptButton: document.querySelector("#generate-prompt-button"),
+  saveGeneratedPromptButton: document.querySelector("#save-generated-prompt-button"),
+  promptForm: document.querySelector("#prompt-form"),
+  promptIdInput: document.querySelector("#prompt-id-input"),
+  promptFormTitle: document.querySelector("#prompt-form-title"),
+  promptCancelEdit: document.querySelector("#prompt-cancel-edit"),
+  promptCustomTypeInput: document.querySelector("#prompt-custom-type-input"),
+  promptUsedInput: document.querySelector("#prompt-used-input"),
+  promptTextInput: document.querySelector("#prompt-text-input"),
+  promptList: document.querySelector("#prompt-list"),
+  storyRevisionNotesInput: document.querySelector("#story-revision-notes-input"),
+  storyContinuityNotesInput: document.querySelector("#story-continuity-notes-input"),
+  saveRevisionNotesButton: document.querySelector("#save-revision-notes-button"),
+  revisionCommentForm: document.querySelector("#revision-comment-form"),
+  revisionCommentInput: document.querySelector("#revision-comment-input"),
+  storyVersionList: document.querySelector("#story-version-list"),
+  sceneChecklistList: document.querySelector("#scene-checklist-list"),
+  revisionCommentList: document.querySelector("#revision-comment-list"),
+  exportSelectionList: document.querySelector("#export-selection-list"),
+  exportTxtButton: document.querySelector("#export-txt-button"),
+  exportMarkdownButton: document.querySelector("#export-markdown-button"),
+  exportPdfButton: document.querySelector("#export-pdf-button"),
   wordhubForm: document.querySelector("#wordhub-form"),
   wordhubIdInput: document.querySelector("#wordhub-id-input"),
   wordhubFormTitle: document.querySelector("#wordhub-form-title"),
@@ -454,6 +661,9 @@ let toastTimer;
 let statsSyncTimer;
 let dataSyncTimer;
 let storySaveTimer;
+let currentWritingView = "overview";
+let currentGeneratedPrompt = "";
+let writingFocusMode = false;
 let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 let activeReaderCatalogue = [];
@@ -462,6 +672,8 @@ let profileNotifications = [];
 let profileAchievements = [];
 let catalogueExpanded = false;
 let readerCatalogueExpanded = false;
+let highlightedCollectionBookId = "";
+let highlightedCollectionBookTimer;
 const CATALOGUE_PREVIEW_LIMIT = 8;
 
 async function apiRequest(action, options = {}) {
@@ -474,6 +686,25 @@ async function apiRequest(action, options = {}) {
       ...(apiToken ? { Authorization: `Bearer ${apiToken}` } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
+    },
+  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "The online service is unavailable.");
+  }
+  return data;
+}
+
+async function apiRequestWithToken(action, token, options = {}) {
+  const response = await fetch(
+    `/api/index?action=${encodeURIComponent(action)}`,
+    {
+      method: options.method || "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
     },
   );
   const data = await response.json().catch(() => ({}));
@@ -1229,6 +1460,93 @@ async function importLegacyUsers() {
   });
 }
 
+async function seedLegacyCommunityAccounts() {
+  if (!currentAccount || !apiToken || legacyAccountsSnapshot.length < 2) {
+    return;
+  }
+  const community = await apiRequest("community");
+  const existingUsernames = new Set(
+    (community.accounts || []).map((account) => normalize(account.username)),
+  );
+  let seeded = 0;
+  for (const account of legacyAccountsSnapshot) {
+    const username = String(account.username || "").trim();
+    const normalized = normalize(username);
+    if (
+      !username ||
+      normalized === normalize(currentAccount.username) ||
+      existingUsernames.has(normalized)
+    ) {
+      continue;
+    }
+    if (
+      !/^[a-f0-9]{32}$/i.test(String(account.salt || "")) ||
+      !/^[a-f0-9]{64}$/i.test(String(account.passwordHash || ""))
+    ) {
+      continue;
+    }
+    let migrated;
+    try {
+      migrated = await apiRequest("migrate", {
+        method: "POST",
+        body: {
+          username,
+          salt: account.salt,
+          passwordHash: account.passwordHash,
+          profileImage: account.profileImage || "",
+        },
+      });
+    } catch (error) {
+      if (String(error.message || "").includes("already in use")) {
+        existingUsernames.add(normalized);
+        continue;
+      }
+      throw error;
+    }
+    const migrationToken = migrated.token;
+    await apiRequestWithToken("data", migrationToken, {
+      method: "POST",
+      body: cloudDataFor(account.id),
+    });
+    const stats = statsFor(account.id);
+    const recentBooks = booksFor(account.id)
+      .slice(0, 5)
+      .map(({ title, author, status }) => ({ title, author, status }));
+    await apiRequestWithToken("stats", migrationToken, {
+      method: "POST",
+      body: {
+        owned: stats.total,
+        read: stats.read,
+        reading: stats.reading,
+        unread: stats.unread,
+        recentBooks,
+      },
+    });
+    await Promise.all(
+      booksFor(account.id)
+        .filter((book) => book.coverImage)
+        .map((book) =>
+          apiRequestWithToken("cover-save", migrationToken, {
+            method: "POST",
+            body: {
+              bookId: book.id,
+              image: book.coverImage,
+            },
+          }).catch(() => {}),
+        ),
+    );
+    existingUsernames.add(normalized);
+    seeded += 1;
+  }
+  if (seeded > 0) {
+    const refreshed = await apiRequest("community");
+    accounts = refreshed.accounts;
+    follows = refreshed.follows;
+    shares = refreshed.shares;
+    sharedJournals = refreshed.journals || [];
+  }
+}
+
 function scheduleStatsSync() {
   if (!currentAccount || !apiToken) return;
   window.clearTimeout(statsSyncTimer);
@@ -1324,22 +1642,30 @@ async function refreshCommunity() {
   }
 }
 
-async function showAuthenticatedApp(account) {
-  currentAccount = account;
-  localStorage.setItem(CURRENT_ACCOUNT_KEY, account.id);
+async function runStartupStep(step) {
   try {
-    await importLegacyUsers();
-    await loadAccountData();
-    await loadJournals();
-    await loadReadingFacts();
-    await loadDreamFacts();
-    await loadMarketplace();
-    await loadLearningNook();
-    await loadChippings();
-    await loadSocialSpaces();
+    await step();
   } catch (error) {
     showToast(error.message);
   }
+}
+
+async function showAuthenticatedApp(account) {
+  currentAccount = account;
+  localStorage.setItem(CURRENT_ACCOUNT_KEY, account.id);
+  await runStartupStep(importLegacyUsers);
+  await runStartupStep(loadAccountData);
+  await runStartupStep(seedLegacyCommunityAccounts);
+  await Promise.all([
+    runStartupStep(loadCommunity),
+    runStartupStep(loadJournals),
+    runStartupStep(loadReadingFacts),
+    runStartupStep(loadDreamFacts),
+    runStartupStep(loadMarketplace),
+    runStartupStep(loadLearningNook),
+    runStartupStep(loadChippings),
+    runStartupStep(loadSocialSpaces),
+  ]);
   elements.authScreen.hidden = true;
   elements.appShell.hidden = false;
   updateProfileDisplay();
@@ -1377,7 +1703,7 @@ function showLoginScreen() {
   elements.authScreen.hidden = false;
   elements.loginForm.reset();
   elements.signupForm.reset();
-  setAuthView(accounts.length ? "login" : "signup");
+  setAuthView("login");
 }
 
 async function initializeAuthentication() {
@@ -1662,14 +1988,79 @@ function bookFormatLabel(format) {
   }[format] || "Printed book";
 }
 
+function parsePageNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+}
+
+function normalizeBookPages(book, status = book?.status || "unread") {
+  const firstPage = parsePageNumber(book?.firstPage);
+  const lastPage = parsePageNumber(book?.lastPage);
+  let currentPage = parsePageNumber(book?.currentPage);
+  if (status === "read" && firstPage && lastPage && lastPage >= firstPage) {
+    currentPage = lastPage;
+  }
+  if (status === "reading" && firstPage && !currentPage) {
+    currentPage = firstPage;
+  }
+  return { firstPage, lastPage, currentPage };
+}
+
+function bookProgressInfo(book) {
+  const { firstPage, lastPage, currentPage } = normalizeBookPages(book);
+  const hasRange = Boolean(firstPage && lastPage && lastPage >= firstPage);
+  if (!hasRange) {
+    return {
+      firstPage,
+      lastPage,
+      currentPage,
+      percent: 0,
+      hasRange: false,
+      detail: "Add the first and last page to track progress.",
+    };
+  }
+  const totalPages = lastPage - firstPage + 1;
+  const pageReached = Math.min(Math.max(currentPage || firstPage - 1, firstPage - 1), lastPage);
+  const hasStarted = pageReached >= firstPage;
+  const pagesRead = Math.max(0, pageReached - firstPage + 1);
+  const percent = Math.min(100, Math.max(0, Math.round((pagesRead / totalPages) * 100)));
+  return {
+    firstPage,
+    lastPage,
+    currentPage: pageReached,
+    percent,
+    hasRange: true,
+    detail: hasStarted
+      ? `Pages ${firstPage}-${lastPage}; reached ${pageReached}`
+      : `Pages ${firstPage}-${lastPage}; not started`,
+  };
+}
+
+function renderBookProgress(book) {
+  const progress = bookProgressInfo(book);
+  return `
+    <div class="book-progress" aria-label="Reading progress for ${escapeHtml(book.title)}">
+      <div class="book-progress-meta">
+        <span>Reading progress</span>
+        <strong>${progress.percent}%</strong>
+      </div>
+      <div class="book-progress-track" aria-hidden="true">
+        <span style="width: ${progress.percent}%"></span>
+      </div>
+      <small>${escapeHtml(progress.detail)}</small>
+    </div>
+  `;
+}
+
 function renderBook(book) {
   const menuIsOpen = openMenuId === book.id;
   const rating = Number(book.rating) || 0;
+  const spotlighted = highlightedCollectionBookId === book.id;
   const cover = book.coverImage
     ? `<img src="${book.coverImage}" alt="The user's copy of ${escapeHtml(book.title)}" />`
     : `<div class="book-cover-placeholder" aria-hidden="true">${escapeHtml(book.title.charAt(0).toUpperCase())}</div>`;
   return `
-    <article class="book-card" data-book-id="${book.id}" style="--card-accent: ${colorForGenre(book.genre)}">
+    <article class="book-card ${spotlighted ? "spotlight" : ""}" data-book-id="${book.id}" style="--card-accent: ${colorForGenre(book.genre)}" tabindex="-1">
       <div class="book-cover" title="${book.coverImage ? "View full picture" : "No picture added"}">${cover}</div>
       <div class="book-card-top">
         <div class="book-card-labels">
@@ -1705,6 +2096,7 @@ function renderBook(book) {
       }
       <h3 class="book-title">${escapeHtml(book.title)}</h3>
       <p class="book-author">by ${escapeHtml(book.author)}</p>
+      ${renderBookProgress(book)}
       <div class="rating-control" role="group" aria-label="Rate ${escapeHtml(book.title)}">
         <span>Rating</span>
         ${[1, 2, 3, 4, 5]
@@ -1784,6 +2176,44 @@ function renderBooks() {
       : "Add your first book and begin building your personal catalogue.";
     document.querySelector("#empty-add-button").hidden = hasBooks;
   }
+}
+
+function focusCollectionBook(bookId) {
+  const book = books.find(
+    (item) => item.id === bookId && item.ownerId === currentAccount?.id,
+  );
+  if (!book) {
+    showToast("That source book is no longer in your collection.");
+    return;
+  }
+  window.location.hash = "#collection";
+  elements.searchInput.value = book.title || "";
+  elements.genreFilter.value = "all";
+  elements.statusFilter.value = "all";
+  catalogueExpanded = true;
+  highlightedCollectionBookId = book.id;
+  window.clearTimeout(highlightedCollectionBookTimer);
+  renderBooks();
+  window.requestAnimationFrame(() => {
+    const escapedId =
+      window.CSS && typeof window.CSS.escape === "function"
+        ? window.CSS.escape(book.id)
+        : book.id;
+    const card = elements.bookGrid.querySelector(
+      `.book-card[data-book-id="${escapedId}"]`,
+    );
+    if (!card) return;
+    card.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    card.focus({ preventScroll: true });
+  });
+  highlightedCollectionBookTimer = window.setTimeout(() => {
+    highlightedCollectionBookId = "";
+    renderBooks();
+  }, 2600);
+  showToast(`Opened "${book.title}" in your Collection.`);
 }
 
 function showToast(message) {
@@ -1972,6 +2402,9 @@ function openBookEditForm(id) {
   document.querySelector("#author-input").value = book.author;
   document.querySelector("#genre-input").value = book.genre;
   document.querySelector("#book-format-input").value = book.format || "print";
+  elements.bookFirstPageInput.value = book.firstPage || "";
+  elements.bookLastPageInput.value = book.lastPage || "";
+  elements.bookCurrentPageInput.value = book.currentPage || "";
   const statusInput = elements.form.querySelector(
     `input[name="status"][value="${book.status}"]`,
   );
@@ -1992,6 +2425,36 @@ async function saveBook(formData) {
           item.ownerId === currentAccount?.id,
       )
     : null;
+  const rawFirstPage = String(formData.get("firstPage") || "").trim();
+  const rawLastPage = String(formData.get("lastPage") || "").trim();
+  const rawCurrentPage = String(formData.get("currentPage") || "").trim();
+  const firstPage = parsePageNumber(rawFirstPage);
+  const lastPage = parsePageNumber(rawLastPage);
+  const currentPage = parsePageNumber(rawCurrentPage);
+  const pageFieldsStarted = Boolean(rawFirstPage || rawLastPage || rawCurrentPage);
+  elements.bookFirstPageInput.setCustomValidity("");
+  elements.bookLastPageInput.setCustomValidity("");
+  elements.bookCurrentPageInput.setCustomValidity("");
+  if (pageFieldsStarted && (!rawFirstPage || !rawLastPage)) {
+    const target = rawFirstPage ? elements.bookLastPageInput : elements.bookFirstPageInput;
+    target.setCustomValidity("Add both the first and last page to track progress.");
+    target.reportValidity();
+    return;
+  }
+  if (rawFirstPage && rawLastPage && lastPage < firstPage) {
+    elements.bookLastPageInput.setCustomValidity(
+      "The last page cannot be before the first page.",
+    );
+    elements.bookLastPageInput.reportValidity();
+    return;
+  }
+  if (rawCurrentPage && rawLastPage && currentPage > lastPage) {
+    elements.bookCurrentPageInput.setCustomValidity(
+      "The page reached cannot be after the last page.",
+    );
+    elements.bookCurrentPageInput.reportValidity();
+    return;
+  }
   let coverImage = existingBook?.coverImage || "";
   const coverFile = elements.coverInput.files[0];
   if (coverFile) {
@@ -2002,13 +2465,25 @@ async function saveBook(formData) {
       return;
     }
   }
+  const status = formData.get("status");
+  const normalizedPages = normalizeBookPages(
+    {
+      firstPage: rawFirstPage ? firstPage : 0,
+      lastPage: rawLastPage ? lastPage : 0,
+      currentPage: rawCurrentPage ? currentPage : 0,
+    },
+    status,
+  );
   const book = {
     id: existingBook?.id || crypto.randomUUID(),
     title: formData.get("title").trim(),
     author: formData.get("author").trim(),
     genre: formData.get("genre").trim(),
     format: formData.get("format") || "print",
-    status: formData.get("status"),
+    status,
+    firstPage: normalizedPages.firstPage,
+    lastPage: normalizedPages.lastPage,
+    currentPage: normalizedPages.currentPage,
     coverImage,
     rating: existingBook?.rating || 0,
     ownerId: currentAccount.id,
@@ -2046,6 +2521,7 @@ function setBookStatus(id, status) {
   );
   if (!book || !["unread", "reading", "read"].includes(status)) return;
   book.status = status;
+  Object.assign(book, normalizeBookPages(book, status));
   saveBooks();
   renderBooks();
   scheduleStatsSync();
@@ -2692,6 +3168,32 @@ function suggestPagesRead() {
   }
 }
 
+function updateCollectionProgressFromReadingSession(entry) {
+  const titleKey = normalize(entry.title);
+  const authorKey = normalize(entry.author);
+  const book = ownedByCurrent(books).find((item) => {
+    const sameTitle = normalize(item.title) === titleKey;
+    const sameAuthor = !authorKey || normalize(item.author) === authorKey;
+    return sameTitle && sameAuthor;
+  });
+  if (!book) return;
+  const endPage = parsePageNumber(entry.endPage);
+  const startPage = parsePageNumber(entry.startPage);
+  if (!endPage) return;
+  if (!book.firstPage && startPage) book.firstPage = startPage;
+  const lastPage = parsePageNumber(book.lastPage);
+  const currentPage = Math.max(parsePageNumber(book.currentPage), endPage);
+  book.currentPage = lastPage ? Math.min(currentPage, lastPage) : currentPage;
+  if (lastPage && book.currentPage >= lastPage) {
+    book.status = "read";
+  } else if (book.status === "unread") {
+    book.status = "reading";
+  }
+  Object.assign(book, normalizeBookPages(book, book.status));
+  saveBooks();
+  renderBooks();
+}
+
 function addReadingSession(formData) {
   const durationMinutes = updateDurationPreview();
   const startPage = Number(formData.get("startPage"));
@@ -2731,6 +3233,7 @@ function addReadingSession(formData) {
   };
   readingLog.unshift(entry);
   saveReadingLog();
+  updateCollectionProgressFromReadingSession(entry);
   renderReadingLog();
   elements.logDialog.close();
   showToast(`Reading session for "${entry.title}" saved.`);
@@ -3107,55 +3610,1054 @@ function storyWordTotal(text) {
   return words ? words.length : 0;
 }
 
-function currentStory() {
-  return creativeWriting.find(
-    (story) =>
-      story.id === elements.storyIdInput.value &&
-      story.ownerId === currentAccount?.id,
-  );
+function storyCharacterTotal(text) {
+  return String(text || "").replace(/\s+/g, " ").trim().length;
 }
 
 function storyDateLabel(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? ""
-    : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    : date.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+}
+
+function storyDateTimeLabel(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Not yet saved"
+    : date.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+}
+
+function parseTagList(value) {
+  return [
+    ...new Set(
+      String(value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+function formatTagList(values) {
+  return (Array.isArray(values) ? values : []).join(", ");
+}
+
+function plainTextToParagraphHtml(text) {
+  return String(text || "")
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+function richTextToPlain(html) {
+  const node = document.createElement("div");
+  node.innerHTML = String(html || "");
+  return node.textContent || "";
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readMultiSelectValues(select) {
+  return Array.from(select?.selectedOptions || []).map((option) => option.value);
+}
+
+function setMultiSelectValues(select, values) {
+  const selected = new Set(Array.isArray(values) ? values : []);
+  Array.from(select?.options || []).forEach((option) => {
+    option.selected = selected.has(option.value);
+  });
+}
+
+function cloneData(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function normalizePromptType(value) {
+  return Object.hasOwn(WRITING_PROMPT_BANK, value) ? value : "genre";
+}
+
+function defaultSceneChecklist(checklist = {}) {
+  return {
+    clarity: Boolean(checklist.clarity),
+    tension: Boolean(checklist.tension),
+    continuity: Boolean(checklist.continuity),
+    sensory: Boolean(checklist.sensory),
+    ending: Boolean(checklist.ending),
+  };
+}
+
+function ensureScene(scene, fallbackOrder = 1) {
+  const item = scene || {};
+  if (!item.id) item.id = crypto.randomUUID();
+  if (!item.title) item.title = "Untitled scene";
+  if (!item.order) item.order = fallbackOrder;
+  if (!item.summary) item.summary = "";
+  if (!item.povCharacter) item.povCharacter = "";
+  if (!item.setting) item.setting = "";
+  if (!item.conflict) item.conflict = "";
+  if (!item.goal) item.goal = "";
+  if (!item.outcome) item.outcome = "";
+  if (!item.wordCount) item.wordCount = 0;
+  if (!item.status) item.status = "planning";
+  if (!Array.isArray(item.relatedCharacterIds)) item.relatedCharacterIds = [];
+  if (!Array.isArray(item.moodTags)) item.moodTags = [];
+  if (!Array.isArray(item.themeTags)) item.themeTags = [];
+  if (!Array.isArray(item.symbolTags)) item.symbolTags = [];
+  item.checklist = defaultSceneChecklist(item.checklist);
+  return item;
+}
+
+function ensureChapter(chapter, fallbackOrder = 1) {
+  const item = chapter || {};
+  if (!item.id) item.id = crypto.randomUUID();
+  if (!item.title) item.title = "Untitled chapter";
+  if (!item.order) item.order = fallbackOrder;
+  if (!item.summary) item.summary = "";
+  if (!item.wordCount) item.wordCount = 0;
+  if (!item.status) item.status = "planning";
+  if (!Array.isArray(item.themeTags)) item.themeTags = [];
+  if (!Array.isArray(item.symbolTags)) item.symbolTags = [];
+  if (!Array.isArray(item.scenes)) item.scenes = [];
+  item.scenes = item.scenes.map((scene, index) => ensureScene(scene, index + 1));
+  return item;
+}
+
+function ensurePrompt(prompt) {
+  const item = prompt || {};
+  if (!item.id) item.id = crypto.randomUUID();
+  if (!item.type) item.type = "genre";
+  item.type = normalizePromptType(item.type);
+  if (!item.text) item.text = "";
+  item.used = Boolean(item.used);
+  if (!item.createdAt) item.createdAt = new Date().toISOString();
+  return item;
+}
+
+function ensureWritingProject(project) {
+  const item = project || {};
+  if (!item.id) item.id = crypto.randomUUID();
+  if (!item.title) item.title = "Untitled project";
+  if (!item.type) item.type = "other";
+  if (!item.genre) item.genre = "";
+  if (!item.description) item.description = item.premise || "";
+  if (item.targetWordCount == null) item.targetWordCount = 0;
+  if (!item.status) item.status = storyWordTotal(item.draft || "") ? "drafting" : "planning";
+  if (!item.createdAt) item.createdAt = new Date().toISOString();
+  if (!item.updatedAt) item.updatedAt = item.createdAt;
+  if (!Array.isArray(item.moodTags)) item.moodTags = parseTagList(item.moodTags);
+  if (!Array.isArray(item.themeTags)) item.themeTags = parseTagList(item.themeTags);
+  if (!Array.isArray(item.symbolTags)) item.symbolTags = parseTagList(item.symbolTags);
+  if (!Array.isArray(item.conflictTags)) item.conflictTags = parseTagList(item.conflictTags);
+  if (!item.notes) item.notes = item.outline || "";
+  if (!item.draftNotes) item.draftNotes = "";
+  if (!item.manuscriptHtml) item.manuscriptHtml = plainTextToParagraphHtml(item.draft || "");
+  if (!item.manuscriptText) item.manuscriptText = richTextToPlain(item.manuscriptHtml);
+  if (!Array.isArray(item.chapters)) item.chapters = [];
+  if (!Array.isArray(item.charactersList)) item.charactersList = [];
+  if (!Array.isArray(item.worldbuilding)) item.worldbuilding = [];
+  if (!Array.isArray(item.timeline)) item.timeline = [];
+  if (!Array.isArray(item.researchShelf)) item.researchShelf = [];
+  if (!Array.isArray(item.quoteReferences)) item.quoteReferences = [];
+  if (!Array.isArray(item.prompts)) item.prompts = [];
+  if (!Array.isArray(item.versions)) item.versions = [];
+  if (!Array.isArray(item.comments)) item.comments = [];
+  if (!Array.isArray(item.writingLog)) item.writingLog = [];
+  if (!item.revisionNotes) item.revisionNotes = "";
+  if (!item.continuityNotes) item.continuityNotes = "";
+  if (item.dailyWordGoal == null) item.dailyWordGoal = 0;
+  if (item.weeklyWordGoal == null) item.weeklyWordGoal = 0;
+  if (item.projectWordGoal == null) item.projectWordGoal = item.targetWordCount || 0;
+  if (!item.deadline) item.deadline = "";
+  item.chapters = item.chapters.map((chapter, index) => ensureChapter(chapter, index + 1));
+  item.charactersList = item.charactersList.map((character) => ({
+    id: character.id || crypto.randomUUID(),
+    name: character.name || "Unnamed character",
+    age: character.age || "",
+    role: character.role || "",
+    appearance: character.appearance || "",
+    personality: character.personality || "",
+    strengths: character.strengths || "",
+    weaknesses: character.weaknesses || "",
+    goal: character.goal || "",
+    fear: character.fear || "",
+    backstory: character.backstory || "",
+    arc: character.arc || "",
+    relationships: character.relationships || "",
+    notes: character.notes || "",
+  }));
+  item.worldbuilding = item.worldbuilding.map((entry) => ({
+    id: entry.id || crypto.randomUUID(),
+    title: entry.title || "Untitled entry",
+    category: entry.category || "locations",
+    description: entry.description || "",
+    relatedCharacterIds: Array.isArray(entry.relatedCharacterIds)
+      ? entry.relatedCharacterIds
+      : [],
+    relatedSceneIds: Array.isArray(entry.relatedSceneIds)
+      ? entry.relatedSceneIds
+      : [],
+    notes: entry.notes || "",
+  }));
+  item.timeline = item.timeline.map((entry) => ({
+    id: entry.id || crypto.randomUUID(),
+    title: entry.title || "Untitled event",
+    dateOrOrder: entry.dateOrOrder || "",
+    description: entry.description || "",
+    relatedCharacterIds: Array.isArray(entry.relatedCharacterIds)
+      ? entry.relatedCharacterIds
+      : [],
+    relatedSceneIds: Array.isArray(entry.relatedSceneIds)
+      ? entry.relatedSceneIds
+      : [],
+    type: entry.type || "",
+  }));
+  item.researchShelf = item.researchShelf.map((entry) => ({
+    id: entry.id || crypto.randomUUID(),
+    catalogueItemId: entry.catalogueItemId || "",
+    title: entry.title || "",
+    author: entry.author || "",
+    notes: entry.notes || "",
+    tags: Array.isArray(entry.tags) ? entry.tags : parseTagList(entry.tags),
+    chapterId: entry.chapterId || "",
+    sceneId: entry.sceneId || "",
+  }));
+  item.quoteReferences = item.quoteReferences.map((entry) => ({
+    id: entry.id || crypto.randomUUID(),
+    text: entry.text || "",
+    sourceTitle: entry.sourceTitle || "",
+    author: entry.author || "",
+    page: entry.page || "",
+    tags: Array.isArray(entry.tags) ? entry.tags : parseTagList(entry.tags),
+    chapterId: entry.chapterId || "",
+    sceneId: entry.sceneId || "",
+    personalNote: entry.personalNote || "",
+  }));
+  item.prompts = item.prompts.map(ensurePrompt);
+  item.versions = item.versions.map((version) => ({
+    id: version.id || crypto.randomUUID(),
+    label: version.label || "Saved version",
+    createdAt: version.createdAt || new Date().toISOString(),
+    html: version.html || "",
+    notes: version.notes || "",
+    words: toNumber(version.words),
+  }));
+  item.comments = item.comments.map((comment) => ({
+    id: comment.id || crypto.randomUUID(),
+    text: comment.text || "",
+    createdAt: comment.createdAt || new Date().toISOString(),
+  }));
+  item.writingLog = item.writingLog.map((entry) => ({
+    date: entry.date || new Date().toISOString().slice(0, 10),
+    words: Math.max(0, toNumber(entry.words)),
+  }));
+  if (!item.__writingV2Migrated) {
+    const legacyNotes = [
+      item.characters ? `Legacy character notes:\n${item.characters}` : "",
+      item.setting ? `Legacy setting notes:\n${item.setting}` : "",
+      item.pov ? `Legacy POV note: ${item.pov}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    if (legacyNotes) {
+      item.notes = [item.notes, legacyNotes].filter(Boolean).join("\n\n");
+    }
+    item.__writingV2Migrated = true;
+  }
+  return item;
+}
+
+function migrateCreativeWritingProjects() {
+  let changed = false;
+  creativeWriting.forEach((project) => {
+    const before = JSON.stringify(project);
+    ensureWritingProject(project);
+    if (JSON.stringify(project) !== before) changed = true;
+  });
+  if (changed) saveCreativeWriting();
+}
+
+function currentStory() {
+  const project = creativeWriting.find(
+    (story) =>
+      story.id === elements.storyIdInput.value &&
+      story.ownerId === currentAccount?.id,
+  );
+  return project ? ensureWritingProject(project) : null;
+}
+
+function allStoryProjects() {
+  return ownedByCurrent(creativeWriting).map(ensureWritingProject);
+}
+
+function currentStoryWordCount(project = currentStory()) {
+  if (!project) return 0;
+  return storyWordTotal(project.manuscriptText || richTextToPlain(project.manuscriptHtml));
+}
+
+function currentStoryCharacterCount(project = currentStory()) {
+  if (!project) return 0;
+  return storyCharacterTotal(project.manuscriptText || richTextToPlain(project.manuscriptHtml));
+}
+
+function chapterSceneOptions(project) {
+  return project.chapters
+    .sort((first, second) => first.order - second.order)
+    .flatMap((chapter) =>
+      chapter.scenes
+        .sort((first, second) => first.order - second.order)
+        .map((scene) => ({
+          id: scene.id,
+          label: `Chapter ${chapter.order}: ${chapter.title} / Scene ${scene.order}: ${scene.title}`,
+          chapterId: chapter.id,
+        })),
+    );
+}
+
+function storyTagSearchText(project) {
+  return normalize(
+    [
+      project.title,
+      project.type,
+      project.genre,
+      project.status,
+      project.description,
+      project.notes,
+      ...(project.moodTags || []),
+      ...(project.themeTags || []),
+      ...(project.symbolTags || []),
+      ...(project.conflictTags || []),
+    ].join(" "),
+  );
+}
+
+function storyProgress(project) {
+  const current = currentStoryWordCount(project);
+  const target = toNumber(project.projectWordGoal || project.targetWordCount);
+  const percentage = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+  return { current, target, percentage };
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function writingProgressStats(project) {
+  const byDate = new Map();
+  project.writingLog.forEach((entry) => {
+    byDate.set(entry.date, (byDate.get(entry.date) || 0) + toNumber(entry.words));
+  });
+  const today = todayKey();
+  const todayWords = byDate.get(today) || 0;
+  const weeklyWords = Array.from(byDate.entries())
+    .filter(([date]) => {
+      const diff =
+        (new Date(`${today}T00:00:00`).getTime() - new Date(`${date}T00:00:00`).getTime()) /
+        86400000;
+      return diff >= 0 && diff < 7;
+    })
+    .reduce((sum, [, words]) => sum + words, 0);
+  let streak = 0;
+  for (let index = 0; index < 365; index += 1) {
+    const date = new Date();
+    date.setDate(date.getDate() - index);
+    const key = date.toISOString().slice(0, 10);
+    if ((byDate.get(key) || 0) > 0) streak += 1;
+    else break;
+  }
+  const dailyAverage = Array.from(byDate.values()).slice(-14).reduce((sum, value) => sum + value, 0) /
+    Math.max(1, Math.min(14, byDate.size || 1));
+  let estimatedCompletion = "Unknown";
+  const progress = storyProgress(project);
+  if (progress.target > 0 && dailyAverage > 0 && progress.current < progress.target) {
+    const remaining = progress.target - progress.current;
+    const days = Math.ceil(remaining / dailyAverage);
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    estimatedCompletion = date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } else if (progress.current >= progress.target && progress.target > 0) {
+    estimatedCompletion = "Reached";
+  }
+  return {
+    totalWords: progress.current,
+    todayWords,
+    weeklyWords,
+    percentage: progress.percentage,
+    streak,
+    estimatedCompletion,
+  };
+}
+
+function renderWritingDashboard() {
+  if (!currentAccount) return;
+  const projects = allStoryProjects();
+  const wordsToday = projects.reduce(
+    (sum, project) => sum + writingProgressStats(project).todayWords,
+    0,
+  );
+  const longestStreak = projects.reduce(
+    (best, project) => Math.max(best, writingProgressStats(project).streak),
+    0,
+  );
+  const activeProjects = projects.filter((project) =>
+    ["planning", "drafting", "editing"].includes(project.status),
+  ).length;
+  const totalWords = projects.reduce(
+    (sum, project) => sum + currentStoryWordCount(project),
+    0,
+  );
+  elements.writingDashboard.innerHTML = [
+    { label: "Projects", value: projects.length, note: "Stories, essays, poems, and more." },
+    { label: "Active", value: activeProjects, note: "Currently in planning, drafting, or editing." },
+    { label: "Words today", value: wordsToday, note: "Tracked from manuscript saves." },
+    { label: "Total words", value: totalWords, note: `Best streak: ${longestStreak} day${longestStreak === 1 ? "" : "s"}.` },
+  ]
+    .map(
+      (card) => `
+        <article class="writing-dashboard-card">
+          <p>${escapeHtml(card.label)}</p>
+          <strong>${escapeHtml(String(card.value))}</strong>
+          <small>${escapeHtml(card.note)}</small>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function filteredStories() {
+  const query = normalize(elements.storySearchInput.value);
+  const status = elements.storyStatusFilter.value;
+  const sortMode = elements.storySortInput.value;
+  return allStoryProjects()
+    .filter((project) => {
+      const matchesQuery = !query || storyTagSearchText(project).includes(query);
+      const matchesStatus = status === "all" || project.status === status;
+      return matchesQuery && matchesStatus;
+    })
+    .sort((first, second) => {
+      if (sortMode === "title") {
+        return first.title.localeCompare(second.title, undefined, {
+          sensitivity: "base",
+        });
+      }
+      if (sortMode === "created") {
+        return String(second.createdAt).localeCompare(String(first.createdAt));
+      }
+      if (sortMode === "progress") {
+        return storyProgress(second).percentage - storyProgress(first).percentage;
+      }
+      return String(second.updatedAt).localeCompare(String(first.updatedAt));
+    });
 }
 
 function renderStories() {
   if (!currentAccount) return;
-  const stories = ownedByCurrent(creativeWriting).sort((first, second) =>
-    String(second.updatedAt).localeCompare(String(first.updatedAt)),
-  );
+  renderWritingDashboard();
+  const stories = filteredStories();
   const activeId = elements.storyIdInput.value;
   elements.storyCount.textContent = stories.length;
   elements.storyList.innerHTML = stories
-    .map(
-      (story) => `
+    .map((story) => {
+      const progress = storyProgress(story);
+      return `
         <button
           class="story-list-item ${story.id === activeId ? "active" : ""}"
           type="button"
           data-story-id="${story.id}"
         >
-          <strong>${escapeHtml(story.title || "Untitled story")}</strong>
-          <span>${escapeHtml(story.genre || "Unspecified genre")}</span>
-          <small>${storyWordTotal(story.draft)} words / ${escapeHtml(storyDateLabel(story.updatedAt))}</small>
+          <strong>${escapeHtml(story.title || "Untitled project")}</strong>
+          <span>${escapeHtml(story.type)} / ${escapeHtml(story.genre || "No genre")}</span>
+          <small>${progress.current} words / ${escapeHtml(story.status)} / ${escapeHtml(storyDateLabel(story.updatedAt))}</small>
         </button>
-      `,
-    )
+      `;
+    })
     .join("");
   elements.storyEmpty.hidden = stories.length > 0;
 }
 
+function updateWritingSelectionOptions(project = currentStory()) {
+  if (!project) return;
+  const chapters = project.chapters
+    .slice()
+    .sort((first, second) => first.order - second.order);
+  const scenes = chapterSceneOptions(project);
+  const characters = project.charactersList
+    .slice()
+    .sort((first, second) => first.name.localeCompare(second.name));
+  const chapterOptions = [
+    '<option value="">No linked chapter</option>',
+    ...chapters.map(
+      (chapter) =>
+        `<option value="${chapter.id}">Chapter ${chapter.order}: ${escapeHtml(chapter.title)}</option>`,
+    ),
+  ].join("");
+  const requiredChapterOptions = [
+    '<option value="">Choose a chapter</option>',
+    ...chapters.map(
+      (chapter) =>
+        `<option value="${chapter.id}">Chapter ${chapter.order}: ${escapeHtml(chapter.title)}</option>`,
+    ),
+  ].join("");
+  const sceneOptions = [
+    '<option value="">No linked scene</option>',
+    ...scenes.map(
+      (scene) =>
+        `<option value="${scene.id}" data-chapter-id="${scene.chapterId}">${escapeHtml(scene.label)}</option>`,
+    ),
+  ].join("");
+  const characterOptions = characters
+    .map(
+      (character) =>
+        `<option value="${character.id}">${escapeHtml(character.name)}</option>`,
+    )
+    .join("");
+  elements.sceneChapterInput.innerHTML = requiredChapterOptions;
+  elements.researchChapterInput.innerHTML = chapterOptions;
+  elements.quoteChapterInput.innerHTML = chapterOptions;
+  elements.researchSceneInput.innerHTML = sceneOptions;
+  elements.quoteSceneInput.innerHTML = sceneOptions;
+  elements.worldbuildingScenesInput.innerHTML = scenes
+    .map((scene) => `<option value="${scene.id}">${escapeHtml(scene.label)}</option>`)
+    .join("");
+  elements.timelineScenesInput.innerHTML = elements.worldbuildingScenesInput.innerHTML;
+  elements.sceneCharactersInput.innerHTML = characterOptions;
+  elements.worldbuildingCharactersInput.innerHTML = characterOptions;
+  elements.timelineCharactersInput.innerHTML = characterOptions;
+  const catalogueBooks = ownedByCurrent(books)
+    .slice()
+    .sort((first, second) =>
+      first.title.localeCompare(second.title, undefined, { sensitivity: "base" }),
+    );
+  elements.researchCatalogueSelect.innerHTML = [
+    '<option value="">Choose a book from your collection</option>',
+    ...catalogueBooks.map(
+      (book) =>
+        `<option value="${book.id}">${escapeHtml(book.title)} / ${escapeHtml(book.author)}</option>`,
+    ),
+  ].join("");
+}
+
+function renderWritingProjectMeta(project) {
+  const progress = storyProgress(project);
+  elements.writingProjectMeta.textContent = [
+    project.type,
+    project.genre || "No genre yet",
+    project.status,
+    `${progress.current} words`,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+  elements.storyProgressBarFill.style.width = `${progress.percentage}%`;
+  elements.storyProgressLabel.textContent =
+    progress.target > 0 ? `${progress.percentage}% of goal` : "No word goal";
+}
+
+function renderManuscriptInsights(project = currentStory()) {
+  if (!project) return;
+  const text = richTextToPlain(elements.storyDraftInput.innerHTML);
+  const query = normalize(elements.storyManuscriptSearchInput.value);
+  if (!query) {
+    elements.storySearchResults.textContent =
+      "Search results will appear here.";
+  } else {
+    const snippets = [];
+    let source = text;
+    let index = source.toLocaleLowerCase().indexOf(query);
+    while (index !== -1 && snippets.length < 5) {
+      const start = Math.max(0, index - 35);
+      const end = Math.min(source.length, index + query.length + 45);
+      snippets.push(source.slice(start, end).replace(/\s+/g, " ").trim());
+      index = source.toLocaleLowerCase().indexOf(query, index + query.length);
+    }
+    elements.storySearchResults.innerHTML = snippets.length
+      ? snippets.map((snippet) => `<p>${escapeHtml(snippet)}</p>`).join("")
+      : "No matches inside the manuscript.";
+  }
+  const stopWords = new Set([
+    "the",
+    "and",
+    "that",
+    "with",
+    "this",
+    "from",
+    "your",
+    "have",
+    "into",
+    "they",
+    "their",
+    "there",
+    "were",
+    "about",
+  ]);
+  const counts = new Map();
+  (text.match(/\b[a-zA-Z']{4,}\b/g) || []).forEach((word) => {
+    const key = word.toLocaleLowerCase();
+    if (stopWords.has(key)) return;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+  const repeated = Array.from(counts.entries())
+    .filter(([, count]) => count > 2)
+    .sort((first, second) => second[1] - first[1])
+    .slice(0, 12);
+  elements.storyRepeatedWords.innerHTML = repeated.length
+    ? repeated
+        .map(
+          ([word, count]) =>
+            `<span class="story-repeated-word-chip">${escapeHtml(word)} (${count})</span>`,
+        )
+        .join("")
+    : "No heavily repeated words yet.";
+}
+
+function renderChapterList(project = currentStory()) {
+  if (!project) return;
+  const filter = normalize(elements.writingTagFilterInput.value);
+  const charactersById = Object.fromEntries(
+    project.charactersList.map((character) => [character.id, character.name]),
+  );
+  elements.chapterList.innerHTML = project.chapters
+    .slice()
+    .sort((first, second) => first.order - second.order)
+    .filter((chapter) => {
+      if (!filter) return true;
+      return normalize(
+        [
+          chapter.title,
+          chapter.summary,
+          ...chapter.themeTags,
+          ...chapter.symbolTags,
+          ...chapter.scenes.flatMap((scene) => [
+            scene.title,
+            scene.summary,
+            scene.povCharacter,
+            scene.setting,
+            scene.conflict,
+            scene.goal,
+            scene.outcome,
+            ...scene.moodTags,
+            ...scene.themeTags,
+            ...scene.symbolTags,
+          ]),
+        ].join(" "),
+      ).includes(filter);
+    })
+    .map((chapter) => `
+      <article class="chapter-card">
+        <p class="chapter-card-meta">Chapter ${chapter.order} / ${escapeHtml(chapter.status)} / ${chapter.wordCount || 0} words</p>
+        <h3>${escapeHtml(chapter.title)}</h3>
+        <p>${escapeHtml(chapter.summary || "No summary yet.")}</p>
+        <div class="writing-tag-cloud">
+          ${[...chapter.themeTags, ...chapter.symbolTags].map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+        </div>
+        <div class="chapter-card-actions">
+          <button type="button" data-chapter-action="edit" data-id="${chapter.id}">Edit</button>
+          <button type="button" data-chapter-action="up" data-id="${chapter.id}">Move up</button>
+          <button type="button" data-chapter-action="down" data-id="${chapter.id}">Move down</button>
+          <button type="button" data-chapter-action="delete" data-id="${chapter.id}">Delete</button>
+        </div>
+        <div class="chapter-scene-list">
+          ${chapter.scenes
+            .slice()
+            .sort((first, second) => first.order - second.order)
+            .map(
+              (scene) => `
+                <article class="scene-card">
+                  <p class="chapter-card-meta">Scene ${scene.order} / ${escapeHtml(scene.status)} / ${scene.wordCount || 0} words</p>
+                  <h4>${escapeHtml(scene.title)}</h4>
+                  <p>${escapeHtml(scene.summary || "No summary yet.")}</p>
+                  <p><strong>POV:</strong> ${escapeHtml(scene.povCharacter || "Unassigned")}</p>
+                  <p><strong>Setting:</strong> ${escapeHtml(scene.setting || "Unassigned")}</p>
+                  <p><strong>Conflict:</strong> ${escapeHtml(scene.conflict || "Unassigned")}</p>
+                  <p><strong>Goal / outcome:</strong> ${escapeHtml(scene.goal || "Unknown")} / ${escapeHtml(scene.outcome || "Unknown")}</p>
+                  <p><strong>Linked characters:</strong> ${escapeHtml(
+                    scene.relatedCharacterIds.map((id) => charactersById[id]).filter(Boolean).join(", ") ||
+                      "None",
+                  )}</p>
+                  <div class="writing-tag-cloud">
+                    ${[...scene.moodTags, ...scene.themeTags, ...scene.symbolTags].map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+                  </div>
+                  <div class="scene-card-actions">
+                    <button type="button" data-scene-action="edit" data-id="${scene.id}">Edit</button>
+                    <button type="button" data-scene-action="up" data-chapter-id="${chapter.id}" data-id="${scene.id}">Move up</button>
+                    <button type="button" data-scene-action="down" data-chapter-id="${chapter.id}" data-id="${scene.id}">Move down</button>
+                    <button type="button" data-scene-action="delete" data-id="${scene.id}">Delete</button>
+                  </div>
+                </article>
+              `,
+            )
+            .join("") || '<p class="chapter-card-meta">No scenes in this chapter yet.</p>'}
+        </div>
+      </article>
+    `)
+    .join("") || '<p class="writing-card-meta">No chapters yet. Add one to begin structuring the project.</p>';
+}
+
+function renderCharacterList(project = currentStory()) {
+  if (!project) return;
+  elements.characterList.innerHTML = project.charactersList
+    .slice()
+    .sort((first, second) => first.name.localeCompare(second.name))
+    .map(
+      (character) => `
+        <article class="writing-item-card">
+          <p class="writing-card-meta">${escapeHtml(character.role || "Character")} / ${escapeHtml(character.age || "Age unspecified")}</p>
+          <h3>${escapeHtml(character.name)}</h3>
+          <p><strong>Goal:</strong> ${escapeHtml(character.goal || "Unknown")}</p>
+          <p><strong>Fear:</strong> ${escapeHtml(character.fear || "Unknown")}</p>
+          <p><strong>Arc:</strong> ${escapeHtml(character.arc || "No arc notes yet.")}</p>
+          <div class="writing-card-actions">
+            <button type="button" data-character-action="edit" data-id="${character.id}">Edit</button>
+            <button type="button" data-character-action="delete" data-id="${character.id}">Delete</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No characters yet. Add a cast member to start shaping the story.</p>';
+}
+
+function renderWorldbuilding(project = currentStory()) {
+  if (!project) return;
+  const sceneLabels = Object.fromEntries(
+    chapterSceneOptions(project).map((scene) => [scene.id, scene.label]),
+  );
+  const characterLabels = Object.fromEntries(
+    project.charactersList.map((character) => [character.id, character.name]),
+  );
+  elements.worldbuildingList.innerHTML = project.worldbuilding
+    .slice()
+    .sort((first, second) =>
+      `${first.category}:${first.title}`.localeCompare(`${second.category}:${second.title}`),
+    )
+    .map(
+      (entry) => `
+        <article class="writing-item-card">
+          <p class="writing-card-meta">${escapeHtml(entry.category)}</p>
+          <h3>${escapeHtml(entry.title)}</h3>
+          <p>${escapeHtml(entry.description || "No description yet.")}</p>
+          <p><strong>Characters:</strong> ${escapeHtml(
+            entry.relatedCharacterIds.map((id) => characterLabels[id]).filter(Boolean).join(", ") ||
+              "None",
+          )}</p>
+          <p><strong>Scenes:</strong> ${escapeHtml(
+            entry.relatedSceneIds.map((id) => sceneLabels[id]).filter(Boolean).join(", ") || "None",
+          )}</p>
+          <div class="writing-card-actions">
+            <button type="button" data-worldbuilding-action="edit" data-id="${entry.id}">Edit</button>
+            <button type="button" data-worldbuilding-action="delete" data-id="${entry.id}">Delete</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No worldbuilding notes yet. Add a place, belief, object, or system here.</p>';
+}
+
+function renderTimeline(project = currentStory()) {
+  if (!project) return;
+  elements.timelineList.innerHTML = project.timeline
+    .slice()
+    .sort((first, second) =>
+      String(first.dateOrOrder).localeCompare(String(second.dateOrOrder), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    )
+    .map(
+      (entry) => `
+        <article class="timeline-item">
+          <p class="timeline-meta">${escapeHtml(entry.type || "Timeline event")} / ${escapeHtml(entry.dateOrOrder)}</p>
+          <h3>${escapeHtml(entry.title)}</h3>
+          <p>${escapeHtml(entry.description || "No description yet.")}</p>
+          <div class="timeline-actions">
+            <button type="button" data-timeline-action="edit" data-id="${entry.id}">Edit</button>
+            <button type="button" data-timeline-action="delete" data-id="${entry.id}">Delete</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No timeline events yet. Add one to map the order of what matters.</p>';
+}
+
+function renderResearchShelf(project = currentStory()) {
+  if (!project) return;
+  elements.researchList.innerHTML = project.researchShelf
+    .map(
+      (entry) => `
+        <article class="writing-item-card">
+          <p class="writing-card-meta">Research shelf</p>
+          <h3>${escapeHtml(entry.title || "Unlinked title")}</h3>
+          <p><strong>Author:</strong> ${escapeHtml(entry.author || "Unknown")}</p>
+          <p>${escapeHtml(entry.notes || "No notes yet.")}</p>
+          <div class="writing-tag-cloud">
+            ${(entry.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+          </div>
+          <div class="writing-card-actions">
+            <button type="button" data-research-action="open-book" data-book-id="${entry.catalogueItemId}">Open book</button>
+            <button type="button" data-research-action="edit" data-id="${entry.id}">Edit</button>
+            <button type="button" data-research-action="delete" data-id="${entry.id}">Delete</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No research items yet. Link books from your catalogue to build this shelf.</p>';
+}
+
+function renderQuotes(project = currentStory()) {
+  if (!project) return;
+  elements.quoteList.innerHTML = project.quoteReferences
+    .map(
+      (entry) => `
+        <article class="writing-item-card">
+          <p class="writing-card-meta">${escapeHtml(entry.sourceTitle || "Reference")} / ${escapeHtml(entry.page || "No page")}</p>
+          <h3>${escapeHtml(entry.author || "Unknown author")}</h3>
+          <p>${escapeHtml(entry.text || "")}</p>
+          ${entry.personalNote ? `<p><strong>Note:</strong> ${escapeHtml(entry.personalNote)}</p>` : ""}
+          <div class="writing-tag-cloud">
+            ${(entry.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+          </div>
+          <div class="writing-card-actions">
+            <button type="button" data-quote-action="edit" data-id="${entry.id}">Edit</button>
+            <button type="button" data-quote-action="delete" data-id="${entry.id}">Delete</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No quotes or references yet. Save a passage, citation, or note to revisit later.</p>';
+}
+
+function renderGoals(project = currentStory()) {
+  if (!project) return;
+  const stats = writingProgressStats(project);
+  const deadlineText = project.deadline
+    ? storyDateLabel(project.deadline)
+    : "No deadline yet";
+  elements.writingGoalSummary.innerHTML = `
+    <article class="writing-goal-card">
+      <p>Total word count</p>
+      <strong>${stats.totalWords}</strong>
+    </article>
+    <article class="writing-goal-card">
+      <p>Words written today</p>
+      <strong>${stats.todayWords}</strong>
+    </article>
+    <article class="writing-goal-card">
+      <p>Writing streak</p>
+      <strong>${stats.streak}</strong>
+    </article>
+    <article class="writing-goal-card">
+      <p>Weekly progress</p>
+      <strong>${stats.weeklyWords}</strong>
+    </article>
+    <article class="writing-goal-card">
+      <p>Estimated completion</p>
+      <strong>${escapeHtml(stats.estimatedCompletion)}</strong>
+    </article>
+    <article class="writing-goal-card">
+      <p>Deadline</p>
+      <strong>${escapeHtml(deadlineText)}</strong>
+    </article>
+    <article class="writing-goal-bar">
+      <p>Project progress</p>
+      <div class="writing-goal-bar-track"><span style="width:${stats.percentage}%"></span></div>
+      <small>${stats.percentage}% of your project goal</small>
+    </article>
+  `;
+}
+
+function renderPrompts(project = currentStory()) {
+  if (!project) return;
+  elements.promptList.innerHTML = project.prompts
+    .slice()
+    .sort((first, second) => String(second.createdAt).localeCompare(String(first.createdAt)))
+    .map(
+      (prompt) => `
+        <article class="writing-item-card">
+          <p class="writing-card-meta">${escapeHtml(prompt.type)} / ${prompt.used ? "Used" : "Unused"}</p>
+          <p>${escapeHtml(prompt.text)}</p>
+          <div class="writing-card-actions">
+            <button type="button" data-prompt-action="toggle" data-id="${prompt.id}">
+              ${prompt.used ? "Mark unused" : "Mark used"}
+            </button>
+            <button type="button" data-prompt-action="edit" data-id="${prompt.id}">Edit</button>
+            <button type="button" data-prompt-action="delete" data-id="${prompt.id}">Delete</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No prompts saved yet. Generate one or add your own.</p>';
+}
+
+function renderRevision(project = currentStory()) {
+  if (!project) return;
+  elements.storyVersionList.innerHTML = project.versions
+    .slice()
+    .sort((first, second) => String(second.createdAt).localeCompare(String(first.createdAt)))
+    .map(
+      (version) => `
+        <article class="version-item">
+          <p class="writing-card-meta">${escapeHtml(version.label)} / ${escapeHtml(storyDateTimeLabel(version.createdAt))}</p>
+          <p>${version.words} words</p>
+          <button type="button" data-version-action="restore" data-id="${version.id}">Restore version</button>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No saved versions yet. Manual manuscript saves create them.</p>';
+  elements.revisionCommentList.innerHTML = project.comments
+    .slice()
+    .sort((first, second) => String(second.createdAt).localeCompare(String(first.createdAt)))
+    .map(
+      (comment) => `
+        <article class="comment-item">
+          <p class="writing-card-meta">${escapeHtml(storyDateTimeLabel(comment.createdAt))}</p>
+          <p>${escapeHtml(comment.text)}</p>
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">No comments yet.</p>';
+  elements.sceneChecklistList.innerHTML = project.chapters
+    .flatMap((chapter) =>
+      chapter.scenes.map((scene) => ({
+        chapter,
+        scene,
+      })),
+    )
+    .map(
+      ({ chapter, scene }) => `
+        <article class="checklist-item">
+          <p class="writing-card-meta">Chapter ${chapter.order} / Scene ${scene.order}</p>
+          <p><strong>${escapeHtml(scene.title)}</strong></p>
+          ${[
+            ["clarity", "Clarity"],
+            ["tension", "Tension"],
+            ["continuity", "Continuity"],
+            ["sensory", "Sensory detail"],
+            ["ending", "Strong ending"],
+          ]
+            .map(
+              ([key, label]) => `
+                <label>
+                  <input
+                    type="checkbox"
+                    data-scene-check="${key}"
+                    data-id="${scene.id}"
+                    ${scene.checklist[key] ? "checked" : ""}
+                  />
+                  <span>${label}</span>
+                </label>
+              `,
+            )
+            .join("")}
+        </article>
+      `,
+    )
+    .join("") || '<p class="writing-card-meta">Add scenes to build a revision checklist.</p>';
+}
+
+function renderExportSelection(project = currentStory()) {
+  if (!project) return;
+  elements.exportSelectionList.innerHTML = [
+    `<label><input type="checkbox" value="__full__" checked /> <span>Full project manuscript and notes</span></label>`,
+    ...project.chapters
+      .slice()
+      .sort((first, second) => first.order - second.order)
+      .map(
+        (chapter) =>
+          `<label><input type="checkbox" value="${chapter.id}" /> <span>Chapter ${chapter.order}: ${escapeHtml(chapter.title)}</span></label>`,
+      ),
+  ].join("");
+}
+
+function renderActiveStoryDetails(project = currentStory()) {
+  if (!project) return;
+  updateWritingSelectionOptions(project);
+  renderWritingProjectMeta(project);
+  renderChapterList(project);
+  renderCharacterList(project);
+  renderWorldbuilding(project);
+  renderTimeline(project);
+  renderResearchShelf(project);
+  renderQuotes(project);
+  renderGoals(project);
+  renderPrompts(project);
+  renderRevision(project);
+  renderExportSelection(project);
+  renderManuscriptInsights(project);
+}
+
 function setWritingView(view) {
-  elements.storyPlanView.hidden = view !== "plan";
-  elements.storyDraftView.hidden = view !== "draft";
+  currentWritingView = view;
+  const panels = {
+    overview: elements.storyPlanView,
+    manuscript: elements.storyDraftView,
+    chapters: elements.storyChaptersView,
+    characters: elements.storyCharactersView,
+    worldbuilding: elements.storyWorldbuildingView,
+    timeline: elements.storyTimelineView,
+    research: elements.storyResearchView,
+    quotes: elements.storyQuotesView,
+    goals: elements.storyGoalsView,
+    prompts: elements.storyPromptsView,
+    revision: elements.storyRevisionView,
+    export: elements.storyExportView,
+  };
+  Object.entries(panels).forEach(([key, panel]) => {
+    panel.hidden = key !== view;
+  });
   document.querySelectorAll("[data-writing-view]").forEach((button) => {
     const selected = button.dataset.writingView === view;
     button.classList.toggle("active", selected);
     button.setAttribute("aria-selected", String(selected));
   });
-  if (view === "draft") elements.storyDraftInput.focus();
+  if (view === "manuscript") {
+    elements.storyDraftInput.focus();
+  }
+}
+
+function populateProjectForm(project) {
+  elements.storyIdInput.value = project.id;
+  elements.storyTitleInput.value = project.title || "";
+  elements.storyTypeInput.value = project.type || "other";
+  elements.storyGenreInput.value = project.genre || "";
+  elements.storyStatusInput.value = project.status || "planning";
+  elements.storyPremiseInput.value = project.description || "";
+  elements.storyTargetInput.value = toNumber(project.targetWordCount) || "";
+  elements.storyCurrentCountInput.value = currentStoryWordCount(project);
+  elements.storyCreatedInput.value = storyDateLabel(project.createdAt);
+  elements.storyUpdatedInput.value = storyDateTimeLabel(project.updatedAt);
+  elements.storyMoodInput.value = formatTagList(project.moodTags);
+  elements.storyThemeInput.value = formatTagList(project.themeTags);
+  elements.storySymbolInput.value = formatTagList(project.symbolTags);
+  elements.storyConflictInput.value = formatTagList(project.conflictTags);
+  elements.storyOutlineInput.value = project.notes || "";
+  elements.storyDraftInput.innerHTML = project.manuscriptHtml || "";
+  elements.storyDraftNotesInput.value = project.draftNotes || "";
+  elements.storyRevisionNotesInput.value = project.revisionNotes || "";
+  elements.storyContinuityNotesInput.value = project.continuityNotes || "";
+  elements.storyWordCount.textContent = currentStoryWordCount(project);
+  elements.storyCharacterCount.textContent = currentStoryCharacterCount(project);
+  elements.storySaveStatus.textContent = "All changes saved";
+  elements.storyLastSaved.textContent = storyDateTimeLabel(project.updatedAt);
+  elements.writingDailyGoalInput.value = toNumber(project.dailyWordGoal) || "";
+  elements.writingWeeklyGoalInput.value = toNumber(project.weeklyWordGoal) || "";
+  elements.writingProjectGoalInput.value = toNumber(project.projectWordGoal) || "";
+  elements.writingDeadlineInput.value = project.deadline || "";
 }
 
 function openStory(storyId) {
@@ -3163,61 +4665,190 @@ function openStory(storyId) {
     (item) => item.id === storyId && item.ownerId === currentAccount?.id,
   );
   if (!story) return;
-  elements.storyIdInput.value = story.id;
-  elements.storyTitleInput.value = story.title || "";
-  elements.storyGenreInput.value = story.genre || "";
-  elements.storyPovInput.value = story.pov || "";
-  elements.storyPremiseInput.value = story.premise || "";
-  elements.storyCharactersInput.value = story.characters || "";
-  elements.storySettingInput.value = story.setting || "";
-  elements.storyOutlineInput.value = story.outline || "";
-  elements.storyDraftInput.value = story.draft || "";
-  elements.storyWordCount.textContent = storyWordTotal(story.draft);
-  elements.storySaveStatus.textContent = "All changes saved";
+  const project = ensureWritingProject(story);
   elements.storyEditor.hidden = false;
   elements.storyEditorEmpty.hidden = true;
-  setWritingView("plan");
+  populateProjectForm(project);
   renderStories();
+  renderActiveStoryDetails(project);
+  setWritingView(currentWritingView);
 }
 
 function createStory() {
   if (!currentAccount) return;
-  const story = {
+  const project = ensureWritingProject({
     id: crypto.randomUUID(),
-    title: "Untitled story",
+    title: "Untitled project",
+    type: "novel",
     genre: "",
-    pov: "",
-    premise: "",
-    characters: "",
-    setting: "",
-    outline: "",
-    draft: "",
+    description: "",
+    targetWordCount: 50000,
+    status: "idea",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ownerId: currentAccount.id,
-  };
-  creativeWriting.unshift(story);
+  });
+  creativeWriting.unshift(project);
   saveCreativeWriting();
-  openStory(story.id);
+  openStory(project.id);
   elements.storyTitleInput.select();
 }
 
-function saveOpenStory() {
+function duplicateStoryProject(project) {
+  const copy = cloneData(project);
+  const characterIdMap = new Map();
+  const chapterIdMap = new Map();
+  const sceneIdMap = new Map();
+  copy.id = crypto.randomUUID();
+  copy.title = `${project.title} (Copy)`;
+  copy.createdAt = new Date().toISOString();
+  copy.updatedAt = copy.createdAt;
+  copy.ownerId = currentAccount.id;
+  copy.comments = [];
+  copy.writingLog = [];
+  copy.versions = [];
+  copy.prompts = (copy.prompts || []).map((prompt) => ({
+    ...prompt,
+    id: crypto.randomUUID(),
+    used: false,
+  }));
+  copy.charactersList = (copy.charactersList || []).map((character) => {
+    const nextId = crypto.randomUUID();
+    characterIdMap.set(character.id, nextId);
+    return {
+      ...character,
+      id: nextId,
+    };
+  });
+  copy.chapters = (copy.chapters || []).map((chapter) => ({
+    ...chapter,
+    id: (() => {
+      const nextId = crypto.randomUUID();
+      chapterIdMap.set(chapter.id, nextId);
+      return nextId;
+    })(),
+    scenes: (chapter.scenes || []).map((scene) => {
+      const nextId = crypto.randomUUID();
+      sceneIdMap.set(scene.id, nextId);
+      return {
+        ...scene,
+        id: nextId,
+        relatedCharacterIds: (scene.relatedCharacterIds || [])
+          .map((id) => characterIdMap.get(id))
+          .filter(Boolean),
+        checklist: defaultSceneChecklist(scene.checklist),
+      };
+    }),
+  }));
+  copy.worldbuilding = (copy.worldbuilding || []).map((entry) => ({
+    ...entry,
+    id: crypto.randomUUID(),
+    relatedCharacterIds: (entry.relatedCharacterIds || [])
+      .map((id) => characterIdMap.get(id))
+      .filter(Boolean),
+    relatedSceneIds: (entry.relatedSceneIds || [])
+      .map((id) => sceneIdMap.get(id))
+      .filter(Boolean),
+  }));
+  copy.timeline = (copy.timeline || []).map((entry) => ({
+    ...entry,
+    id: crypto.randomUUID(),
+    relatedCharacterIds: (entry.relatedCharacterIds || [])
+      .map((id) => characterIdMap.get(id))
+      .filter(Boolean),
+    relatedSceneIds: (entry.relatedSceneIds || [])
+      .map((id) => sceneIdMap.get(id))
+      .filter(Boolean),
+  }));
+  copy.researchShelf = (copy.researchShelf || []).map((entry) => ({
+    ...entry,
+    id: crypto.randomUUID(),
+    chapterId: chapterIdMap.get(entry.chapterId) || "",
+    sceneId: sceneIdMap.get(entry.sceneId) || "",
+  }));
+  copy.quoteReferences = (copy.quoteReferences || []).map((entry) => ({
+    ...entry,
+    id: crypto.randomUUID(),
+    chapterId: chapterIdMap.get(entry.chapterId) || "",
+    sceneId: sceneIdMap.get(entry.sceneId) || "",
+  }));
+  return ensureWritingProject(copy);
+}
+
+function recordWritingProgress(project, previousWords, nextWords) {
+  const delta = Math.max(0, nextWords - previousWords);
+  if (!delta) return;
+  const today = todayKey();
+  const existing = project.writingLog.find((entry) => entry.date === today);
+  if (existing) existing.words += delta;
+  else project.writingLog.push({ date: today, words: delta });
+}
+
+function saveManuscriptVersion(project, label = "Manual save") {
+  project.versions.unshift({
+    id: crypto.randomUUID(),
+    label,
+    createdAt: new Date().toISOString(),
+    html: elements.storyDraftInput.innerHTML,
+    notes: elements.storyDraftNotesInput.value.trim(),
+    words: storyWordTotal(richTextToPlain(elements.storyDraftInput.innerHTML)),
+  });
+  project.versions = project.versions.slice(0, 25);
+}
+
+function saveProjectOverview() {
   const story = currentStory();
   if (!story) return;
-  story.title = elements.storyTitleInput.value.trim() || "Untitled story";
+  story.title = elements.storyTitleInput.value.trim() || "Untitled project";
+  story.type = elements.storyTypeInput.value;
   story.genre = elements.storyGenreInput.value.trim();
-  story.pov = elements.storyPovInput.value;
-  story.premise = elements.storyPremiseInput.value.trim();
-  story.characters = elements.storyCharactersInput.value.trim();
-  story.setting = elements.storySettingInput.value.trim();
-  story.outline = elements.storyOutlineInput.value.trim();
-  story.draft = elements.storyDraftInput.value;
+  story.status = elements.storyStatusInput.value;
+  story.description = elements.storyPremiseInput.value.trim();
+  story.targetWordCount = toNumber(elements.storyTargetInput.value);
+  story.moodTags = parseTagList(elements.storyMoodInput.value);
+  story.themeTags = parseTagList(elements.storyThemeInput.value);
+  story.symbolTags = parseTagList(elements.storySymbolInput.value);
+  story.conflictTags = parseTagList(elements.storyConflictInput.value);
+  story.notes = elements.storyOutlineInput.value.trim();
   story.updatedAt = new Date().toISOString();
-  elements.storyWordCount.textContent = storyWordTotal(story.draft);
   saveCreativeWriting();
   renderStories();
+  renderWritingProjectMeta(story);
+  elements.storyCurrentCountInput.value = currentStoryWordCount(story);
+  elements.storyUpdatedInput.value = storyDateTimeLabel(story.updatedAt);
+  showToast(`"${story.title}" updated.`);
+}
+
+function saveOpenStory(options = {}) {
+  const story = currentStory();
+  if (!story) return;
+  const previousWords = currentStoryWordCount(story);
+  story.title = elements.storyTitleInput.value.trim() || "Untitled project";
+  story.manuscriptHtml = elements.storyDraftInput.innerHTML.trim();
+  story.manuscriptText = richTextToPlain(story.manuscriptHtml);
+  story.draftNotes = elements.storyDraftNotesInput.value.trim();
+  story.updatedAt = new Date().toISOString();
+  const nextWords = storyWordTotal(story.manuscriptText);
+  if (nextWords > 0 && ["idea", "planning"].includes(story.status)) {
+    story.status = "drafting";
+    elements.storyStatusInput.value = story.status;
+  }
+  recordWritingProgress(story, previousWords, nextWords);
+  if (options.manual) {
+    saveManuscriptVersion(story, "Manual save");
+  }
+  saveCreativeWriting();
+  elements.storyWordCount.textContent = nextWords;
+  elements.storyCharacterCount.textContent = storyCharacterTotal(story.manuscriptText);
+  elements.storyCurrentCountInput.value = nextWords;
+  elements.storyUpdatedInput.value = storyDateTimeLabel(story.updatedAt);
   elements.storySaveStatus.textContent = "All changes saved";
+  elements.storyLastSaved.textContent = storyDateTimeLabel(story.updatedAt);
+  renderStories();
+  renderWritingProjectMeta(story);
+  renderGoals(story);
+  renderRevision(story);
+  renderManuscriptInsights(story);
 }
 
 function scheduleStorySave() {
@@ -3225,9 +4856,19 @@ function scheduleStorySave() {
   window.clearTimeout(storySaveTimer);
   elements.storySaveStatus.textContent = "Saving...";
   elements.storyWordCount.textContent = storyWordTotal(
-    elements.storyDraftInput.value,
+    richTextToPlain(elements.storyDraftInput.innerHTML),
   );
-  storySaveTimer = window.setTimeout(saveOpenStory, 600);
+  elements.storyCharacterCount.textContent = storyCharacterTotal(
+    richTextToPlain(elements.storyDraftInput.innerHTML),
+  );
+  storySaveTimer = window.setTimeout(() => saveOpenStory({ manual: false }), 700);
+}
+
+function resetStoryEditor() {
+  elements.storyIdInput.value = "";
+  elements.storyEditor.hidden = true;
+  elements.storyEditorEmpty.hidden = false;
+  elements.storyTitleInput.value = "";
 }
 
 function deleteOpenStory() {
@@ -3235,12 +4876,647 @@ function deleteOpenStory() {
   if (!story) return;
   creativeWriting = creativeWriting.filter((item) => item.id !== story.id);
   saveCreativeWriting();
-  elements.storyEditor.reset();
-  elements.storyIdInput.value = "";
-  elements.storyEditor.hidden = true;
-  elements.storyEditorEmpty.hidden = false;
+  resetStoryEditor();
   renderStories();
-  showToast(`"${story.title || "Untitled story"}" deleted.`);
+  showToast(`"${story.title || "Untitled project"}" deleted.`);
+}
+
+function duplicateOpenStory() {
+  const story = currentStory();
+  if (!story) return;
+  const duplicate = duplicateStoryProject(story);
+  creativeWriting.unshift(duplicate);
+  saveCreativeWriting();
+  openStory(duplicate.id);
+  showToast(`Created a copy of "${story.title}".`);
+}
+
+function applyWritingFormat(action, value = null) {
+  elements.storyDraftInput.focus();
+  document.execCommand(action, false, value);
+  scheduleStorySave();
+}
+
+function saveChapter() {
+  const story = currentStory();
+  if (!story) return;
+  const existing = story.chapters.find((chapter) => chapter.id === elements.chapterIdInput.value);
+  const chapter = ensureChapter(
+    existing || {
+      id: crypto.randomUUID(),
+      scenes: [],
+    },
+    toNumber(elements.chapterOrderInput.value, story.chapters.length + 1),
+  );
+  chapter.title = elements.chapterTitleInput.value.trim() || "Untitled chapter";
+  chapter.order = toNumber(elements.chapterOrderInput.value, 1);
+  chapter.status = elements.chapterStatusInput.value;
+  chapter.summary = elements.chapterSummaryInput.value.trim();
+  chapter.wordCount = toNumber(elements.chapterWordCountInput.value);
+  chapter.themeTags = parseTagList(elements.chapterThemeInput.value);
+  chapter.symbolTags = parseTagList(elements.chapterSymbolInput.value);
+  if (!existing) story.chapters.push(chapter);
+  story.updatedAt = new Date().toISOString();
+  saveCreativeWriting();
+  elements.chapterForm.reset();
+  elements.chapterIdInput.value = "";
+  elements.chapterFormTitle.textContent = "Add chapter";
+  elements.chapterCancelEdit.hidden = true;
+  renderActiveStoryDetails(story);
+}
+
+function editChapter(id) {
+  const chapter = currentStory()?.chapters.find((item) => item.id === id);
+  if (!chapter) return;
+  elements.chapterIdInput.value = chapter.id;
+  elements.chapterTitleInput.value = chapter.title;
+  elements.chapterOrderInput.value = chapter.order;
+  elements.chapterStatusInput.value = chapter.status;
+  elements.chapterSummaryInput.value = chapter.summary;
+  elements.chapterWordCountInput.value = chapter.wordCount || "";
+  elements.chapterThemeInput.value = formatTagList(chapter.themeTags);
+  elements.chapterSymbolInput.value = formatTagList(chapter.symbolTags);
+  elements.chapterFormTitle.textContent = "Edit chapter";
+  elements.chapterCancelEdit.hidden = false;
+}
+
+function moveChapter(id, direction) {
+  const story = currentStory();
+  if (!story) return;
+  const chapters = story.chapters.slice().sort((first, second) => first.order - second.order);
+  const index = chapters.findIndex((chapter) => chapter.id === id);
+  if (index < 0) return;
+  const swapIndex = index + direction;
+  if (swapIndex < 0 || swapIndex >= chapters.length) return;
+  [chapters[index].order, chapters[swapIndex].order] = [
+    chapters[swapIndex].order,
+    chapters[index].order,
+  ];
+  story.chapters = chapters;
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function deleteChapter(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.chapters = story.chapters.filter((chapter) => chapter.id !== id);
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function saveScene() {
+  const story = currentStory();
+  if (!story) return;
+  const chapter = story.chapters.find((item) => item.id === elements.sceneChapterInput.value);
+  if (!chapter) return;
+  let existingScene = null;
+  let existingChapter = null;
+  story.chapters.forEach((currentChapter) => {
+    const found = currentChapter.scenes.find((scene) => scene.id === elements.sceneIdInput.value);
+    if (found) {
+      existingScene = found;
+      existingChapter = currentChapter;
+    }
+  });
+  const scene = ensureScene(existingScene || { id: crypto.randomUUID() }, toNumber(elements.sceneOrderInput.value, chapter.scenes.length + 1));
+  scene.title = elements.sceneTitleInput.value.trim() || "Untitled scene";
+  scene.order = toNumber(elements.sceneOrderInput.value, 1);
+  scene.summary = elements.sceneSummaryInput.value.trim();
+  scene.povCharacter = elements.scenePovInput.value.trim();
+  scene.setting = elements.sceneSettingInput.value.trim();
+  scene.conflict = elements.sceneConflictInput.value.trim();
+  scene.goal = elements.sceneGoalInput.value.trim();
+  scene.outcome = elements.sceneOutcomeInput.value.trim();
+  scene.wordCount = toNumber(elements.sceneWordCountInput.value);
+  scene.status = elements.sceneStatusInput.value;
+  scene.relatedCharacterIds = readMultiSelectValues(elements.sceneCharactersInput);
+  scene.moodTags = parseTagList(elements.sceneMoodInput.value);
+  scene.themeTags = parseTagList(elements.sceneThemeInput.value);
+  scene.symbolTags = parseTagList(elements.sceneSymbolInput.value);
+  if (existingScene && existingChapter && existingChapter.id !== chapter.id) {
+    existingChapter.scenes = existingChapter.scenes.filter((item) => item.id !== scene.id);
+    chapter.scenes.push(scene);
+  } else if (!existingScene) {
+    chapter.scenes.push(scene);
+  }
+  story.updatedAt = new Date().toISOString();
+  saveCreativeWriting();
+  elements.sceneForm.reset();
+  elements.sceneIdInput.value = "";
+  elements.sceneFormTitle.textContent = "Add scene";
+  elements.sceneCancelEdit.hidden = true;
+  renderActiveStoryDetails(story);
+}
+
+function findSceneById(story, id) {
+  for (const chapter of story.chapters) {
+    const scene = chapter.scenes.find((item) => item.id === id);
+    if (scene) return { chapter, scene };
+  }
+  return null;
+}
+
+function editScene(id) {
+  const story = currentStory();
+  if (!story) return;
+  const found = findSceneById(story, id);
+  if (!found) return;
+  const { chapter, scene } = found;
+  elements.sceneIdInput.value = scene.id;
+  elements.sceneChapterInput.value = chapter.id;
+  elements.sceneTitleInput.value = scene.title;
+  elements.sceneOrderInput.value = scene.order;
+  elements.sceneSummaryInput.value = scene.summary;
+  elements.scenePovInput.value = scene.povCharacter;
+  elements.sceneSettingInput.value = scene.setting;
+  elements.sceneConflictInput.value = scene.conflict;
+  elements.sceneGoalInput.value = scene.goal;
+  elements.sceneOutcomeInput.value = scene.outcome;
+  elements.sceneWordCountInput.value = scene.wordCount || "";
+  elements.sceneStatusInput.value = scene.status;
+  setMultiSelectValues(elements.sceneCharactersInput, scene.relatedCharacterIds);
+  elements.sceneMoodInput.value = formatTagList(scene.moodTags);
+  elements.sceneThemeInput.value = formatTagList(scene.themeTags);
+  elements.sceneSymbolInput.value = formatTagList(scene.symbolTags);
+  elements.sceneFormTitle.textContent = "Edit scene";
+  elements.sceneCancelEdit.hidden = false;
+}
+
+function moveScene(chapterId, sceneId, direction) {
+  const story = currentStory();
+  if (!story) return;
+  const chapter = story.chapters.find((item) => item.id === chapterId);
+  if (!chapter) return;
+  const scenes = chapter.scenes.slice().sort((first, second) => first.order - second.order);
+  const index = scenes.findIndex((scene) => scene.id === sceneId);
+  if (index < 0) return;
+  const swapIndex = index + direction;
+  if (swapIndex < 0 || swapIndex >= scenes.length) return;
+  [scenes[index].order, scenes[swapIndex].order] = [scenes[swapIndex].order, scenes[index].order];
+  chapter.scenes = scenes;
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function deleteScene(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.chapters.forEach((chapter) => {
+    chapter.scenes = chapter.scenes.filter((scene) => scene.id !== id);
+  });
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function saveCharacter() {
+  const story = currentStory();
+  if (!story) return;
+  const existing = story.charactersList.find((character) => character.id === elements.characterIdInput.value);
+  const character = existing || { id: crypto.randomUUID() };
+  Object.assign(character, {
+    name: elements.characterNameInput.value.trim() || "Unnamed character",
+    age: elements.characterAgeInput.value.trim(),
+    role: elements.characterRoleInput.value.trim(),
+    appearance: elements.characterAppearanceInput.value.trim(),
+    personality: elements.characterPersonalityInput.value.trim(),
+    strengths: elements.characterStrengthsInput.value.trim(),
+    weaknesses: elements.characterWeaknessesInput.value.trim(),
+    goal: elements.characterGoalInput.value.trim(),
+    fear: elements.characterFearInput.value.trim(),
+    backstory: elements.characterBackstoryInput.value.trim(),
+    arc: elements.characterArcInput.value.trim(),
+    relationships: elements.characterRelationshipsInput.value.trim(),
+    notes: elements.characterNotesInput.value.trim(),
+  });
+  if (!existing) story.charactersList.push(character);
+  saveCreativeWriting();
+  elements.characterForm.reset();
+  elements.characterIdInput.value = "";
+  elements.characterFormTitle.textContent = "Add character";
+  elements.characterCancelEdit.hidden = true;
+  renderActiveStoryDetails(story);
+}
+
+function editCharacter(id) {
+  const character = currentStory()?.charactersList.find((item) => item.id === id);
+  if (!character) return;
+  elements.characterIdInput.value = character.id;
+  elements.characterNameInput.value = character.name;
+  elements.characterAgeInput.value = character.age;
+  elements.characterRoleInput.value = character.role;
+  elements.characterAppearanceInput.value = character.appearance;
+  elements.characterPersonalityInput.value = character.personality;
+  elements.characterStrengthsInput.value = character.strengths;
+  elements.characterWeaknessesInput.value = character.weaknesses;
+  elements.characterGoalInput.value = character.goal;
+  elements.characterFearInput.value = character.fear;
+  elements.characterBackstoryInput.value = character.backstory;
+  elements.characterArcInput.value = character.arc;
+  elements.characterRelationshipsInput.value = character.relationships;
+  elements.characterNotesInput.value = character.notes;
+  elements.characterFormTitle.textContent = "Edit character";
+  elements.characterCancelEdit.hidden = false;
+}
+
+function deleteCharacter(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.charactersList = story.charactersList.filter((character) => character.id !== id);
+  story.chapters.forEach((chapter) => {
+    chapter.scenes.forEach((scene) => {
+      scene.relatedCharacterIds = scene.relatedCharacterIds.filter((characterId) => characterId !== id);
+    });
+  });
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function saveWorldbuildingEntry() {
+  const story = currentStory();
+  if (!story) return;
+  const existing = story.worldbuilding.find((entry) => entry.id === elements.worldbuildingIdInput.value);
+  const entry = existing || { id: crypto.randomUUID() };
+  Object.assign(entry, {
+    title: elements.worldbuildingTitleInput.value.trim() || "Untitled entry",
+    category: elements.worldbuildingCategoryInput.value,
+    description: elements.worldbuildingDescriptionInput.value.trim(),
+    relatedCharacterIds: readMultiSelectValues(elements.worldbuildingCharactersInput),
+    relatedSceneIds: readMultiSelectValues(elements.worldbuildingScenesInput),
+    notes: elements.worldbuildingNotesInput.value.trim(),
+  });
+  if (!existing) story.worldbuilding.push(entry);
+  saveCreativeWriting();
+  elements.worldbuildingForm.reset();
+  elements.worldbuildingIdInput.value = "";
+  elements.worldbuildingFormTitle.textContent = "Add notebook entry";
+  elements.worldbuildingCancelEdit.hidden = true;
+  renderActiveStoryDetails(story);
+}
+
+function editWorldbuildingEntry(id) {
+  const entry = currentStory()?.worldbuilding.find((item) => item.id === id);
+  if (!entry) return;
+  elements.worldbuildingIdInput.value = entry.id;
+  elements.worldbuildingTitleInput.value = entry.title;
+  elements.worldbuildingCategoryInput.value = entry.category;
+  elements.worldbuildingDescriptionInput.value = entry.description;
+  setMultiSelectValues(elements.worldbuildingCharactersInput, entry.relatedCharacterIds);
+  setMultiSelectValues(elements.worldbuildingScenesInput, entry.relatedSceneIds);
+  elements.worldbuildingNotesInput.value = entry.notes;
+  elements.worldbuildingFormTitle.textContent = "Edit notebook entry";
+  elements.worldbuildingCancelEdit.hidden = false;
+}
+
+function deleteWorldbuildingEntry(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.worldbuilding = story.worldbuilding.filter((entry) => entry.id !== id);
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function saveTimelineEvent() {
+  const story = currentStory();
+  if (!story) return;
+  const existing = story.timeline.find((entry) => entry.id === elements.timelineIdInput.value);
+  const entry = existing || { id: crypto.randomUUID() };
+  Object.assign(entry, {
+    title: elements.timelineTitleInput.value.trim() || "Untitled event",
+    dateOrOrder: elements.timelineDateInput.value.trim(),
+    description: elements.timelineDescriptionInput.value.trim(),
+    relatedCharacterIds: readMultiSelectValues(elements.timelineCharactersInput),
+    relatedSceneIds: readMultiSelectValues(elements.timelineScenesInput),
+    type: elements.timelineTypeInput.value.trim(),
+  });
+  if (!existing) story.timeline.push(entry);
+  saveCreativeWriting();
+  elements.timelineForm.reset();
+  elements.timelineIdInput.value = "";
+  elements.timelineFormTitle.textContent = "Add timeline event";
+  elements.timelineCancelEdit.hidden = true;
+  renderActiveStoryDetails(story);
+}
+
+function editTimelineEvent(id) {
+  const entry = currentStory()?.timeline.find((item) => item.id === id);
+  if (!entry) return;
+  elements.timelineIdInput.value = entry.id;
+  elements.timelineTitleInput.value = entry.title;
+  elements.timelineDateInput.value = entry.dateOrOrder;
+  elements.timelineTypeInput.value = entry.type;
+  elements.timelineDescriptionInput.value = entry.description;
+  setMultiSelectValues(elements.timelineCharactersInput, entry.relatedCharacterIds);
+  setMultiSelectValues(elements.timelineScenesInput, entry.relatedSceneIds);
+  elements.timelineFormTitle.textContent = "Edit timeline event";
+  elements.timelineCancelEdit.hidden = false;
+}
+
+function deleteTimelineEvent(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.timeline = story.timeline.filter((entry) => entry.id !== id);
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function saveResearchItem() {
+  const story = currentStory();
+  if (!story) return;
+  const book = ownedByCurrent(books).find((item) => item.id === elements.researchCatalogueSelect.value);
+  if (!book) return;
+  const existing = story.researchShelf.find((entry) => entry.id === elements.researchIdInput.value);
+  const entry = existing || { id: crypto.randomUUID() };
+  Object.assign(entry, {
+    catalogueItemId: book.id,
+    title: book.title,
+    author: book.author,
+    notes: elements.researchNotesInput.value.trim(),
+    tags: parseTagList(elements.researchTagsInput.value),
+    chapterId: elements.researchChapterInput.value,
+    sceneId: elements.researchSceneInput.value,
+  });
+  if (!existing) story.researchShelf.push(entry);
+  saveCreativeWriting();
+  elements.researchForm.reset();
+  elements.researchIdInput.value = "";
+  elements.researchFormTitle.textContent = "Add to Research Shelf";
+  elements.researchCancelEdit.hidden = true;
+  renderActiveStoryDetails(story);
+}
+
+function editResearchItem(id) {
+  const entry = currentStory()?.researchShelf.find((item) => item.id === id);
+  if (!entry) return;
+  elements.researchIdInput.value = entry.id;
+  elements.researchCatalogueSelect.value = entry.catalogueItemId;
+  elements.researchTagsInput.value = formatTagList(entry.tags);
+  elements.researchChapterInput.value = entry.chapterId || "";
+  elements.researchSceneInput.value = entry.sceneId || "";
+  elements.researchNotesInput.value = entry.notes || "";
+  elements.researchFormTitle.textContent = "Edit Research Shelf item";
+  elements.researchCancelEdit.hidden = false;
+}
+
+function deleteResearchItem(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.researchShelf = story.researchShelf.filter((entry) => entry.id !== id);
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function saveQuoteReference() {
+  const story = currentStory();
+  if (!story) return;
+  const existing = story.quoteReferences.find((entry) => entry.id === elements.quoteIdInput.value);
+  const entry = existing || { id: crypto.randomUUID() };
+  Object.assign(entry, {
+    text: elements.quoteTextInput.value.trim(),
+    sourceTitle: elements.quoteSourceTitleInput.value.trim(),
+    author: elements.quoteAuthorInput.value.trim(),
+    page: elements.quotePageInput.value.trim(),
+    tags: parseTagList(elements.quoteTagsInput.value),
+    chapterId: elements.quoteChapterInput.value,
+    sceneId: elements.quoteSceneInput.value,
+    personalNote: elements.quoteNoteInput.value.trim(),
+  });
+  if (!existing) story.quoteReferences.push(entry);
+  saveCreativeWriting();
+  elements.quoteForm.reset();
+  elements.quoteIdInput.value = "";
+  elements.quoteFormTitle.textContent = "Save quote or reference";
+  elements.quoteCancelEdit.hidden = true;
+  renderActiveStoryDetails(story);
+}
+
+function editQuoteReference(id) {
+  const entry = currentStory()?.quoteReferences.find((item) => item.id === id);
+  if (!entry) return;
+  elements.quoteIdInput.value = entry.id;
+  elements.quoteTextInput.value = entry.text;
+  elements.quoteSourceTitleInput.value = entry.sourceTitle;
+  elements.quoteAuthorInput.value = entry.author;
+  elements.quotePageInput.value = entry.page;
+  elements.quoteTagsInput.value = formatTagList(entry.tags);
+  elements.quoteChapterInput.value = entry.chapterId || "";
+  elements.quoteSceneInput.value = entry.sceneId || "";
+  elements.quoteNoteInput.value = entry.personalNote || "";
+  elements.quoteFormTitle.textContent = "Edit quote or reference";
+  elements.quoteCancelEdit.hidden = false;
+}
+
+function deleteQuoteReference(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.quoteReferences = story.quoteReferences.filter((entry) => entry.id !== id);
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function saveWritingGoals() {
+  const story = currentStory();
+  if (!story) return;
+  story.dailyWordGoal = toNumber(elements.writingDailyGoalInput.value);
+  story.weeklyWordGoal = toNumber(elements.writingWeeklyGoalInput.value);
+  story.projectWordGoal = toNumber(elements.writingProjectGoalInput.value);
+  story.deadline = elements.writingDeadlineInput.value;
+  saveCreativeWriting();
+  renderActiveStoryDetails(story);
+}
+
+function generatePrompt() {
+  const type = normalizePromptType(elements.promptTypeInput.value);
+  const bank = WRITING_PROMPT_BANK[type] || WRITING_PROMPT_BANK.genre;
+  currentGeneratedPrompt = bank[Math.floor(Math.random() * bank.length)];
+  elements.promptGeneratedText.value = currentGeneratedPrompt;
+}
+
+function saveGeneratedPrompt() {
+  const story = currentStory();
+  if (!story || !currentGeneratedPrompt) return;
+  story.prompts.unshift(
+    ensurePrompt({
+      type: normalizePromptType(elements.promptTypeInput.value),
+      text: currentGeneratedPrompt,
+      used: false,
+      createdAt: new Date().toISOString(),
+    }),
+  );
+  saveCreativeWriting();
+  renderPrompts(story);
+}
+
+function savePromptEntry() {
+  const story = currentStory();
+  if (!story) return;
+  const existing = story.prompts.find((prompt) => prompt.id === elements.promptIdInput.value);
+  const prompt = ensurePrompt(existing || { id: crypto.randomUUID() });
+  prompt.type = normalizePromptType(elements.promptCustomTypeInput.value);
+  prompt.text = elements.promptTextInput.value.trim();
+  prompt.used = elements.promptUsedInput.value === "true";
+  if (!existing) story.prompts.unshift(prompt);
+  saveCreativeWriting();
+  elements.promptForm.reset();
+  elements.promptIdInput.value = "";
+  elements.promptFormTitle.textContent = "Add custom prompt";
+  elements.promptCancelEdit.hidden = true;
+  renderPrompts(story);
+}
+
+function editPromptEntry(id) {
+  const prompt = currentStory()?.prompts.find((item) => item.id === id);
+  if (!prompt) return;
+  elements.promptIdInput.value = prompt.id;
+  elements.promptCustomTypeInput.value = prompt.type;
+  elements.promptUsedInput.value = String(Boolean(prompt.used));
+  elements.promptTextInput.value = prompt.text;
+  elements.promptFormTitle.textContent = "Edit prompt";
+  elements.promptCancelEdit.hidden = false;
+}
+
+function togglePromptUsed(id) {
+  const story = currentStory();
+  if (!story) return;
+  const prompt = story.prompts.find((item) => item.id === id);
+  if (!prompt) return;
+  prompt.used = !prompt.used;
+  saveCreativeWriting();
+  renderPrompts(story);
+}
+
+function deletePromptEntry(id) {
+  const story = currentStory();
+  if (!story) return;
+  story.prompts = story.prompts.filter((prompt) => prompt.id !== id);
+  saveCreativeWriting();
+  renderPrompts(story);
+}
+
+function saveRevisionNotes() {
+  const story = currentStory();
+  if (!story) return;
+  story.revisionNotes = elements.storyRevisionNotesInput.value.trim();
+  story.continuityNotes = elements.storyContinuityNotesInput.value.trim();
+  saveCreativeWriting();
+  renderRevision(story);
+}
+
+function addRevisionComment() {
+  const story = currentStory();
+  if (!story) return;
+  story.comments.unshift({
+    id: crypto.randomUUID(),
+    text: elements.revisionCommentInput.value.trim(),
+    createdAt: new Date().toISOString(),
+  });
+  saveCreativeWriting();
+  elements.revisionCommentForm.reset();
+  renderRevision(story);
+}
+
+function restoreStoryVersion(id) {
+  const story = currentStory();
+  if (!story) return;
+  const version = story.versions.find((item) => item.id === id);
+  if (!version) return;
+  elements.storyDraftInput.innerHTML = version.html;
+  elements.storyDraftNotesInput.value = version.notes || "";
+  saveOpenStory({ manual: true });
+  showToast("Previous version restored.");
+}
+
+function updateSceneChecklist(sceneId, key, checked) {
+  const story = currentStory();
+  if (!story) return;
+  const found = findSceneById(story, sceneId);
+  if (!found) return;
+  found.scene.checklist[key] = checked;
+  saveCreativeWriting();
+}
+
+function selectedExportChapterIds() {
+  return Array.from(
+    elements.exportSelectionList.querySelectorAll('input[type="checkbox"]:checked'),
+  ).map((input) => input.value);
+}
+
+function buildProjectExport(project, format = "txt") {
+  const selected = new Set(selectedExportChapterIds());
+  const includeFull = selected.has("__full__") || selected.size === 0;
+  const selectedChapters = project.chapters
+    .slice()
+    .sort((first, second) => first.order - second.order)
+    .filter((chapter) => includeFull || selected.has(chapter.id));
+  if (format === "markdown") {
+    return [
+      `# ${project.title}`,
+      "",
+      `- Type: ${project.type}`,
+      `- Genre: ${project.genre || "Unspecified"}`,
+      `- Status: ${project.status}`,
+      "",
+      project.description ? `## Premise\n\n${project.description}\n` : "",
+      includeFull && project.manuscriptText ? `## Manuscript\n\n${project.manuscriptText}\n` : "",
+      selectedChapters
+        .map(
+          (chapter) => `## Chapter ${chapter.order}: ${chapter.title}\n\n${chapter.summary || ""}\n` +
+            chapter.scenes
+              .slice()
+              .sort((first, second) => first.order - second.order)
+              .map(
+                (scene) =>
+                  `### Scene ${scene.order}: ${scene.title}\n\n${scene.summary || ""}\n`,
+              )
+              .join("\n"),
+        )
+        .join("\n"),
+      project.notes ? `## Notes\n\n${project.notes}\n` : "",
+      project.revisionNotes ? `## Revision Notes\n\n${project.revisionNotes}\n` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+  return [
+    project.title,
+    "",
+    `Type: ${project.type}`,
+    `Genre: ${project.genre || "Unspecified"}`,
+    `Status: ${project.status}`,
+    "",
+    project.description ? `Premise:\n${project.description}\n` : "",
+    includeFull && project.manuscriptText ? `Manuscript:\n${project.manuscriptText}\n` : "",
+    selectedChapters
+      .map(
+        (chapter) =>
+          `Chapter ${chapter.order}: ${chapter.title}\n${chapter.summary || ""}\n` +
+          chapter.scenes
+            .slice()
+            .sort((first, second) => first.order - second.order)
+            .map(
+              (scene) =>
+                `  Scene ${scene.order}: ${scene.title}\n  ${scene.summary || ""}\n`,
+            )
+            .join(""),
+      )
+      .join("\n"),
+    project.notes ? `Notes:\n${project.notes}\n` : "",
+    project.revisionNotes ? `Revision Notes:\n${project.revisionNotes}\n` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function downloadWritingExport(extension, content, mimeType) {
+  const story = currentStory();
+  if (!story) return;
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${story.title || "writing-project"}.${extension}`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function resetWordhubForm() {
@@ -4170,14 +6446,17 @@ function buildPrintContent(kind) {
     content: entries.length
       ? entries
           .map(
-            (story) => `
+            (storyItem) => {
+              const story = ensureWritingProject(storyItem);
+              return `
               <article>
-                <h2>${escapeHtml(story.title || "Untitled story")}</h2>
-                <p class="print-meta">${escapeHtml(story.genre || "Unspecified genre")} / ${escapeHtml(story.pov || "Unspecified point of view")} / ${storyWordTotal(story.draft)} words</p>
-                ${story.premise ? `<p><strong>Premise:</strong> ${escapeHtml(story.premise)}</p>` : ""}
-                ${story.outline ? `<p><strong>Outline:</strong> ${escapeHtml(story.outline)}</p>` : ""}
+                <h2>${escapeHtml(story.title || "Untitled project")}</h2>
+                <p class="print-meta">${escapeHtml(story.type || "Project")} / ${escapeHtml(story.genre || "Unspecified genre")} / ${escapeHtml(story.status || "planning")} / ${currentStoryWordCount(story)} words</p>
+                ${story.description ? `<p><strong>Premise:</strong> ${escapeHtml(story.description)}</p>` : ""}
+                ${story.notes ? `<p><strong>Notes:</strong> ${escapeHtml(story.notes)}</p>` : ""}
               </article>
-            `,
+            `;
+            },
           )
           .join("")
       : printEmpty("No writing projects have been created."),
@@ -4197,6 +6476,35 @@ function printList(kind) {
   `;
   elements.printSheet.setAttribute("aria-hidden", "false");
   document.title = `${printable.title} - My Library`;
+  const cleanUp = () => {
+    document.title = previousTitle;
+    elements.printSheet.setAttribute("aria-hidden", "true");
+    window.removeEventListener("afterprint", cleanUp);
+  };
+  window.addEventListener("afterprint", cleanUp);
+  window.print();
+}
+
+function printCurrentWritingProject() {
+  const story = currentStory();
+  if (!story) return;
+  const previousTitle = document.title;
+  const markdownLike = buildProjectExport(story, "txt")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
+    .join("");
+  elements.printSheet.innerHTML = `
+    <header>
+      <p>MY LIBRARY</p>
+      <h1>${escapeHtml(story.title)}</h1>
+      <span>${escapeHtml(currentAccount?.username || "Reader")} / Printed ${escapeHtml(new Date().toLocaleDateString())}</span>
+    </header>
+    <main>${markdownLike}</main>
+  `;
+  elements.printSheet.setAttribute("aria-hidden", "false");
+  document.title = `${story.title} - My Library`;
   const cleanUp = () => {
     document.title = previousTitle;
     elements.printSheet.setAttribute("aria-hidden", "true");
@@ -5649,6 +7957,7 @@ function renderReaderCatalogue() {
               </div>
               <h3 class="book-title">${escapeHtml(book.title)}</h3>
               <p class="book-author">by ${escapeHtml(book.author)}</p>
+              ${renderBookProgress(book)}
               <div class="reader-public-rating" aria-label="${rating ? `${rating} out of 5 stars` : "Not rated"}">
                 ${rating ? `${"&#9733;".repeat(rating)}${"&#9734;".repeat(5 - rating)}` : "Not rated"}
               </div>
@@ -6109,13 +8418,31 @@ elements.journalForm.addEventListener("submit", (event) => {
   }
 });
 
-elements.storyEditor.addEventListener("submit", (event) => {
+elements.writingProjectForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  saveOpenStory();
+  saveProjectOverview();
 });
 
-elements.storyEditor.addEventListener("input", scheduleStorySave);
-elements.storyEditor.addEventListener("change", scheduleStorySave);
+elements.storyEditor.addEventListener("input", (event) => {
+  if (!currentStory()) return;
+  if (
+    event.target === elements.storyDraftInput ||
+    event.target === elements.storyDraftNotesInput ||
+    event.target.closest("#story-manuscript-view")
+  ) {
+    scheduleStorySave();
+  }
+});
+
+elements.storyEditor.addEventListener("change", (event) => {
+  if (!currentStory()) return;
+  if (event.target.closest("#story-overview-view")) {
+    elements.storySaveStatus.textContent = "Overview changed";
+  }
+  if (event.target.closest("#story-manuscript-view")) {
+    scheduleStorySave();
+  }
+});
 
 elements.storyList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-story-id]");
@@ -6130,6 +8457,225 @@ document.querySelectorAll("[data-writing-view]").forEach((button) => {
     setWritingView(button.dataset.writingView);
   });
 });
+document.querySelectorAll("[data-format-action]").forEach((button) => {
+  button.addEventListener("click", () => {
+    applyWritingFormat(
+      button.dataset.formatAction,
+      button.dataset.formatValue || null,
+    );
+  });
+});
+
+elements.storySearchInput.addEventListener("input", renderStories);
+elements.storySortInput.addEventListener("change", renderStories);
+elements.storyStatusFilter.addEventListener("change", renderStories);
+elements.storyManualSaveButton.addEventListener("click", () =>
+  saveOpenStory({ manual: true }),
+);
+elements.storyFocusButton.addEventListener("click", () => {
+  writingFocusMode = !writingFocusMode;
+  elements.appShell.classList.toggle("writing-focus-mode", writingFocusMode);
+  elements.storyFocusButton.textContent = writingFocusMode
+    ? "Exit focus mode"
+    : "Distraction-free";
+});
+elements.storyManuscriptSearchInput.addEventListener("input", () =>
+  renderManuscriptInsights(),
+);
+elements.storyDraftInput.addEventListener("input", () => renderManuscriptInsights());
+elements.storyDraftInput.addEventListener("keydown", () => {
+  window.clearTimeout(storySaveTimer);
+});
+elements.duplicateStoryButton.addEventListener("click", duplicateOpenStory);
+
+elements.chapterForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.chapterForm.reportValidity()) saveChapter();
+});
+elements.chapterCancelEdit.addEventListener("click", () => {
+  elements.chapterForm.reset();
+  elements.chapterIdInput.value = "";
+  elements.chapterFormTitle.textContent = "Add chapter";
+  elements.chapterCancelEdit.hidden = true;
+});
+elements.chapterList.addEventListener("click", (event) => {
+  const chapterButton = event.target.closest("button[data-chapter-action]");
+  if (chapterButton) {
+    const { chapterAction, id } = chapterButton.dataset;
+    if (chapterAction === "edit") editChapter(id);
+    if (chapterAction === "up") moveChapter(id, -1);
+    if (chapterAction === "down") moveChapter(id, 1);
+    if (chapterAction === "delete") deleteChapter(id);
+    return;
+  }
+  const sceneButton = event.target.closest("button[data-scene-action]");
+  if (!sceneButton) return;
+  const { sceneAction, id, chapterId } = sceneButton.dataset;
+  if (sceneAction === "edit") editScene(id);
+  if (sceneAction === "up") moveScene(chapterId, id, -1);
+  if (sceneAction === "down") moveScene(chapterId, id, 1);
+  if (sceneAction === "delete") deleteScene(id);
+});
+
+elements.sceneForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.sceneForm.reportValidity()) saveScene();
+});
+elements.sceneCancelEdit.addEventListener("click", () => {
+  elements.sceneForm.reset();
+  elements.sceneIdInput.value = "";
+  elements.sceneFormTitle.textContent = "Add scene";
+  elements.sceneCancelEdit.hidden = true;
+});
+elements.writingTagFilterInput.addEventListener("input", () => renderChapterList());
+
+elements.characterForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.characterForm.reportValidity()) saveCharacter();
+});
+elements.characterCancelEdit.addEventListener("click", () => {
+  elements.characterForm.reset();
+  elements.characterIdInput.value = "";
+  elements.characterFormTitle.textContent = "Add character";
+  elements.characterCancelEdit.hidden = true;
+});
+elements.characterList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-character-action]");
+  if (!button) return;
+  if (button.dataset.characterAction === "edit") editCharacter(button.dataset.id);
+  if (button.dataset.characterAction === "delete") deleteCharacter(button.dataset.id);
+});
+
+elements.worldbuildingForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.worldbuildingForm.reportValidity()) saveWorldbuildingEntry();
+});
+elements.worldbuildingCancelEdit.addEventListener("click", () => {
+  elements.worldbuildingForm.reset();
+  elements.worldbuildingIdInput.value = "";
+  elements.worldbuildingFormTitle.textContent = "Add notebook entry";
+  elements.worldbuildingCancelEdit.hidden = true;
+});
+elements.worldbuildingList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-worldbuilding-action]");
+  if (!button) return;
+  if (button.dataset.worldbuildingAction === "edit") {
+    editWorldbuildingEntry(button.dataset.id);
+  }
+  if (button.dataset.worldbuildingAction === "delete") {
+    deleteWorldbuildingEntry(button.dataset.id);
+  }
+});
+
+elements.timelineForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.timelineForm.reportValidity()) saveTimelineEvent();
+});
+elements.timelineCancelEdit.addEventListener("click", () => {
+  elements.timelineForm.reset();
+  elements.timelineIdInput.value = "";
+  elements.timelineFormTitle.textContent = "Add timeline event";
+  elements.timelineCancelEdit.hidden = true;
+});
+elements.timelineList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-timeline-action]");
+  if (!button) return;
+  if (button.dataset.timelineAction === "edit") editTimelineEvent(button.dataset.id);
+  if (button.dataset.timelineAction === "delete") deleteTimelineEvent(button.dataset.id);
+});
+
+elements.researchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.researchForm.reportValidity()) saveResearchItem();
+});
+elements.researchCancelEdit.addEventListener("click", () => {
+  elements.researchForm.reset();
+  elements.researchIdInput.value = "";
+  elements.researchFormTitle.textContent = "Add to Research Shelf";
+  elements.researchCancelEdit.hidden = true;
+});
+elements.researchList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-research-action]");
+  if (!button) return;
+  if (button.dataset.researchAction === "edit") editResearchItem(button.dataset.id);
+  if (button.dataset.researchAction === "delete") deleteResearchItem(button.dataset.id);
+  if (button.dataset.researchAction === "open-book") {
+    focusCollectionBook(button.dataset.bookId);
+  }
+});
+
+elements.quoteForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.quoteForm.reportValidity()) saveQuoteReference();
+});
+elements.quoteCancelEdit.addEventListener("click", () => {
+  elements.quoteForm.reset();
+  elements.quoteIdInput.value = "";
+  elements.quoteFormTitle.textContent = "Save quote or reference";
+  elements.quoteCancelEdit.hidden = true;
+});
+elements.quoteList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-quote-action]");
+  if (!button) return;
+  if (button.dataset.quoteAction === "edit") editQuoteReference(button.dataset.id);
+  if (button.dataset.quoteAction === "delete") deleteQuoteReference(button.dataset.id);
+});
+
+elements.writingGoalsForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveWritingGoals();
+});
+
+elements.generatePromptButton.addEventListener("click", generatePrompt);
+elements.saveGeneratedPromptButton.addEventListener("click", saveGeneratedPrompt);
+elements.promptForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.promptForm.reportValidity()) savePromptEntry();
+});
+elements.promptCancelEdit.addEventListener("click", () => {
+  elements.promptForm.reset();
+  elements.promptIdInput.value = "";
+  elements.promptFormTitle.textContent = "Add custom prompt";
+  elements.promptCancelEdit.hidden = true;
+});
+elements.promptList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-prompt-action]");
+  if (!button) return;
+  if (button.dataset.promptAction === "edit") editPromptEntry(button.dataset.id);
+  if (button.dataset.promptAction === "toggle") togglePromptUsed(button.dataset.id);
+  if (button.dataset.promptAction === "delete") deletePromptEntry(button.dataset.id);
+});
+
+elements.saveRevisionNotesButton.addEventListener("click", saveRevisionNotes);
+elements.revisionCommentForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.revisionCommentForm.reportValidity()) addRevisionComment();
+});
+elements.storyVersionList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-version-action='restore']");
+  if (button) restoreStoryVersion(button.dataset.id);
+});
+elements.sceneChecklistList.addEventListener("change", (event) => {
+  const checkbox = event.target.closest("input[data-scene-check]");
+  if (!checkbox) return;
+  updateSceneChecklist(checkbox.dataset.id, checkbox.dataset.sceneCheck, checkbox.checked);
+});
+
+elements.exportTxtButton.addEventListener("click", () => {
+  const story = currentStory();
+  if (!story) return;
+  downloadWritingExport("txt", buildProjectExport(story, "txt"), "text/plain;charset=utf-8");
+});
+elements.exportMarkdownButton.addEventListener("click", () => {
+  const story = currentStory();
+  if (!story) return;
+  downloadWritingExport(
+    "md",
+    buildProjectExport(story, "markdown"),
+    "text/markdown;charset=utf-8",
+  );
+});
+elements.exportPdfButton.addEventListener("click", printCurrentWritingProject);
 
 elements.wordhubForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -6618,4 +9164,5 @@ window.addEventListener("hashchange", closeFeatureMenu);
 renderArchetypeReference();
 renderJungConceptReference();
 migrateAccountData();
+migrateCreativeWritingProjects();
 initializeAuthentication();
