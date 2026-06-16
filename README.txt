@@ -184,6 +184,11 @@ both individual and Mark All Read actions. Achievement milestones now extend
 across collections, completed books, sessions, pages, reading time, passages,
 journals, dreams, and WordHub vocabulary.
 
+The Collection includes a visual bookshelf diagram. Each spine represents one
+book, displays a code such as #1, can be arranged alphabetically or by genre,
+and shows the book title and details on hover, focus, or tap. Read books are
+highlighted gold, busy-reading books are gray, and unread books remain plain.
+
 The animated Jung figure now wears glasses and a moustache and appears at a
 slower interval so that the Dream Journal remains calm and readable.
 
@@ -194,11 +199,6 @@ Dream analysis has been expanded with richer Jungian reflection: saved analyses
 now include category reasoning, emotional tone, symbolic clusters, possible
 inner tensions, metrics, integration practices, reflection questions, sources,
 and the existing uncertainty and non-diagnostic cautions.
-
-A Hollywood section now lets readers search public Apple/iTunes movie and TV
-series data, add results with poster artwork to a personal screen collection,
-filter saved titles, and mark each title as to watch, watching, or watched. The
-Hollywood list synchronizes with the user's account.
 
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
