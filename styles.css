@@ -232,6 +232,7 @@ textarea:focus-visible {
 .site-header,
 .hero,
 .collection-section,
+.hollywood-section,
 footer {
   padding-left: clamp(1.25rem, 6vw, 6rem);
   padding-right: clamp(1.25rem, 6vw, 6rem);
@@ -575,6 +576,259 @@ h1 {
   box-shadow:
     0 13px 22px rgba(64, 38, 23, 0.13),
     inset 0 -5px 0 rgba(91, 53, 31, 0.08);
+}
+
+.hollywood-section {
+  padding-top: 4.5rem;
+  padding-bottom: 5.5rem;
+  color: #f8f2e6;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(255, 211, 112, 0.18), transparent 18rem),
+    radial-gradient(circle at 86% 18%, rgba(194, 76, 55, 0.16), transparent 22rem),
+    linear-gradient(135deg, #19151f, #2d1d24 48%, #0f1622);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hollywood-heading {
+  align-items: center;
+  padding: 1.3rem;
+  background: rgba(255, 244, 215, 0.08);
+  border: 1px solid rgba(255, 244, 215, 0.16);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.24);
+}
+
+.hollywood-heading .section-intro {
+  max-width: 48rem;
+  color: rgba(248, 242, 230, 0.72);
+}
+
+.hollywood-count {
+  display: grid;
+  place-items: center;
+  min-width: 140px;
+  min-height: 110px;
+  color: #1d1720;
+  background: linear-gradient(135deg, #f1c86b, #ffe9ad);
+  border-radius: 50% 50% 45% 45%;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.26);
+}
+
+.hollywood-count strong {
+  font-size: 2.6rem;
+  font-weight: 400;
+}
+
+.hollywood-count span {
+  font: 800 0.58rem/1.2 Arial, sans-serif;
+  letter-spacing: 0.12em;
+}
+
+.hollywood-search-panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(180px, 0.7fr) 170px auto;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.2rem;
+  background: rgba(255, 244, 215, 0.075);
+  border: 1px solid rgba(255, 244, 215, 0.14);
+}
+
+.hollywood-search-panel > div {
+  align-self: center;
+}
+
+.hollywood-search-panel h3 {
+  margin-bottom: 0.35rem;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+.hollywood-search-panel p,
+.hollywood-search-status {
+  margin: 0;
+  color: rgba(248, 242, 230, 0.66);
+  line-height: 1.45;
+}
+
+.hollywood-search-panel label span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #f1c86b;
+  font: 800 0.62rem/1 Arial, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hollywood-search-panel input,
+.hollywood-search-panel select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 0.85rem;
+  color: #fff8e8;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 244, 215, 0.18);
+}
+
+.hollywood-search-status {
+  grid-column: 1 / -1;
+}
+
+.hollywood-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+}
+
+.hollywood-results[hidden],
+.hollywood-grid[hidden],
+.hollywood-empty[hidden] {
+  display: none;
+}
+
+.hollywood-result-card,
+.hollywood-card {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.9rem;
+  background: rgba(255, 244, 215, 0.08);
+  border: 1px solid rgba(255, 244, 215, 0.14);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
+}
+
+.hollywood-result-card h3,
+.hollywood-card h3 {
+  margin: 0.2rem 0 0.35rem;
+  color: #fff8e8;
+  font-size: 1.28rem;
+  font-weight: 400;
+}
+
+.hollywood-result-card p,
+.hollywood-card p,
+.hollywood-result-card small,
+.hollywood-card small {
+  color: rgba(248, 242, 230, 0.66);
+  line-height: 1.45;
+}
+
+.hollywood-result-card button,
+.hollywood-remove {
+  margin-top: 0.75rem;
+  padding: 0.58rem 0.72rem;
+  color: #1d1720;
+  background: #f1c86b;
+  border: 0;
+  font: 800 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hollywood-result-card button:disabled {
+  opacity: 0.55;
+}
+
+.hollywood-poster {
+  display: grid;
+  place-items: center;
+  min-height: 155px;
+  overflow: hidden;
+  color: rgba(255, 244, 215, 0.72);
+  background:
+    linear-gradient(135deg, rgba(241, 200, 107, 0.18), rgba(0, 0, 0, 0.2)),
+    #15121b;
+  border: 1px solid rgba(255, 244, 215, 0.15);
+}
+
+.hollywood-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hollywood-poster span {
+  font-size: 3rem;
+  font-style: italic;
+}
+
+.hollywood-toolbar {
+  grid-template-columns: minmax(240px, 1fr) 220px;
+  margin-top: 0.5rem;
+}
+
+.hollywood-toolbar input,
+.hollywood-toolbar select {
+  color: #fff8e8;
+  background: rgba(255, 244, 215, 0.08);
+  border-color: rgba(255, 244, 215, 0.18);
+}
+
+.hollywood-toolbar input::placeholder {
+  color: rgba(248, 242, 230, 0.5);
+}
+
+.hollywood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1rem;
+}
+
+.hollywood-card {
+  grid-template-columns: 132px minmax(0, 1fr);
+}
+
+.hollywood-card-kicker,
+.hollywood-status-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.hollywood-card-kicker span,
+.hollywood-status-buttons button {
+  padding: 0.35rem 0.5rem;
+  color: #f1c86b;
+  background: rgba(241, 200, 107, 0.1);
+  border: 1px solid rgba(241, 200, 107, 0.22);
+  font: 800 0.55rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hollywood-status-buttons {
+  margin-top: 0.85rem;
+}
+
+.hollywood-status-buttons button.active {
+  color: #1d1720;
+  background: #f1c86b;
+}
+
+.hollywood-remove {
+  color: #ffd8cf;
+  background: transparent;
+  border: 1px solid rgba(255, 216, 207, 0.28);
+}
+
+.hollywood-empty {
+  padding: 2rem;
+  text-align: center;
+  color: rgba(248, 242, 230, 0.72);
+  border: 1px dashed rgba(255, 244, 215, 0.2);
+}
+
+.hollywood-empty > div {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 1rem;
+  color: #1d1720;
+  background: #f1c86b;
+  border-radius: 50%;
+  font-size: 2rem;
 }
 
 .section-heading {
@@ -7002,6 +7256,44 @@ body.feature-menu-open::after {
   color: #ead486;
 }
 
+.dream-analysis-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0.85rem 0;
+}
+
+.dream-analysis-metrics span {
+  padding: 0.65rem;
+  color: rgba(245, 239, 255, 0.72);
+  background: rgba(245, 239, 255, 0.065);
+  border: 1px solid rgba(220, 199, 255, 0.14);
+}
+
+.dream-analysis-metrics strong {
+  display: block;
+  color: #ead486;
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.dream-analysis-deep-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0.9rem 0;
+}
+
+.dream-analysis-deep-grid section {
+  padding: 0.75rem;
+  background: rgba(8, 6, 18, 0.24);
+  border: 1px solid rgba(220, 199, 255, 0.12);
+}
+
+.dream-analysis-deep-grid section > strong {
+  color: #ead486;
+}
+
 .dream-analysis p,
 .dream-analysis li {
   line-height: 1.55;
@@ -7025,6 +7317,105 @@ body.feature-menu-open::after {
 .dream-home-link {
   color: #60488b;
   border-bottom-color: #60488b;
+}
+
+#quandary-dialog {
+  width: min(640px, calc(100vw - 2rem));
+  color: #f8f1df;
+  background:
+    radial-gradient(circle at top left, rgba(241, 200, 107, 0.22), transparent 16rem),
+    linear-gradient(145deg, #172a22, #203d32 54%, #2b211d);
+  border: 1px solid rgba(241, 200, 107, 0.42);
+  border-radius: 18px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.38);
+}
+
+#quandary-dialog::backdrop {
+  background:
+    radial-gradient(circle at center, rgba(23, 42, 34, 0.26), rgba(10, 12, 10, 0.72)),
+    rgba(0, 0, 0, 0.44);
+  backdrop-filter: blur(4px);
+}
+
+#quandary-form {
+  padding: clamp(1.3rem, 4vw, 2.2rem);
+}
+
+#quandary-form .dialog-heading {
+  align-items: center;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(248, 241, 223, 0.16);
+}
+
+#quandary-form h2 {
+  margin-bottom: 0;
+  color: #fff7df;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+#quandary-form .dialog-copy {
+  color: rgba(248, 241, 223, 0.72);
+  line-height: 1.6;
+}
+
+.quandary-guidance {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0 1.2rem;
+  padding: 0.9rem 1rem;
+  color: #fff7df;
+  background: rgba(241, 200, 107, 0.12);
+  border: 1px solid rgba(241, 200, 107, 0.24);
+  border-left: 4px solid #f1c86b;
+}
+
+.quandary-guidance span {
+  color: rgba(248, 241, 223, 0.72);
+  line-height: 1.45;
+}
+
+#quandary-form label {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+#quandary-form label > span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #f1c86b;
+  font: 800 0.62rem/1 Arial, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#quandary-form input,
+#quandary-form select,
+#quandary-form textarea {
+  width: 100%;
+  padding: 0.85rem;
+  color: #fff7df;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(248, 241, 223, 0.22);
+  border-radius: 12px;
+}
+
+#quandary-form textarea {
+  resize: vertical;
+}
+
+#quandary-form input:focus,
+#quandary-form select:focus,
+#quandary-form textarea:focus {
+  outline: 3px solid rgba(241, 200, 107, 0.22);
+  border-color: rgba(241, 200, 107, 0.65);
+}
+
+#quandary-form .submit-button {
+  width: 100%;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f1c86b, #f6df9e);
 }
 
 .dream-empty {
