@@ -10,6 +10,7 @@ const API_TOKEN_KEY = "my-library-api-token-v1";
 const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
 const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
 const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
+const HOLLYWOOD_STORAGE_KEY = "my-library-hollywood-v1";
 const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 
@@ -280,6 +281,16 @@ const elements = {
   wordhubList: document.querySelector("#wordhub-list"),
   wordhubEmpty: document.querySelector("#wordhub-empty"),
   wordhubCount: document.querySelector("#wordhub-count"),
+  hollywoodSearchForm: document.querySelector("#hollywood-search-form"),
+  hollywoodQueryInput: document.querySelector("#hollywood-query-input"),
+  hollywoodTypeFilter: document.querySelector("#hollywood-type-filter"),
+  hollywoodSearchStatus: document.querySelector("#hollywood-search-status"),
+  hollywoodResults: document.querySelector("#hollywood-results"),
+  hollywoodGrid: document.querySelector("#hollywood-grid"),
+  hollywoodEmpty: document.querySelector("#hollywood-empty"),
+  hollywoodCount: document.querySelector("#hollywood-count"),
+  hollywoodCollectionSearch: document.querySelector("#hollywood-collection-search"),
+  hollywoodCollectionFilter: document.querySelector("#hollywood-collection-filter"),
   profileRunesCount: document.querySelector("#profile-runes-count"),
   profileStreakCount: document.querySelector("#profile-streak-count"),
   profileStreakBest: document.querySelector("#profile-streak-best"),
@@ -414,6 +425,8 @@ let quandaries = [];
 let creativeWriting = loadArray(CREATIVE_WRITING_STORAGE_KEY);
 let wordhub = loadArray(WORDHUB_STORAGE_KEY);
 let dreams = loadArray(DREAMS_STORAGE_KEY);
+let hollywoodItems = loadArray(HOLLYWOOD_STORAGE_KEY);
+let hollywoodSearchResults = [];
 let storeItems = [];
 let equippedTheme = "";
 let equippedFrame = "";
@@ -496,6 +509,7 @@ function adoptLocalAccount(localAccount, onlineAccount) {
   saveCreativeWriting();
   saveWordhub();
   saveDreams();
+  saveHollywood();
 }
 
 function loadArray(key) {
@@ -555,6 +569,12 @@ function saveWordhub() {
 
 function saveDreams() {
   const saved = saveCollection(DREAMS_STORAGE_KEY, dreams);
+  if (saved) scheduleDataSync();
+  return saved;
+}
+
+function saveHollywood() {
+  const saved = saveCollection(HOLLYWOOD_STORAGE_KEY, hollywoodItems);
   if (saved) scheduleDataSync();
   return saved;
 }
@@ -646,6 +666,7 @@ function migrateAccountData() {
   let creativeWritingChanged = false;
   let wordhubChanged = false;
   let dreamsChanged = false;
+  let hollywoodChanged = false;
   books.forEach((item) => {
     if (!item.ownerId) {
       item.ownerId = admin.id;
@@ -688,6 +709,12 @@ function migrateAccountData() {
       dreamsChanged = true;
     }
   });
+  hollywoodItems.forEach((item) => {
+    if (!item.ownerId) {
+      item.ownerId = admin.id;
+      hollywoodChanged = true;
+    }
+  });
   if (changedAccounts) saveAccounts();
   if (booksChanged) saveBooks();
   if (logsChanged) saveReadingLog();
@@ -696,6 +723,7 @@ function migrateAccountData() {
   if (creativeWritingChanged) saveCreativeWriting();
   if (wordhubChanged) saveWordhub();
   if (dreamsChanged) saveDreams();
+  if (hollywoodChanged) saveHollywood();
 }
 
 function normalize(value) {
@@ -1064,6 +1092,9 @@ function cloudDataFor(accountId) {
     dreams: dreams
       .filter((item) => item.ownerId === accountId)
       .map(cloudSafeItem),
+    hollywood: hollywoodItems
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
   };
 }
 
@@ -1076,6 +1107,7 @@ function hasCloudData(data) {
     "creativeWriting",
     "wordhub",
     "dreams",
+    "hollywood",
   ].some(
     (key) => Array.isArray(data[key]) && data[key].length > 0,
   );
@@ -1183,6 +1215,11 @@ async function loadAccountData() {
       })),
     ),
   );
+  hollywoodItems = replaceAccountItems(
+    hollywoodItems,
+    currentAccount.id,
+    cloud.hollywood || [],
+  );
   saveCollection(STORAGE_KEY, books);
   saveCollection(LOG_STORAGE_KEY, readingLog);
   saveCollection(PASSAGE_STORAGE_KEY, passages);
@@ -1190,6 +1227,7 @@ async function loadAccountData() {
   saveCollection(CREATIVE_WRITING_STORAGE_KEY, creativeWriting);
   saveCollection(WORDHUB_STORAGE_KEY, wordhub);
   saveCollection(DREAMS_STORAGE_KEY, dreams);
+  saveCollection(HOLLYWOOD_STORAGE_KEY, hollywoodItems);
   isApplyingCloudData = false;
   await syncAccountData();
   await Promise.all(
@@ -1343,6 +1381,7 @@ async function showAuthenticatedApp(account) {
   renderJournals();
   renderStories();
   renderWordhub();
+  renderHollywood();
   renderDreams();
   renderCommunity();
   if (dailyStreakRewardEarned) {
@@ -3260,6 +3299,193 @@ function renderWordhub() {
       : "Build a living vocabulary.";
 }
 
+function hollywoodTypeLabel(type) {
+  return type === "series" ? "TV series" : "Movie";
+}
+
+function hollywoodStatusLabel(status) {
+  return {
+    toWatch: "To watch",
+    watching: "Watching",
+    watched: "Watched",
+  }[status] || "To watch";
+}
+
+function hollywoodPoster(item) {
+  return item.poster
+    ? `<img src="${escapeHtml(item.poster)}" alt="Poster for ${escapeHtml(item.title)}" loading="lazy" />`
+    : `<span>${escapeHtml(item.title.slice(0, 1).toUpperCase() || "H")}</span>`;
+}
+
+function renderHollywoodSearchResults() {
+  if (!elements.hollywoodResults) return;
+  elements.hollywoodResults.innerHTML = hollywoodSearchResults
+    .map((item) => {
+      const duplicate = ownedByCurrent(hollywoodItems).some(
+        (saved) =>
+          normalize(saved.title) === normalize(item.title) &&
+          saved.type === item.type,
+      );
+      return `
+        <article class="hollywood-result-card">
+          <div class="hollywood-poster">${hollywoodPoster(item)}</div>
+          <div>
+            <p class="eyebrow">${escapeHtml(hollywoodTypeLabel(item.type))}</p>
+            <h3>${escapeHtml(item.title)}</h3>
+            <p>${escapeHtml([item.year, item.genre].filter(Boolean).join(" · "))}</p>
+            ${item.description ? `<small>${escapeHtml(item.description)}</small>` : ""}
+            <button type="button" data-hollywood-add="${escapeHtml(item.lookupId)}" ${duplicate ? "disabled" : ""}>
+              ${duplicate ? "Already added" : "Add to Hollywood"}
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+  elements.hollywoodResults.hidden = hollywoodSearchResults.length === 0;
+}
+
+function renderHollywood() {
+  if (!currentAccount || !elements.hollywoodGrid) return;
+  const query = normalize(elements.hollywoodCollectionSearch.value);
+  const typeFilter = elements.hollywoodCollectionFilter.value;
+  const accountItems = ownedByCurrent(hollywoodItems);
+  const visibleItems = accountItems
+    .filter((item) => {
+      const searchable = normalize([
+        item.title,
+        item.genre,
+        item.type,
+        item.year,
+        item.description,
+      ].join(" "));
+      return (
+        (!query || searchable.includes(query)) &&
+        (typeFilter === "all" || item.type === typeFilter || item.status === typeFilter)
+      );
+    })
+    .sort((first, second) =>
+      first.title.localeCompare(second.title, undefined, { sensitivity: "base" }),
+    );
+  elements.hollywoodCount.textContent = accountItems.length;
+  elements.hollywoodGrid.innerHTML = visibleItems
+    .map(
+      (item) => `
+        <article class="hollywood-card">
+          <div class="hollywood-poster">${hollywoodPoster(item)}</div>
+          <div class="hollywood-card-body">
+            <div class="hollywood-card-kicker">
+              <span>${escapeHtml(hollywoodTypeLabel(item.type))}</span>
+              <span>${escapeHtml(hollywoodStatusLabel(item.status))}</span>
+            </div>
+            <h3>${escapeHtml(item.title)}</h3>
+            <p>${escapeHtml([item.year, item.genre].filter(Boolean).join(" · ") || "Uncatalogued")}</p>
+            ${item.description ? `<small>${escapeHtml(item.description)}</small>` : ""}
+            <div class="hollywood-status-buttons" aria-label="Set watch status">
+              ${["toWatch", "watching", "watched"]
+                .map(
+                  (status) => `
+                    <button
+                      class="${item.status === status ? "active" : ""}"
+                      type="button"
+                      data-hollywood-status="${status}"
+                      data-id="${item.id}"
+                    >
+                      ${escapeHtml(hollywoodStatusLabel(status))}
+                    </button>
+                  `,
+                )
+                .join("")}
+            </div>
+            <button class="hollywood-remove" type="button" data-hollywood-remove="${item.id}">
+              Remove
+            </button>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+  elements.hollywoodGrid.hidden = visibleItems.length === 0;
+  elements.hollywoodEmpty.hidden = visibleItems.length > 0;
+  elements.hollywoodEmpty.querySelector("h3").textContent =
+    accountItems.length && !visibleItems.length
+      ? "No Hollywood matches found."
+      : "Your Hollywood shelf is empty.";
+}
+
+async function searchHollywood(formData) {
+  const query = formData.get("query").trim();
+  const type = formData.get("type");
+  if (query.length < 2) {
+    elements.hollywoodSearchStatus.textContent = "Enter at least two characters.";
+    return;
+  }
+  elements.hollywoodSearchStatus.textContent = "Searching posters and titles...";
+  try {
+    const data = await apiRequest("hollywood-search", {
+      method: "POST",
+      body: { query, type },
+    });
+    hollywoodSearchResults = data.results || [];
+    elements.hollywoodSearchStatus.textContent = hollywoodSearchResults.length
+      ? `Found ${hollywoodSearchResults.length} result${hollywoodSearchResults.length === 1 ? "" : "s"}.`
+      : "No matching movies or series were found.";
+    renderHollywoodSearchResults();
+  } catch (error) {
+    hollywoodSearchResults = [];
+    renderHollywoodSearchResults();
+    elements.hollywoodSearchStatus.textContent = error.message;
+  }
+}
+
+function addHollywoodItem(lookupId) {
+  const result = hollywoodSearchResults.find((item) => item.lookupId === lookupId);
+  if (!result || !currentAccount) return;
+  const duplicate = ownedByCurrent(hollywoodItems).some(
+    (item) =>
+      normalize(item.title) === normalize(result.title) &&
+      item.type === result.type,
+  );
+  if (duplicate) {
+    showToast("That title is already in your Hollywood section.");
+    return;
+  }
+  hollywoodItems.unshift({
+    ...result,
+    id: crypto.randomUUID(),
+    status: "toWatch",
+    ownerId: currentAccount.id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  saveHollywood();
+  renderHollywood();
+  renderHollywoodSearchResults();
+  showToast(`"${result.title}" added to Hollywood.`);
+}
+
+function setHollywoodStatus(id, status) {
+  const item = hollywoodItems.find(
+    (entry) => entry.id === id && entry.ownerId === currentAccount?.id,
+  );
+  if (!item || !["toWatch", "watching", "watched"].includes(status)) return;
+  item.status = status;
+  item.updatedAt = new Date().toISOString();
+  saveHollywood();
+  renderHollywood();
+}
+
+function removeHollywoodItem(id) {
+  const item = hollywoodItems.find(
+    (entry) => entry.id === id && entry.ownerId === currentAccount?.id,
+  );
+  if (!item) return;
+  hollywoodItems = hollywoodItems.filter((entry) => entry.id !== id);
+  saveHollywood();
+  renderHollywood();
+  showToast(`"${item.title}" removed from Hollywood.`);
+}
+
 function saveWordhubEntry() {
   const id = elements.wordhubIdInput.value;
   const word = elements.wordhubWordInput.value.trim();
@@ -3483,6 +3709,102 @@ function uniqueDreamImages(dream) {
   ].slice(0, 6);
 }
 
+function dreamWordCount(dream) {
+  return String(dream.dream || "")
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function dreamEmotionalTone(text) {
+  const toneSets = [
+    {
+      label: "fear, threat, or pressure",
+      words: ["afraid", "fear", "panic", "chase", "attack", "danger", "hide", "trapped"],
+    },
+    {
+      label: "loss, grief, or separation",
+      words: ["lost", "death", "dead", "missing", "alone", "abandoned", "cry", "grief"],
+    },
+    {
+      label: "wonder, mystery, or sacred charge",
+      words: ["light", "temple", "holy", "ancient", "glowing", "magic", "vast", "voice"],
+    },
+    {
+      label: "movement, change, or transition",
+      words: ["road", "door", "bridge", "train", "car", "travel", "arrive", "leave"],
+    },
+    {
+      label: "conflict, judgement, or resistance",
+      words: ["fight", "argue", "judge", "court", "test", "fail", "angry", "refuse"],
+    },
+  ];
+  return toneSets
+    .map((tone) => ({
+      label: tone.label,
+      score: keywordScore(text, tone.words, 2),
+    }))
+    .filter((tone) => tone.score > 0)
+    .sort((first, second) => second.score - first.score)
+    .slice(0, 3);
+}
+
+function dreamPatternFlags(text, dream) {
+  const patterns = [
+    {
+      title: "Threshold imagery",
+      detail: "Doors, bridges, roads, gates, travel, or borders may point to a transition between old and new attitudes.",
+      words: ["door", "gate", "bridge", "road", "path", "border", "threshold", "airport", "station"],
+    },
+    {
+      title: "Shadow material",
+      detail: "Pursuers, hidden rooms, shame, monsters, or rejected figures may invite careful attention to disowned qualities.",
+      words: ["shadow", "monster", "dark", "hide", "secret", "forbidden", "enemy", "chase"],
+    },
+    {
+      title: "Complex activation",
+      detail: "Strong family, authority, school, failure, or humiliation imagery can suggest an emotionally charged complex.",
+      words: ["mother", "father", "teacher", "boss", "school", "exam", "fail", "humiliation"],
+    },
+    {
+      title: "Self or wholeness motif",
+      detail: "Circles, centres, mandalas, trees, stars, sacred buildings, or guiding figures can suggest a regulating image of wholeness.",
+      words: ["circle", "centre", "center", "mandala", "tree", "star", "temple", "guide", "wise"],
+    },
+    {
+      title: "Embodied instinct",
+      detail: "Animals, hunger, water, weather, injury, or bodily sensation may ask what instinctive life is trying to express.",
+      words: ["animal", "water", "blood", "body", "hunger", "storm", "fire", "snake", "wolf"],
+    },
+  ];
+  const suppliedNotes = [dream.archetypes, dream.motifs, dream.symbols].filter(Boolean).length;
+  return patterns
+    .map((pattern) => ({
+      ...pattern,
+      score: keywordScore(text, pattern.words, 2) + suppliedNotes,
+    }))
+    .filter((pattern) => pattern.score > 0)
+    .sort((first, second) => second.score - first.score)
+    .slice(0, 4);
+}
+
+function dreamCategoryReason(key, dream, text) {
+  const wordCount = dreamWordCount(dream);
+  const reasons = {
+    compensatory: "The dream may be balancing the conscious attitude by presenting neglected, opposite, hidden, or emotionally uncomfortable material.",
+    prospective: "The dream may be sketching a direction of development through travel, thresholds, choices, or images of future movement.",
+    big: "The dream carries possible archetypal weight when its images feel numinous, mythic, cosmic, ancient, sacred, or unusually memorable.",
+    reductive: "The dream may be drawing attention back to a personal complex, wound, fear, humiliation, or unresolved pattern.",
+    prophetic: "This category only marks prophecy-like feeling or later resemblance; it does not verify prediction.",
+  };
+  if (key === "big" && wordCount > 250) {
+    return `${reasons[key]} Its length and detail also suggest the image may deserve slow amplification.`;
+  }
+  if (key === "compensatory" && text.includes("shadow")) {
+    return `${reasons[key]} The explicit shadow language makes this especially worth approaching with patience.`;
+  }
+  return reasons[key] || "This is a tentative interpretive lens.";
+}
+
 function createJungianAnalysis(dream, wakingContext, focusQuestion) {
   const text = [
     dream.dream,
@@ -3574,6 +3896,7 @@ function createJungianAnalysis(dream, wakingContext, focusQuestion) {
       label: analysisCategoryLabel(key),
       score,
       likelihood: likelihoodLabel(score),
+      reason: dreamCategoryReason(key, dream, text),
       note:
         key === "prophetic"
           ? "This describes a felt resemblance to events, not evidence that a dream predicts the future."
@@ -3582,6 +3905,9 @@ function createJungianAnalysis(dream, wakingContext, focusQuestion) {
     .sort((first, second) => second.score - first.score);
   const primary = categories[0];
   const images = uniqueDreamImages(dream);
+  const tones = dreamEmotionalTone(text);
+  const patterns = dreamPatternFlags(text, dream);
+  const wordCount = dreamWordCount(dream);
   const contextNote = wakingContext
     ? `The waking situation you supplied may help locate the tension or possibility the dream is exploring.`
     : "No waking-life context was supplied, so this interpretation is especially tentative. Jungian work normally compares the dream with the dreamer's conscious situation.";
@@ -3592,10 +3918,33 @@ function createJungianAnalysis(dream, wakingContext, focusQuestion) {
     focusQuestion,
     primaryCategory: primary.key,
     categories,
+    complexity: {
+      wordCount,
+      suppliedSymbolCount: uniqueDreamImages(dream).length,
+      toneLabels: tones.map((tone) => tone.label),
+      patternCount: patterns.length,
+    },
     overview: `The strongest available lens is ${primary.label.toLocaleLowerCase()}, but this is a ${primary.likelihood}, not a classification. ${contextNote}`,
     amplification: images.length
       ? `Images worth amplifying through your own memories, cultural associations, stories, and art include ${images.join(", ")}.`
       : "Choose the images with the strongest emotional charge and write your personal associations before consulting general symbol traditions.",
+    symbolicClusters: patterns.map((pattern) => ({
+      title: pattern.title,
+      detail: pattern.detail,
+    })),
+    emotionalTone: tones.length
+      ? tones.map((tone) => tone.label)
+      : ["unclear from wording; use your felt memory of the dream as the guide"],
+    possibleTensions: [
+      "What the conscious self says it wants versus what the dream image seems to demand.",
+      "The social role or persona in waking life versus the less acceptable or less developed figure in the dream.",
+      "Safety, control, and habit versus movement toward uncertainty, change, or enlargement.",
+    ],
+    integrationPractices: [
+      "Write five personal associations for the most charged image before consulting any guide.",
+      "Give the strongest dream figure a short voice in a dialogue, then answer it as yourself.",
+      "Choose one small waking action that honours the dream symbolically without treating it as a command.",
+    ],
     reflectionQuestions: [
       focusQuestion ||
         "What conscious attitude, plan, fear, or certainty might this dream be balancing or enlarging?",
@@ -3634,7 +3983,38 @@ function renderDreamAnalysis(analysis) {
           .join("")}
       </div>
       <p>${escapeHtml(analysis.overview)}</p>
+      <div class="dream-analysis-metrics">
+        <span><strong>${Number(analysis.complexity?.wordCount || 0)}</strong> words recorded</span>
+        <span><strong>${Number(analysis.complexity?.suppliedSymbolCount || 0)}</strong> noted images</span>
+        <span><strong>${Number(analysis.complexity?.patternCount || 0)}</strong> symbolic clusters</span>
+      </div>
       <p><strong>Amplification:</strong> ${escapeHtml(analysis.amplification)}</p>
+      <div class="dream-analysis-deep-grid">
+        <section>
+          <strong>Emotional tone</strong>
+          <ul>${(analysis.emotionalTone || [])
+            .map((tone) => `<li>${escapeHtml(tone)}</li>`)
+            .join("")}</ul>
+        </section>
+        <section>
+          <strong>Symbolic clusters</strong>
+          <ul>${(analysis.symbolicClusters || [])
+            .map((cluster) => `<li><b>${escapeHtml(cluster.title)}:</b> ${escapeHtml(cluster.detail)}</li>`)
+            .join("") || "<li>No strong cluster detected; begin with personal associations.</li>"}</ul>
+        </section>
+        <section>
+          <strong>Possible inner tensions</strong>
+          <ul>${(analysis.possibleTensions || [])
+            .map((tension) => `<li>${escapeHtml(tension)}</li>`)
+            .join("")}</ul>
+        </section>
+        <section>
+          <strong>Integration practices</strong>
+          <ul>${(analysis.integrationPractices || [])
+            .map((practice) => `<li>${escapeHtml(practice)}</li>`)
+            .join("")}</ul>
+        </section>
+      </div>
       <div class="dream-analysis-questions">
         <strong>Questions for your own analysis</strong>
         <ul>${(analysis.reflectionQuestions || [])
@@ -5902,6 +6282,27 @@ elements.wordhubForm.addEventListener("submit", (event) => {
 
 elements.wordhubCancelEdit.addEventListener("click", resetWordhubForm);
 elements.wordhubSearchInput.addEventListener("input", renderWordhub);
+elements.hollywoodSearchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.hollywoodSearchForm.reportValidity()) {
+    searchHollywood(new FormData(elements.hollywoodSearchForm));
+  }
+});
+elements.hollywoodCollectionSearch.addEventListener("input", renderHollywood);
+elements.hollywoodCollectionFilter.addEventListener("change", renderHollywood);
+elements.hollywoodResults.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-hollywood-add]");
+  if (button) addHollywoodItem(button.dataset.hollywoodAdd);
+});
+elements.hollywoodGrid.addEventListener("click", (event) => {
+  const statusButton = event.target.closest("button[data-hollywood-status]");
+  if (statusButton) {
+    setHollywoodStatus(statusButton.dataset.id, statusButton.dataset.hollywoodStatus);
+    return;
+  }
+  const removeButton = event.target.closest("button[data-hollywood-remove]");
+  if (removeButton) removeHollywoodItem(removeButton.dataset.hollywoodRemove);
+});
 elements.wordhubWordInput.addEventListener("input", () => {
   elements.wordhubWordInput.setCustomValidity("");
 });
