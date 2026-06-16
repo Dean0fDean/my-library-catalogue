@@ -642,6 +642,7 @@ async function ensureSchema() {
           creative_writing JSONB NOT NULL DEFAULT '[]'::jsonb,
           wordhub JSONB NOT NULL DEFAULT '[]'::jsonb,
           dreams JSONB NOT NULL DEFAULT '[]'::jsonb,
+          hollywood JSONB NOT NULL DEFAULT '[]'::jsonb,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `;
@@ -656,6 +657,10 @@ async function ensureSchema() {
       await sql`
         ALTER TABLE library_data
         ADD COLUMN IF NOT EXISTS dreams JSONB NOT NULL DEFAULT '[]'::jsonb
+      `;
+      await sql`
+        ALTER TABLE library_data
+        ADD COLUMN IF NOT EXISTS hollywood JSONB NOT NULL DEFAULT '[]'::jsonb
       `;
       await sql`
         CREATE TABLE IF NOT EXISTS library_notifications (
@@ -1106,7 +1111,7 @@ export default async function handler(request, response) {
     if (action === "data" && request.method === "GET") {
       const rows = await sql`
         SELECT books, reading_log, passages, wishlist, creative_writing,
-               wordhub, dreams, updated_at
+               wordhub, dreams, hollywood, updated_at
         FROM library_data WHERE user_id = ${user.id}
       `;
       const row = rows[0] || {};
@@ -1118,6 +1123,7 @@ export default async function handler(request, response) {
         creativeWriting: row.creative_writing || [],
         wordhub: row.wordhub || [],
         dreams: row.dreams || [],
+        hollywood: row.hollywood || [],
         updatedAt: row.updated_at || null,
       });
     }
@@ -1145,7 +1151,7 @@ export default async function handler(request, response) {
       await sql`
         INSERT INTO library_data (
           user_id, books, reading_log, passages, wishlist, creative_writing,
-          wordhub, dreams, updated_at
+          wordhub, dreams, hollywood, updated_at
         )
         VALUES (
           ${user.id}, ${JSON.stringify(cleanArray(body.books))}::jsonb,
@@ -1154,7 +1160,8 @@ export default async function handler(request, response) {
           ${JSON.stringify(cleanArray(body.wishlist))}::jsonb,
           ${JSON.stringify(cleanArray(body.creativeWriting))}::jsonb,
           ${JSON.stringify(cleanArray(body.wordhub))}::jsonb,
-          ${JSON.stringify(mergedDreams)}::jsonb, NOW()
+          ${JSON.stringify(mergedDreams)}::jsonb,
+          ${JSON.stringify(cleanArray(body.hollywood))}::jsonb, NOW()
         )
         ON CONFLICT (user_id) DO UPDATE SET
           books = EXCLUDED.books,
@@ -1164,6 +1171,7 @@ export default async function handler(request, response) {
           creative_writing = EXCLUDED.creative_writing,
           wordhub = EXCLUDED.wordhub,
           dreams = EXCLUDED.dreams,
+          hollywood = EXCLUDED.hollywood,
           updated_at = NOW()
       `;
       return json(response, 200, { ok: true });
@@ -2567,6 +2575,58 @@ export default async function handler(request, response) {
         definitions,
         source: "Free Dictionary API",
       });
+    }
+
+    if (action === "hollywood-search" && request.method === "POST") {
+      const query = String(body.query || "").trim().slice(0, 120);
+      const type = ["movie", "series", "all"].includes(body.type)
+        ? body.type
+        : "all";
+      if (query.length < 2) {
+        return json(response, 400, { error: "Enter at least two characters to search." });
+      }
+      const entities =
+        type === "movie"
+          ? ["movie"]
+          : type === "series"
+            ? ["tvSeason"]
+            : ["movie", "tvSeason"];
+      const results = [];
+      const seen = new Set();
+      for (const entity of entities) {
+        const searchUrl =
+          `https://itunes.apple.com/search?term=${encodeURIComponent(query)}` +
+          `&entity=${entity}&limit=12&country=US`;
+        const hollywoodResponse = await fetch(searchUrl, {
+          headers: { "User-Agent": "My-Library-Catalogue/1.0" },
+        });
+        if (!hollywoodResponse.ok) continue;
+        const data = await hollywoodResponse.json();
+        for (const item of Array.isArray(data.results) ? data.results : []) {
+          const title = String(item.trackName || item.collectionName || "").trim();
+          if (!title) continue;
+          const mediaType = entity === "movie" ? "movie" : "series";
+          const key = `${mediaType}:${title.toLowerCase()}:${String(item.releaseDate || "").slice(0, 4)}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const poster = String(item.artworkUrl100 || "")
+            .replace("100x100bb", "600x600bb")
+            .replace("100x100-75", "600x600-75");
+          results.push({
+            lookupId: `${mediaType}-${String(item.trackId || item.collectionId || crypto.randomUUID())}`,
+            title,
+            type: mediaType,
+            year: String(item.releaseDate || "").slice(0, 4),
+            genre: String(item.primaryGenreName || ""),
+            poster,
+            description: String(item.longDescription || item.shortDescription || "").slice(0, 420),
+            sourceUrl: String(item.trackViewUrl || item.collectionViewUrl || ""),
+          });
+          if (results.length >= 16) break;
+        }
+        if (results.length >= 16) break;
+      }
+      return json(response, 200, { results });
     }
 
     if (action === "reading-challenges" && request.method === "GET") {
