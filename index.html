@@ -161,7 +161,6 @@
               <p>Your library</p>
               <a href="#collection"><strong>Collection</strong><span>Books you own</span></a>
               <a href="#wishlist"><strong>Wishlist</strong><span>Books to purchase</span></a>
-              <a href="#hollywood"><strong>Hollywood</strong><span>Movies and TV series</span></a>
             </div>
             <div class="menu-group">
               <p>Reading life</p>
@@ -296,11 +295,6 @@
               <strong>WordHub Alcove</strong>
               <small>Keep new words in active use</small>
             </a>
-            <a href="#hollywood">
-              <span aria-hidden="true">09</span>
-              <strong>Hollywood</strong>
-              <small>Catalogue films and TV series</small>
-            </a>
           </div>
         </section>
 
@@ -352,6 +346,44 @@
             </label>
           </div>
 
+          <section class="bookshelf-map" aria-labelledby="bookshelf-map-title">
+            <div class="bookshelf-map-heading">
+              <div>
+                <p class="eyebrow">VISUAL SHELF MAP</p>
+                <h3 id="bookshelf-map-title">Bookshelf diagram</h3>
+                <p>
+                  Each spine represents one book in your Collection. Gold means
+                  read, gray means busy reading, and plain spines are still to be read.
+                </p>
+              </div>
+              <label class="bookshelf-sort-control">
+                <span>Arrange by</span>
+                <select id="bookshelf-sort">
+                  <option value="title">Alphabetical title</option>
+                  <option value="genre">Genre, then title</option>
+                </select>
+              </label>
+            </div>
+            <div class="bookshelf-legend" aria-label="Bookshelf status legend">
+              <span><i class="legend-read"></i> Read</span>
+              <span><i class="legend-reading"></i> Busy reading</span>
+              <span><i class="legend-unread"></i> To be read</span>
+            </div>
+            <div class="bookshelf-stage">
+              <div
+                id="bookshelf-diagram"
+                class="bookshelf-diagram"
+                aria-label="Bookshelf diagram of collection"
+              ></div>
+              <aside id="bookshelf-details" class="bookshelf-details">
+                <strong id="bookshelf-detail-code">#</strong>
+                <span id="bookshelf-detail-title">Hover or tap a book spine.</span>
+                <small id="bookshelf-detail-meta">The full title will appear here.</small>
+              </aside>
+            </div>
+            <p id="bookshelf-count" class="bookshelf-count">0 books on the shelf</p>
+          </section>
+
           <div id="book-grid" class="book-grid" aria-live="polite"></div>
           <button
             class="catalogue-expand-button"
@@ -373,91 +405,6 @@
             <button class="text-button" id="empty-add-button" type="button">
               Add your first book <span aria-hidden="true">-&gt;</span>
             </button>
-          </div>
-        </section>
-
-        <section
-          class="hollywood-section"
-          id="hollywood"
-          aria-labelledby="hollywood-title"
-        >
-          <div class="section-heading hollywood-heading">
-            <div>
-              <p class="eyebrow">THE SCREENING ROOM</p>
-              <h2 id="hollywood-title">Hollywood</h2>
-              <p class="section-intro">
-                Search for movies and TV series online, add them to your personal
-                screen collection, and keep track of what you plan to watch.
-              </p>
-            </div>
-            <div class="hollywood-count">
-              <strong id="hollywood-count">0</strong>
-              <span>SCREEN TITLES</span>
-            </div>
-          </div>
-
-          <form id="hollywood-search-form" class="hollywood-search-panel">
-            <div>
-              <p class="eyebrow">ONLINE POSTER SEARCH</p>
-              <h3>Find a movie or series</h3>
-              <p>
-                Results use Apple/iTunes public search data. Review the result,
-                then add it to your Hollywood shelf.
-              </p>
-            </div>
-            <label>
-              <span>Title</span>
-              <input
-                id="hollywood-query-input"
-                name="query"
-                type="search"
-                minlength="2"
-                placeholder="Search movies or TV series..."
-                required
-              />
-            </label>
-            <label>
-              <span>Type</span>
-              <select id="hollywood-type-filter" name="type">
-                <option value="all">Movies and TV series</option>
-                <option value="movie">Movies only</option>
-                <option value="series">TV series only</option>
-              </select>
-            </label>
-            <button class="primary-button" type="submit">Search Hollywood</button>
-            <p id="hollywood-search-status" class="hollywood-search-status" aria-live="polite"></p>
-          </form>
-
-          <div id="hollywood-results" class="hollywood-results" hidden></div>
-
-          <div class="toolbar hollywood-toolbar">
-            <label class="search-box">
-              <span class="search-icon" aria-hidden="true"></span>
-              <span class="sr-only">Search Hollywood collection</span>
-              <input
-                id="hollywood-collection-search"
-                type="search"
-                placeholder="Search saved movies or series..."
-              />
-            </label>
-            <label class="select-wrap">
-              <span class="sr-only">Filter Hollywood collection</span>
-              <select id="hollywood-collection-filter">
-                <option value="all">All screen titles</option>
-                <option value="movie">Movies</option>
-                <option value="series">TV series</option>
-                <option value="toWatch">To watch</option>
-                <option value="watching">Watching</option>
-                <option value="watched">Watched</option>
-              </select>
-            </label>
-          </div>
-
-          <div id="hollywood-grid" class="hollywood-grid" aria-live="polite"></div>
-          <div id="hollywood-empty" class="hollywood-empty">
-            <div aria-hidden="true">H</div>
-            <h3>Your Hollywood shelf is empty.</h3>
-            <p>Search for a movie or TV series to begin your screen catalogue.</p>
           </div>
         </section>
 
