@@ -984,6 +984,51 @@ h2 {
   box-shadow: var(--shadow);
 }
 
+.book-card.spotlight {
+  box-shadow:
+    0 0 0 2px rgba(181, 136, 40, 0.35),
+    0 18px 34px rgba(181, 136, 40, 0.18);
+  animation: book-spotlight 2.4s ease;
+}
+
+.book-card.spotlight::after {
+  content: "Opened from Research Shelf";
+  position: absolute;
+  top: 0.85rem;
+  right: 0.9rem;
+  padding: 0.22rem 0.5rem;
+  color: rgba(92, 61, 12, 0.92);
+  background: rgba(236, 217, 160, 0.92);
+  border: 1px solid rgba(181, 136, 40, 0.28);
+  border-radius: 999px;
+  font: 700 0.52rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@keyframes book-spotlight {
+  0% {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow:
+      0 0 0 0 rgba(181, 136, 40, 0.42),
+      0 20px 36px rgba(181, 136, 40, 0.22);
+  }
+
+  55% {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow:
+      0 0 0 8px rgba(181, 136, 40, 0),
+      0 18px 34px rgba(181, 136, 40, 0.18);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 2px rgba(181, 136, 40, 0.35),
+      0 18px 34px rgba(181, 136, 40, 0.18);
+  }
+}
+
 .book-card-top {
   display: flex;
   align-items: center;
@@ -1029,6 +1074,56 @@ h2 {
   color: rgba(23, 42, 34, 0.65);
   font-style: italic;
   line-height: 1.45;
+}
+
+.book-progress {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(23, 42, 34, 0.1);
+  background: rgba(255, 252, 244, 0.62);
+}
+
+.book-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.book-progress-meta span {
+  color: rgba(23, 42, 34, 0.58);
+  font: 700 0.55rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.book-progress-meta strong {
+  color: var(--forest);
+  font: 800 0.78rem/1 Arial, sans-serif;
+}
+
+.book-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(23, 42, 34, 0.1);
+}
+
+.book-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--terracotta));
+  transition: width 220ms ease;
+}
+
+.book-progress small {
+  display: block;
+  margin-top: 0.45rem;
+  color: rgba(23, 42, 34, 0.56);
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
 .book-status-options {
@@ -5885,8 +5980,60 @@ body.feature-menu-open::after {
   line-height: 1.65;
 }
 
+.writing-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.writing-dashboard-card,
+.writing-goal-card,
+.writing-goal-bar {
+  padding: 1rem 1.05rem;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(23, 42, 34, 0.12);
+}
+
+.writing-dashboard-card p,
+.writing-dashboard-card small {
+  margin: 0;
+}
+
+.writing-dashboard-card p,
+.writing-goal-card p {
+  color: rgba(23, 42, 34, 0.56);
+  font: 700 0.58rem/1.4 Arial, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.writing-dashboard-card strong,
+.writing-goal-card strong {
+  display: block;
+  margin: 0.45rem 0 0.3rem;
+  font-size: 1.95rem;
+  font-weight: 400;
+}
+
+.writing-dashboard-card small {
+  color: rgba(23, 42, 34, 0.66);
+  line-height: 1.45;
+}
+
+.writing-toolbar-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 220px 190px;
+  gap: 0.85rem;
+  margin-top: 1.6rem;
+}
+
+.writing-search-box {
+  background: rgba(255, 255, 255, 0.46);
+}
+
 .writing-workspace {
-  min-height: 650px;
+  min-height: 780px;
   display: grid;
   grid-template-columns: minmax(220px, 0.28fr) minmax(0, 1fr);
   margin-top: 2.5rem;
@@ -5930,6 +6077,9 @@ body.feature-menu-open::after {
 .story-list {
   display: grid;
   gap: 0.55rem;
+  max-height: 1200px;
+  overflow: auto;
+  padding-right: 0.2rem;
 }
 
 .story-list-item {
@@ -5984,11 +6134,24 @@ body.feature-menu-open::after {
   padding: clamp(1.4rem, 4vw, 3rem);
 }
 
+.writing-project-header {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .story-editor-topline {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: end;
   gap: 1rem;
+}
+
+.writing-project-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .story-title-field > span,
@@ -6011,19 +6174,63 @@ body.feature-menu-open::after {
   font: 400 clamp(2rem, 5vw, 3.5rem)/1 Georgia, serif;
 }
 
+.secondary-writing-button,
 .story-delete-button {
-  margin-bottom: 0.7rem;
-  padding: 0.55rem;
-  border: 0;
-  color: #76372a;
-  background: transparent;
-  font: 700 0.58rem/1 Arial, sans-serif;
+  min-height: 42px;
+  padding: 0.7rem 1rem;
+  font: 700 0.6rem/1 Arial, sans-serif;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
+.secondary-writing-button {
+  border: 1px solid rgba(23, 42, 34, 0.18);
+  color: var(--forest);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.story-delete-button {
+  border: 1px solid rgba(118, 55, 42, 0.18);
+  color: #76372a;
+  background: rgba(118, 55, 42, 0.08);
+}
+
+.writing-project-meta {
+  margin: 0;
+  color: rgba(23, 42, 34, 0.66);
+  line-height: 1.6;
+}
+
+.writing-project-progress-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.writing-project-progress-bar {
+  height: 12px;
+  flex: 1;
+  overflow: hidden;
+  background: rgba(23, 42, 34, 0.08);
+  border-radius: 999px;
+}
+
+.writing-project-progress-bar span {
+  height: 100%;
+  display: block;
+  width: 0;
+  background: linear-gradient(90deg, var(--gold), var(--terracotta));
+  border-radius: inherit;
+}
+
+.writing-project-progress-shell strong {
+  font: 700 0.68rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+}
+
 .writing-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
   margin: 1.8rem 0;
   border-bottom: 1px solid var(--line);
@@ -6052,6 +6259,35 @@ body.feature-menu-open::after {
   margin-bottom: 1.15rem;
 }
 
+.writing-entity-form {
+  padding: 1.2rem;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(23, 42, 34, 0.12);
+}
+
+.entity-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.entity-form-heading h3 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+.entity-form-heading button {
+  border: 0;
+  color: var(--terracotta);
+  background: transparent;
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .story-editor input:not(.story-title-field input),
 .story-editor select,
 .story-editor textarea,
@@ -6073,7 +6309,7 @@ body.feature-menu-open::after {
 
 .manuscript-toolbar {
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.75rem;
@@ -6083,8 +6319,35 @@ body.feature-menu-open::after {
   text-transform: uppercase;
 }
 
+.manuscript-stats,
+.manuscript-toolbar-actions,
+.prompt-generator-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem 0.9rem;
+}
+
 .spellcheck-status {
   color: var(--forest);
+}
+
+.writing-format-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.writing-format-toolbar button {
+  min-height: 38px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(23, 42, 34, 0.16);
+  color: rgba(23, 42, 34, 0.7);
+  background: rgba(255, 255, 255, 0.7);
+  font: 700 0.58rem/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 #story-draft-input {
@@ -6095,6 +6358,226 @@ body.feature-menu-open::after {
       0 2.75rem / 100% 2rem,
     #fbf8f0;
   font: 400 1.08rem/2rem Georgia, serif;
+  outline: none;
+  white-space: pre-wrap;
+}
+
+.writing-rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(23, 42, 34, 0.35);
+}
+
+.manuscript-lower-grid {
+  margin-top: 1rem;
+}
+
+.story-search-results,
+.story-repeated-words {
+  min-height: 94px;
+  padding: 0.9rem;
+  color: rgba(23, 42, 34, 0.7);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(23, 42, 34, 0.12);
+  line-height: 1.55;
+}
+
+.story-repeated-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.story-repeated-word-chip,
+.writing-tag-cloud span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font: 700 0.56rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.story-repeated-word-chip {
+  color: var(--forest);
+  background: rgba(23, 63, 49, 0.08);
+}
+
+.writing-tab-panel {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.writing-subpanel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.writing-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.writing-item-card,
+.timeline-item,
+.chapter-card,
+.scene-card,
+.version-item,
+.comment-item,
+.checklist-item {
+  padding: 0.95rem 1rem;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(23, 42, 34, 0.12);
+}
+
+.writing-item-card h3,
+.timeline-item h3,
+.chapter-card h3,
+.scene-card h4 {
+  margin-bottom: 0.35rem;
+  font-weight: 400;
+}
+
+.writing-item-card h3,
+.timeline-item h3,
+.chapter-card h3 {
+  font-size: 1.45rem;
+}
+
+.scene-card h4 {
+  font-size: 1.08rem;
+}
+
+.writing-card-meta,
+.chapter-card-meta,
+.timeline-meta {
+  color: rgba(23, 42, 34, 0.56);
+  font: 700 0.58rem/1.5 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.writing-card-grid > .writing-card-meta,
+.chapter-list > .writing-card-meta,
+.timeline-list > .writing-card-meta,
+.writing-card-stack-list > .writing-card-meta {
+  margin: 0;
+  padding: 0.95rem 1rem;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px dashed rgba(23, 42, 34, 0.18);
+}
+
+.writing-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+}
+
+.writing-tag-cloud span {
+  color: var(--terracotta);
+  background: rgba(173, 95, 69, 0.08);
+}
+
+.writing-card-actions,
+.chapter-card-actions,
+.scene-card-actions,
+.timeline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.writing-card-actions button,
+.chapter-card-actions button,
+.scene-card-actions button,
+.timeline-actions button,
+.version-item button {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(23, 42, 34, 0.14);
+  color: rgba(23, 42, 34, 0.7);
+  background: rgba(255, 255, 255, 0.72);
+  font: 700 0.54rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chapter-list,
+.timeline-list,
+.writing-card-stack-list,
+.chapter-scene-list,
+.export-selection-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.writing-goal-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.writing-goal-bar {
+  grid-column: 1 / -1;
+}
+
+.writing-goal-bar-track {
+  height: 14px;
+  margin: 0.7rem 0;
+  overflow: hidden;
+  background: rgba(23, 42, 34, 0.08);
+  border-radius: 999px;
+}
+
+.writing-goal-bar-track span {
+  height: 100%;
+  display: block;
+  width: 0;
+  background: linear-gradient(90deg, var(--gold), var(--forest));
+}
+
+.checklist-item label,
+.export-selection-list label {
+  display: flex;
+  align-items: start;
+  gap: 0.6rem;
+}
+
+.writing-export-note {
+  color: rgba(23, 42, 34, 0.64);
+  line-height: 1.6;
+}
+
+.writing-focus-mode .story-library,
+.writing-focus-mode #story-overview-view,
+.writing-focus-mode #story-chapters-view,
+.writing-focus-mode #story-characters-view,
+.writing-focus-mode #story-worldbuilding-view,
+.writing-focus-mode #story-timeline-view,
+.writing-focus-mode #story-research-view,
+.writing-focus-mode #story-quotes-view,
+.writing-focus-mode #story-goals-view,
+.writing-focus-mode #story-prompts-view,
+.writing-focus-mode #story-revision-view,
+.writing-focus-mode #story-export-view,
+.writing-focus-mode .writing-tabs,
+.writing-focus-mode .writing-project-header {
+  display: none !important;
+}
+
+.writing-focus-mode .writing-workspace {
+  grid-template-columns: 1fr;
+}
+
+.writing-focus-mode #story-manuscript-view {
+  display: grid !important;
+}
+
+.writing-focus-mode .story-editor {
+  padding: 1.5rem;
 }
 
 .story-editor-empty {
@@ -6338,8 +6821,15 @@ body.feature-menu-open::after {
 }
 
 @media (max-width: 900px) {
+  .writing-dashboard,
+  .writing-goal-summary,
   .writing-workspace,
   .wordhub-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .writing-toolbar-panel,
+  .writing-subpanel-grid {
     grid-template-columns: 1fr;
   }
 
@@ -6358,6 +6848,8 @@ body.feature-menu-open::after {
     padding-top: 4rem;
   }
 
+  .writing-dashboard,
+  .writing-goal-summary,
   .story-list,
   .wordhub-list,
   .story-editor-topline {
@@ -6379,8 +6871,7 @@ body.feature-menu-open::after {
   }
 
   .writing-tabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
   }
 }
 
