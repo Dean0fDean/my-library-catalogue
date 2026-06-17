@@ -193,6 +193,7 @@ const elements = {
   sessionCountInsight: document.querySelector("#session-count-insight"),
   pagesInsight: document.querySelector("#pages-insight"),
   pagesWeekInsight: document.querySelector("#pages-week-insight"),
+  lifetimePagesInsight: document.querySelector("#lifetime-pages-insight"),
   paceInsight: document.querySelector("#pace-insight"),
   averageInsight: document.querySelector("#average-insight"),
   streakInsight: document.querySelector("#streak-insight"),
@@ -755,8 +756,12 @@ function saveCollection(key, value) {
   }
 }
 
+function localSafeBooks() {
+  return books.map((book) => ({ ...book, coverImage: "" }));
+}
+
 function saveBooks() {
-  const saved = saveCollection(STORAGE_KEY, books);
+  const saved = saveCollection(STORAGE_KEY, localSafeBooks());
   if (saved) scheduleDataSync();
   return saved;
 }
@@ -1278,7 +1283,7 @@ async function loadCloudBookCovers() {
         if (result.image) book.coverImage = result.image;
       }),
   );
-  saveCollection(STORAGE_KEY, books);
+  saveCollection(STORAGE_KEY, localSafeBooks());
 }
 
 function cloudDataFor(accountId) {
@@ -1421,7 +1426,7 @@ async function loadAccountData() {
       })),
     ),
   );
-  saveCollection(STORAGE_KEY, books);
+  saveCollection(STORAGE_KEY, localSafeBooks());
   saveCollection(LOG_STORAGE_KEY, readingLog);
   saveCollection(PASSAGE_STORAGE_KEY, passages);
   saveCollection(WISHLIST_STORAGE_KEY, wishlist);
@@ -2035,6 +2040,35 @@ function loggedBookProgress(book) {
     (best, entry) => Math.max(best, loggedPageReached(entry)),
     0,
   );
+}
+
+function bookPageCount(book) {
+  const { firstPage, lastPage } = normalizeBookPages(book);
+  return firstPage && lastPage && lastPage >= firstPage
+    ? lastPage - firstPage + 1
+    : 0;
+}
+
+function loggedPagesForBook(book) {
+  return readingSessionsForBook(book).reduce(
+    (total, entry) => total + (Number(entry.pagesRead) || 0),
+    0,
+  );
+}
+
+function lifetimePagesReadFrom(accountLog) {
+  const loggedPages = accountLog.reduce(
+    (total, entry) => total + (Number(entry.pagesRead) || 0),
+    0,
+  );
+  const completedBookPages = booksFor(currentAccount?.id)
+    .filter((book) => book.status === "read")
+    .reduce((total, book) => {
+      const pageCount = bookPageCount(book);
+      if (!pageCount) return total;
+      return total + Math.max(0, pageCount - loggedPagesForBook(book));
+    }, 0);
+  return loggedPages + completedBookPages;
 }
 
 function bookProgressInfo(book) {
@@ -2895,7 +2929,23 @@ function getTimePeriod(time) {
   return "late at night";
 }
 
+function ensureLifetimePagesCard() {
+  if (elements.lifetimePagesInsight) return;
+  const pagesCard = elements.pagesInsight?.closest(".insight-card");
+  if (!pagesCard) return;
+  const card = document.createElement("article");
+  card.className = "insight-card";
+  card.innerHTML = `
+    <span>Lifetime pages</span>
+    <strong id="lifetime-pages-insight">0</strong>
+    <small>Logged pages plus completed books</small>
+  `;
+  pagesCard.insertAdjacentElement("afterend", card);
+  elements.lifetimePagesInsight = card.querySelector("#lifetime-pages-insight");
+}
+
 function renderReadingInsights() {
+  ensureLifetimePagesCard();
   const accountLog = ownedByCurrent(readingLog);
   const sessionCount = accountLog.length;
   const totalMinutes = accountLog.reduce(
@@ -2906,6 +2956,7 @@ function renderReadingInsights() {
     (total, entry) => total + entry.pagesRead,
     0,
   );
+  const lifetimePages = lifetimePagesReadFrom(accountLog);
   const weeklyDays = getLastSevenDays();
   const weeklyDates = new Set(weeklyDays.map((day) => day.date));
   const weeklyEntries = accountLog.filter((entry) =>
@@ -2982,6 +3033,9 @@ function renderReadingInsights() {
   elements.pagesInsight.textContent = totalPages.toLocaleString();
   elements.pagesWeekInsight.textContent =
     `${weeklyPages.toLocaleString()} in the last 7 days`;
+  if (elements.lifetimePagesInsight) {
+    elements.lifetimePagesInsight.textContent = lifetimePages.toLocaleString();
+  }
   elements.paceInsight.textContent = pace ? `${pace} p/h` : "--";
   elements.averageInsight.textContent = averageMinutes
     ? formatDuration(averageMinutes)
