@@ -1998,8 +1998,13 @@ function bookFormatLabel(format) {
 }
 
 function parsePageNumber(value) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  if (/^\d+$/.test(text)) {
+    const parsed = Number(text);
+    return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+  }
+  return romanToNumber(text);
 }
 
 function romanToNumber(value) {
@@ -3129,6 +3134,17 @@ function ensureReadingLogEnhancements() {
   [elements.pagesReadInput, elements.startPageInput, elements.endPageInput, elements.continuePageInput]
     .filter(Boolean)
     .forEach((input) => input.removeAttribute("required"));
+  [
+    { input: elements.startPageInput, placeholder: "1 or x" },
+    { input: elements.endPageInput, placeholder: "25 or xiii" },
+  ].forEach(({ input, placeholder }) => {
+    if (!input) return;
+    input.type = "text";
+    input.inputMode = "text";
+    input.placeholder = placeholder;
+    input.removeAttribute("min");
+    input.removeAttribute("step");
+  });
 }
 
 function chartColor(index) {
@@ -3582,9 +3598,18 @@ function updateLogBookOptions() {
 function renderLogEntry(entry) {
   const pagesRead = Number(entry.pagesRead) || 0;
   const pace = Math.round((pagesRead / entry.durationMinutes) * 60);
+  const startLabel = entry.startPageLabel || entry.startPage;
+  const endLabel = entry.endPageLabel || entry.endPage;
+  const continueLabel =
+    entry.continuePageLabel || entry.continuePage || (entry.endPage ? entry.endPage + 1 : "");
+  const hasRange = Boolean(startLabel && endLabel);
   const pageDetail = entry.specificPages
     ? `Specific pages: ${escapeHtml(entry.specificPages)}`
-    : `Pages ${entry.startPage}-${entry.endPage}; continue at ${entry.continuePage ?? entry.endPage + 1}`;
+    : hasRange
+    ? `Pages ${escapeHtml(startLabel)}-${escapeHtml(endLabel)}${
+        continueLabel ? `; continue at ${escapeHtml(continueLabel)}` : ""
+      }`
+    : "Page range not specified";
   return `
     <article class="log-entry">
       <div class="log-book">
@@ -3690,8 +3715,8 @@ function suggestPagesRead() {
     }
     return;
   }
-  const startPage = Number(elements.startPageInput.value);
-  const endPage = Number(elements.endPageInput.value);
+  const startPage = parsePageNumber(elements.startPageInput.value);
+  const endPage = parsePageNumber(elements.endPageInput.value);
   if (
     elements.startPageInput.value &&
     elements.endPageInput.value &&
@@ -3731,9 +3756,12 @@ function updateCollectionProgressFromReadingSession(entry) {
 function addReadingSession(formData) {
   const durationMinutes = updateDurationPreview();
   const exactPages = parseSpecificPages(formData.get("specificPages"));
-  const startPage = parsePageNumber(formData.get("startPage"));
-  const endPage = parsePageNumber(formData.get("endPage"));
-  const continuePage = parsePageNumber(formData.get("continuePage"));
+  const rawStartPage = String(formData.get("startPage") || "").trim();
+  const rawEndPage = String(formData.get("endPage") || "").trim();
+  const rawContinuePage = String(formData.get("continuePage") || "").trim();
+  const startPage = parsePageNumber(rawStartPage);
+  const endPage = parsePageNumber(rawEndPage);
+  const continuePage = parsePageNumber(rawContinuePage);
   const pagesFromRange = startPage && endPage && endPage >= startPage
     ? endPage - startPage + 1
     : 0;
@@ -3772,8 +3800,11 @@ function addReadingSession(formData) {
     specificPages: exactPages.display,
     highestPageRead: exactPages.highestNumericPage || endPage || 0,
     startPage,
+    startPageLabel: rawStartPage,
     endPage,
+    endPageLabel: rawEndPage,
     continuePage,
+    continuePageLabel: rawContinuePage,
     date: formData.get("date"),
     startTime: formData.get("startTime"),
     endTime: formData.get("endTime"),
