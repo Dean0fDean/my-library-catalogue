@@ -178,6 +178,7 @@ const elements = {
   logTitleInput: document.querySelector("#log-title-input"),
   logAuthorInput: document.querySelector("#log-author-input"),
   pagesReadInput: document.querySelector("#pages-read-input"),
+  specificPagesInput: document.querySelector("#specific-pages-input"),
   startPageInput: document.querySelector("#start-page-input"),
   endPageInput: document.querySelector("#end-page-input"),
   continuePageInput: document.querySelector("#continue-page-input"),
@@ -204,6 +205,8 @@ const elements = {
   activeDaysDetail: document.querySelector("#active-days-detail"),
   projectedPagesInsight: document.querySelector("#projected-pages-insight"),
   readingDeepInsights: document.querySelector("#reading-deep-insights"),
+  readingChartPanel: document.querySelector("#reading-chart-panel"),
+  generateReadingChartsButton: document.querySelector("#generate-reading-charts"),
   weeklyChart: document.querySelector("#weekly-chart"),
   weeklyTotal: document.querySelector("#weekly-total"),
   habitTitle: document.querySelector("#habit-title"),
@@ -675,6 +678,7 @@ let catalogueExpanded = false;
 let readerCatalogueExpanded = false;
 let highlightedCollectionBookId = "";
 let highlightedCollectionBookTimer;
+let readingChartsVisible = false;
 const CATALOGUE_PREVIEW_LIMIT = 8;
 
 async function apiRequest(action, options = {}) {
@@ -1082,7 +1086,7 @@ function readingSnapshot() {
 
 function listedDreamSymbols(value) {
   return String(value || "")
-    .replace(/[â€¢Â·]/g, ",")
+    .replace(/[•·]/g, ",")
     .split(/[,;\n|]+/)
     .map((symbol) => symbol.trim())
     .filter(Boolean);
@@ -1898,7 +1902,7 @@ function showBookshelfDetails(book, code) {
   elements.bookshelfDetailCode.textContent = code;
   elements.bookshelfDetailTitle.textContent = book.title;
   elements.bookshelfDetailMeta.textContent =
-    `${book.author} Â· ${book.genre || "Uncategorized"} Â· ${bookStatusLabel(book.status)}`;
+    `${book.author} · ${book.genre || "Uncategorized"} · ${bookStatusLabel(book.status)}`;
   elements.bookshelfDetails.classList.add("active");
 }
 
@@ -1998,6 +2002,94 @@ function parsePageNumber(value) {
   return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
 }
 
+function romanToNumber(value) {
+  const numerals = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
+  const text = String(value || "").trim().toLocaleLowerCase();
+  if (!/^[ivxlcdm]+$/.test(text)) return 0;
+  let total = 0;
+  let previous = 0;
+  for (let index = text.length - 1; index >= 0; index -= 1) {
+    const current = numerals[text[index]];
+    if (!current) return 0;
+    total += current < previous ? -current : current;
+    previous = Math.max(previous, current);
+  }
+  return total > 0 ? total : 0;
+}
+
+function parseSpecificPageToken(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+  const numeric = parsePageNumber(text);
+  if (/^\d+$/.test(text)) {
+    return { key: `n:${numeric}`, label: String(numeric), numeric };
+  }
+  const roman = romanToNumber(text);
+  if (roman) {
+    return { key: `r:${roman}`, label: text, numeric: 0 };
+  }
+  return { key: `t:${normalize(text)}`, label: text, numeric: 0 };
+}
+
+function pageRangeTokens(startToken, endToken) {
+  const start = parseSpecificPageToken(startToken);
+  const end = parseSpecificPageToken(endToken);
+  if (!start || !end) return [];
+  const startNumber = /^\d+$/.test(String(startToken).trim())
+    ? start.numeric
+    : romanToNumber(startToken);
+  const endNumber = /^\d+$/.test(String(endToken).trim())
+    ? end.numeric
+    : romanToNumber(endToken);
+  const sameType =
+    (/^\d+$/.test(String(startToken).trim()) &&
+      /^\d+$/.test(String(endToken).trim())) ||
+    (romanToNumber(startToken) && romanToNumber(endToken));
+  if (!sameType || !startNumber || !endNumber || endNumber < startNumber) {
+    return [start, end];
+  }
+  const rangeSize = Math.min(endNumber - startNumber + 1, 1000);
+  return Array.from({ length: rangeSize }, (_, index) => {
+    const value = startNumber + index;
+    const isNumeric = /^\d+$/.test(String(startToken).trim());
+    return {
+      key: `${isNumeric ? "n" : "r"}:${value}`,
+      label: isNumeric ? String(value) : `${startToken}-${endToken}`,
+      numeric: isNumeric ? value : 0,
+    };
+  });
+}
+
+function parseSpecificPages(value) {
+  const pages = new Map();
+  String(value || "")
+    .split(/[,;\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((item) => {
+      const rangeParts = item.split(/\s*[-–—]\s*/);
+      const tokens =
+        rangeParts.length === 2
+          ? pageRangeTokens(rangeParts[0], rangeParts[1])
+          : [parseSpecificPageToken(item)].filter(Boolean);
+      tokens.forEach((token) => {
+        if (!pages.has(token.key)) pages.set(token.key, token);
+      });
+    });
+  const entries = [...pages.values()];
+  const numericPages = entries
+    .map((item) => item.numeric)
+    .filter((page) => page > 0)
+    .sort((a, b) => a - b);
+  return {
+    count: entries.length,
+    display: String(value || "").trim(),
+    numericPages,
+    firstNumericPage: numericPages[0] || 0,
+    highestNumericPage: numericPages[numericPages.length - 1] || 0,
+  };
+}
+
 function normalizeBookPages(book, status = book?.status || "unread") {
   const firstPage = parsePageNumber(book?.firstPage);
   const lastPage = parsePageNumber(book?.lastPage);
@@ -2014,6 +2106,8 @@ function normalizeBookPages(book, status = book?.status || "unread") {
 function loggedPageReached(entry) {
   const endPage = parsePageNumber(entry?.endPage);
   if (endPage) return endPage;
+  const highestPageRead = parsePageNumber(entry?.highestPageRead);
+  if (highestPageRead) return highestPageRead;
   const continuePage = parsePageNumber(entry?.continuePage);
   if (continuePage > 1) return continuePage - 1;
   const startPage = parsePageNumber(entry?.startPage);
@@ -2944,8 +3038,273 @@ function ensureLifetimePagesCard() {
   elements.lifetimePagesInsight = card.querySelector("#lifetime-pages-insight");
 }
 
-function renderReadingInsights() {
+function ensureSpecificPagesField() {
+  if (elements.specificPagesInput) return;
+  const continueLabel = elements.continuePageInput?.closest("label");
+  if (!continueLabel) return;
+  const wrapper = document.createElement("label");
+  wrapper.className = "specific-pages-field";
+  wrapper.innerHTML = `
+    <span>Specific pages read (optional)</span>
+    <textarea
+      id="specific-pages-input"
+      name="specificPages"
+      rows="3"
+      placeholder="For example: x, xiii, 1, 2, 3 or 45-52"
+    ></textarea>
+    <small class="field-help">Use this for front matter, skipped pages, rereading, or non-contiguous pages.</small>
+  `;
+  continueLabel.insertAdjacentElement("afterend", wrapper);
+  elements.specificPagesInput = wrapper.querySelector("#specific-pages-input");
+  elements.specificPagesInput.addEventListener("input", suggestPagesRead);
+}
+
+function ensureReadingChartPanel() {
+  if (!elements.generateReadingChartsButton) {
+    const heading = document.querySelector("#reading-log .section-heading");
+    if (heading) {
+      const button = document.createElement("button");
+      button.className = "primary-button light-button reading-chart-toggle";
+      button.id = "generate-reading-charts";
+      button.type = "button";
+      button.textContent = "Generate charts";
+      heading.appendChild(button);
+      elements.generateReadingChartsButton = button;
+      button.addEventListener("click", () => {
+        readingChartsVisible = !readingChartsVisible;
+        renderReadingInsights();
+      });
+    }
+  }
+  if (elements.readingChartPanel) return;
+  const insights = elements.readingDeepInsights;
+  if (!insights) return;
+  const panel = document.createElement("div");
+  panel.id = "reading-chart-panel";
+  panel.className = "reading-chart-panel";
+  panel.hidden = true;
+  insights.insertAdjacentElement("afterend", panel);
+  elements.readingChartPanel = panel;
+}
+
+function ensureReadingEnhancementStyles() {
+  if (document.querySelector("#reading-enhancement-styles")) return;
+  const style = document.createElement("style");
+  style.id = "reading-enhancement-styles";
+  style.textContent = `
+    .specific-pages-field{padding:1rem;background:rgba(201,137,69,.08);border:1px solid rgba(23,42,34,.12)}
+    #log-form textarea{width:100%;min-height:96px;padding:.85rem .9rem 0;color:var(--ink);background:rgba(255,255,255,.45);border:1px solid rgba(23,42,34,.25);border-radius:2px;line-height:1.45;resize:vertical}
+    #log-form textarea::placeholder{color:rgba(23,42,34,.48);font-style:italic}
+    .reading-chart-toggle{flex:0 0 auto}
+    .reading-chart-panel{margin:-1.4rem 0 3rem;padding:clamp(1rem,3vw,1.5rem);background:rgba(244,240,231,.08);border:1px solid rgba(244,240,231,.16)}
+    .reading-chart-panel[hidden]{display:none}
+    .reading-chart-heading{display:grid;grid-template-columns:minmax(0,.9fr) minmax(260px,1.1fr);gap:1.25rem;align-items:end;margin-bottom:1.2rem}
+    .reading-chart-heading h3{margin:0;color:var(--paper);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:400}
+    .reading-chart-heading p:last-child{margin:0;color:rgba(244,240,231,.72);line-height:1.55}
+    .reading-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+    .reading-chart-card{min-height:260px;padding:1.2rem;background:rgba(8,29,22,.34);border:1px solid rgba(244,240,231,.14)}
+    .reading-chart-card.wide{min-height:auto}
+    .reading-chart-card h4{margin:0 0 1rem;color:var(--paper);font-size:1.2rem;font-weight:400}
+    .reading-chart-card p{color:rgba(244,240,231,.68)}
+    .pie-chart{width:min(180px,56vw);aspect-ratio:1;margin:0 auto 1rem;border:10px solid rgba(244,240,231,.08);border-radius:50%;box-shadow:inset 0 0 0 28px rgba(8,29,22,.34)}
+    .chart-legend,.reading-bar-chart{display:grid;gap:.55rem;padding:0;margin:0;list-style:none}
+    .chart-legend li,.reading-bar-chart li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.55rem;color:rgba(244,240,231,.72);font-size:.8rem}
+    .chart-legend li>span{width:.72rem;height:.72rem;background:var(--swatch);border-radius:50%}
+    .chart-legend strong,.reading-bar-chart span{overflow:hidden;color:var(--paper);font-weight:400;text-overflow:ellipsis;white-space:nowrap}
+    .chart-legend small,.reading-bar-chart small{color:rgba(244,240,231,.58)}
+    .reading-bar-chart li{grid-template-columns:minmax(90px,.8fr) minmax(120px,1.2fr) auto}
+    .reading-bar-chart div{height:.62rem;overflow:hidden;background:rgba(244,240,231,.12);border-radius:999px}
+    .reading-bar-chart b{height:100%;display:block;border-radius:inherit}
+    @media(max-width:800px){.reading-chart-heading,.reading-chart-grid{grid-template-columns:1fr}}
+    @media(max-width:540px){.reading-bar-chart li{grid-template-columns:1fr;align-items:start}}
+  `;
+  document.head.appendChild(style);
+}
+
+function ensureReadingLogEnhancements() {
+  ensureReadingEnhancementStyles();
+  ensureSpecificPagesField();
   ensureLifetimePagesCard();
+  ensureReadingChartPanel();
+  [elements.pagesReadInput, elements.startPageInput, elements.endPageInput, elements.continuePageInput]
+    .filter(Boolean)
+    .forEach((input) => input.removeAttribute("required"));
+}
+
+function chartColor(index) {
+  return [
+    "#d5a744",
+    "#ad5f45",
+    "#8da071",
+    "#7393b3",
+    "#b86f52",
+    "#a982b5",
+    "#54a7a2",
+  ][index % 7];
+}
+
+function sortedTotals(totals) {
+  return Object.entries(totals)
+    .filter(([, value]) => value > 0)
+    .sort((first, second) => second[1] - first[1]);
+}
+
+function renderPieChart(totals, label) {
+  const entries = sortedTotals(totals);
+  const total = entries.reduce((sum, [, value]) => sum + value, 0);
+  if (!total) {
+    return `<article class="reading-chart-card"><h4>${escapeHtml(label)}</h4><p>No chart data yet.</p></article>`;
+  }
+  let cursor = 0;
+  const segments = entries
+    .map(([name, value], index) => {
+      const start = cursor;
+      cursor += (value / total) * 100;
+      return `${chartColor(index)} ${start}% ${cursor}%`;
+    })
+    .join(", ");
+  const legend = entries
+    .map(
+      ([name, value], index) => `
+        <li>
+          <span style="--swatch:${chartColor(index)}"></span>
+          <strong>${escapeHtml(name)}</strong>
+          <small>${Math.round((value / total) * 100)}%</small>
+        </li>
+      `,
+    )
+    .join("");
+  return `
+    <article class="reading-chart-card">
+      <h4>${escapeHtml(label)}</h4>
+      <div class="pie-chart" style="background: conic-gradient(${segments})" role="img" aria-label="${escapeHtml(label)} pie chart"></div>
+      <ul class="chart-legend">${legend}</ul>
+    </article>
+  `;
+}
+
+function renderBarChart(totals, label, unit = "pages") {
+  const entries = sortedTotals(totals).slice(0, 6);
+  const maximum = Math.max(...entries.map(([, value]) => value), 1);
+  const rows = entries.length
+    ? entries
+        .map(
+          ([name, value], index) => `
+            <li>
+              <span>${escapeHtml(name)}</span>
+              <div><b style="width:${Math.max(6, (value / maximum) * 100)}%; background:${chartColor(index)}"></b></div>
+              <small>${value.toLocaleString()} ${unit}</small>
+            </li>
+          `,
+        )
+        .join("")
+    : "<li>No chart data yet.</li>";
+  return `
+    <article class="reading-chart-card wide">
+      <h4>${escapeHtml(label)}</h4>
+      <ul class="reading-bar-chart">${rows}</ul>
+    </article>
+  `;
+}
+
+function bookForLogEntry(entry) {
+  const titleKey = normalize(entry.title);
+  const authorKey = normalize(entry.author);
+  return booksFor(currentAccount?.id).find((book) => {
+    const sameTitle = normalize(book.title) === titleKey;
+    const sameAuthor = !authorKey || !normalize(book.author) || normalize(book.author) === authorKey;
+    return sameTitle && sameAuthor;
+  });
+}
+
+function readingSuggestion({
+  sessionCount,
+  activeDays,
+  averageMinutes,
+  averagePages,
+  pace,
+  recentPages,
+  favoritePeriod,
+  strongestWeekday,
+}) {
+  if (!sessionCount) {
+    return "Start with three short sessions this week. A small baseline makes later patterns much easier to see.";
+  }
+  if (activeDays < 4) {
+    return "Your recent reading is concentrated into a few days. Try scheduling one shorter extra session on a quiet day to make the habit steadier.";
+  }
+  if (averageMinutes > 75 && averagePages < 20) {
+    return "Your sessions are long but page totals are modest. That may mean dense reading; consider logging quick reflections so slower sessions still show their value.";
+  }
+  if (pace >= 45) {
+    return "Your pace is strong. Use that momentum for lighter books, and reserve slower time for books that need annotation or rereading.";
+  }
+  if (recentPages > 0 && recentPages < 60) {
+    return "Your recent page count is gentle. A realistic next target is adding 10-15 pages to your weekly total.";
+  }
+  return `Your best pattern is ${favoritePeriod}${strongestWeekday ? `, especially around ${strongestWeekday[0]}` : ""}. Protecting that window is likely to help most.`;
+}
+
+function renderReadingCharts({
+  accountLog,
+  byBook,
+  periodMinutes,
+  weekdayTotals,
+  sessionCount,
+  activeDays,
+  averageMinutes,
+  averagePages,
+  pace,
+  recentPages,
+  favoritePeriod,
+  strongestWeekday,
+}) {
+  if (!elements.readingChartPanel) return;
+  elements.readingChartPanel.hidden = !readingChartsVisible;
+  if (elements.generateReadingChartsButton) {
+    elements.generateReadingChartsButton.textContent = readingChartsVisible
+      ? "Hide charts"
+      : "Generate charts";
+  }
+  if (!readingChartsVisible) return;
+  const pagesByBook = Object.values(byBook).reduce((totals, book) => {
+    totals[book.title] = (totals[book.title] || 0) + book.pages;
+    return totals;
+  }, {});
+  const pagesByGenre = accountLog.reduce((totals, entry) => {
+    const book = bookForLogEntry(entry);
+    const genre = book?.genre || "Unmatched log entries";
+    totals[genre] = (totals[genre] || 0) + (Number(entry.pagesRead) || 0);
+    return totals;
+  }, {});
+  elements.readingChartPanel.innerHTML = `
+    <div class="reading-chart-heading">
+      <div>
+        <p class="eyebrow">VISUAL PATTERNS</p>
+        <h3>Reading charts and suggestions</h3>
+      </div>
+      <p>${escapeHtml(readingSuggestion({
+        sessionCount,
+        activeDays,
+        averageMinutes,
+        averagePages,
+        pace,
+        recentPages,
+        favoritePeriod,
+        strongestWeekday,
+      }))}</p>
+    </div>
+    <div class="reading-chart-grid">
+      ${renderPieChart(periodMinutes, "Time of day")}
+      ${renderPieChart(weekdayTotals, "Weekday rhythm")}
+      ${renderBarChart(pagesByBook, "Top books by pages")}
+      ${renderBarChart(pagesByGenre, "Pages by genre")}
+    </div>
+  `;
+}
+
+function renderReadingInsights() {
+  ensureReadingLogEnhancements();
   const accountLog = ownedByCurrent(readingLog);
   const sessionCount = accountLog.length;
   const totalMinutes = accountLog.reduce(
@@ -3025,6 +3384,11 @@ function renderReadingInsights() {
   const shortestSession = sessionCount
     ? Math.min(...accountLog.map((entry) => Number(entry.durationMinutes) || 0))
     : 0;
+  const periodMinutes = accountLog.reduce((counts, entry) => {
+    const period = getTimePeriod(entry.startTime);
+    counts[period] = (counts[period] || 0) + entry.durationMinutes;
+    return counts;
+  }, {});
 
   elements.totalTimeInsight.textContent = formatDuration(totalMinutes);
   elements.sessionCountInsight.textContent = sessionCount
@@ -3091,23 +3455,60 @@ function renderReadingInsights() {
       "Log a few reading sessions to learn when you read most and how your pace changes over time.";
     elements.readingDeepInsights.innerHTML =
       '<p class="reading-deep-empty">Detailed comparisons will appear after your first reading session.</p>';
+    renderReadingCharts({
+      accountLog,
+      byBook,
+      periodMinutes,
+      weekdayTotals,
+      sessionCount,
+      activeDays,
+      averageMinutes,
+      averagePages,
+      pace,
+      recentPages,
+      favoritePeriod: "",
+      strongestWeekday,
+    });
     return;
   }
 
-  const periodMinutes = accountLog.reduce((counts, entry) => {
-    const period = getTimePeriod(entry.startTime);
-    counts[period] = (counts[period] || 0) + entry.durationMinutes;
-    return counts;
-  }, {});
   const favoritePeriod = Object.entries(periodMinutes).sort(
     (a, b) => b[1] - a[1],
   )[0][0];
+  const uniqueBookCount = Object.keys(byBook).length;
+  const dominantBookShare = topBook && totalPages
+    ? Math.round((topBook.pages / totalPages) * 100)
+    : 0;
+  const pagesPerActiveDay = activeDays
+    ? Math.round(recentPages / activeDays)
+    : 0;
+  const bestPaceEntry = accountLog
+    .filter((entry) => Number(entry.durationMinutes) > 0)
+    .map((entry) => ({
+      ...entry,
+      pace: Math.round(((Number(entry.pagesRead) || 0) / entry.durationMinutes) * 60),
+    }))
+    .sort((first, second) => second.pace - first.pace)[0];
   elements.habitTitle.textContent = `You read most ${favoritePeriod}.`;
   elements.habitMessage.textContent =
     `Your average session is ${formatDuration(averageMinutes)}, and your longest is ${formatDuration(longestSession)}. ` +
     (streak > 1
       ? `You are on a ${streak}-day streak; protecting that time can help the habit stick.`
       : "A regular reading window can help turn individual sessions into a lasting habit.");
+  renderReadingCharts({
+    accountLog,
+    byBook,
+    periodMinutes,
+    weekdayTotals,
+    sessionCount,
+    activeDays,
+    averageMinutes,
+    averagePages,
+    pace,
+    recentPages,
+    favoritePeriod,
+    strongestWeekday,
+  });
   elements.readingDeepInsights.innerHTML = `
     <article>
       <span>Strongest weekday</span>
@@ -3128,6 +3529,26 @@ function renderReadingInsights() {
       <span>Recent pace</span>
       <strong>${recentMinutes ? `${Math.round((recentPages / recentMinutes) * 60)} p/h` : "--"}</strong>
       <p>Calculated from the last 30 days rather than your lifetime average.</p>
+    </article>
+    <article>
+      <span>Book variety</span>
+      <strong>${uniqueBookCount}</strong>
+      <p>${uniqueBookCount === 1 ? "All logged sessions are focused on one book." : `Your sessions are spread across ${uniqueBookCount} books.`}</p>
+    </article>
+    <article>
+      <span>Reading concentration</span>
+      <strong>${dominantBookShare ? `${dominantBookShare}%` : "--"}</strong>
+      <p>${topBook ? `Share of logged pages coming from ${escapeHtml(topBook.title)}.` : "Log pages to reveal concentration."}</p>
+    </article>
+    <article>
+      <span>Pages per active day</span>
+      <strong>${pagesPerActiveDay || "--"}</strong>
+      <p>Average pages on days when you actually logged a session in the last 30 days.</p>
+    </article>
+    <article>
+      <span>Fastest logged pace</span>
+      <strong>${bestPaceEntry ? `${bestPaceEntry.pace} p/h` : "--"}</strong>
+      <p>${bestPaceEntry ? `${escapeHtml(bestPaceEntry.title)} on ${formatDate(bestPaceEntry.date)}.` : "More sessions will reveal your fastest pace."}</p>
     </article>
   `;
 }
@@ -3159,7 +3580,11 @@ function updateLogBookOptions() {
 }
 
 function renderLogEntry(entry) {
-  const pace = Math.round((entry.pagesRead / entry.durationMinutes) * 60);
+  const pagesRead = Number(entry.pagesRead) || 0;
+  const pace = Math.round((pagesRead / entry.durationMinutes) * 60);
+  const pageDetail = entry.specificPages
+    ? `Specific pages: ${escapeHtml(entry.specificPages)}`
+    : `Pages ${entry.startPage}-${entry.endPage}; continue at ${entry.continuePage ?? entry.endPage + 1}`;
   return `
     <article class="log-entry">
       <div class="log-book">
@@ -3167,8 +3592,8 @@ function renderLogEntry(entry) {
         <p>${escapeHtml(entry.author)} / ${formatDate(entry.date)}</p>
       </div>
       <div class="log-metric">
-        <strong>${entry.pagesRead} pages</strong>
-        <small>Pages ${entry.startPage}-${entry.endPage}; continue at ${entry.continuePage ?? entry.endPage + 1}</small>
+        <strong>${pagesRead} pages</strong>
+        <small>${pageDetail}</small>
       </div>
       <div class="log-metric">
         <strong>${formatDuration(entry.durationMinutes)}</strong>
@@ -3223,6 +3648,7 @@ function setDefaultLogValues() {
 
 function openLogForm() {
   elements.logForm.reset();
+  ensureReadingLogEnhancements();
   setDefaultLogValues();
   updateDurationPreview();
   elements.logDialog.showModal();
@@ -3250,6 +3676,20 @@ function fillAuthorFromCollection() {
 }
 
 function suggestPagesRead() {
+  const specific = parseSpecificPages(elements.specificPagesInput?.value || "");
+  if (specific.count) {
+    elements.pagesReadInput.value = specific.count;
+    if (!elements.startPageInput.value && specific.firstNumericPage) {
+      elements.startPageInput.value = specific.firstNumericPage;
+    }
+    if (!elements.endPageInput.value && specific.highestNumericPage) {
+      elements.endPageInput.value = specific.highestNumericPage;
+    }
+    if (!elements.continuePageInput.value && specific.highestNumericPage) {
+      elements.continuePageInput.value = specific.highestNumericPage + 1;
+    }
+    return;
+  }
   const startPage = Number(elements.startPageInput.value);
   const endPage = Number(elements.endPageInput.value);
   if (
@@ -3271,7 +3711,7 @@ function updateCollectionProgressFromReadingSession(entry) {
     return sameTitle && sameAuthor;
   });
   if (!book) return;
-  const endPage = parsePageNumber(entry.endPage);
+  const endPage = loggedPageReached(entry);
   const startPage = parsePageNumber(entry.startPage);
   if (!endPage) return;
   if (!book.firstPage && startPage) book.firstPage = startPage;
@@ -3290,11 +3730,24 @@ function updateCollectionProgressFromReadingSession(entry) {
 
 function addReadingSession(formData) {
   const durationMinutes = updateDurationPreview();
-  const startPage = Number(formData.get("startPage"));
-  const endPage = Number(formData.get("endPage"));
-  const continuePage = Number(formData.get("continuePage"));
+  const exactPages = parseSpecificPages(formData.get("specificPages"));
+  const startPage = parsePageNumber(formData.get("startPage"));
+  const endPage = parsePageNumber(formData.get("endPage"));
+  const continuePage = parsePageNumber(formData.get("continuePage"));
+  const pagesFromRange = startPage && endPage && endPage >= startPage
+    ? endPage - startPage + 1
+    : 0;
+  const pagesRead = exactPages.count || Number(formData.get("pagesRead")) || pagesFromRange;
   if (!durationMinutes) return;
-  if (endPage < startPage) {
+  elements.pagesReadInput.setCustomValidity("");
+  if (!pagesRead) {
+    elements.pagesReadInput.setCustomValidity(
+      "Enter the number of pages read, a page range, or specific pages read.",
+    );
+    elements.pagesReadInput.reportValidity();
+    return;
+  }
+  if (startPage && endPage && endPage < startPage) {
     elements.endPageInput.setCustomValidity(
       "The finishing page cannot be before the starting page.",
     );
@@ -3302,7 +3755,7 @@ function addReadingSession(formData) {
     return;
   }
   elements.endPageInput.setCustomValidity("");
-  if (continuePage < endPage) {
+  if (continuePage && endPage && continuePage < endPage) {
     elements.continuePageInput.setCustomValidity(
       "The continuation page cannot be before the finishing page.",
     );
@@ -3315,7 +3768,9 @@ function addReadingSession(formData) {
     id: crypto.randomUUID(),
     title: formData.get("title").trim(),
     author: formData.get("author").trim(),
-    pagesRead: Number(formData.get("pagesRead")),
+    pagesRead,
+    specificPages: exactPages.display,
+    highestPageRead: exactPages.highestNumericPage || endPage || 0,
     startPage,
     endPage,
     continuePage,
@@ -6423,7 +6878,7 @@ function openDreamAnalysis(dreamId) {
   elements.dreamAnalysisForm.reset();
   elements.dreamAnalysisId.value = dream.id;
   elements.dreamAnalysisSummary.textContent =
-    `"${dream.title}" â€” ${dreamDateLabel(dream.dreamDate)}`;
+    `"${dream.title}" — ${dreamDateLabel(dream.dreamDate)}`;
   elements.dreamAnalysisDialog.showModal();
 }
 
@@ -7994,7 +8449,7 @@ function renderReaderCatalogueLegacy() {
                   ${book.status === "read" ? "Read" : book.status === "reading" ? "Busy reading" : "To be read"}
                 </span>
                 <span class="reader-book-rating" aria-label="${rating ? `${rating} out of 5 stars` : "Not rated"}">
-                  ${rating ? `${"â˜…".repeat(rating)}${"â˜†".repeat(5 - rating)}` : "Not rated"}
+                  ${rating ? `${"★".repeat(rating)}${"☆".repeat(5 - rating)}` : "Not rated"}
                 </span>
               </div>
             </article>
@@ -9200,6 +9655,11 @@ elements.catalogueExpandButton.addEventListener("click", () => {
 });
 elements.logBookFilter.addEventListener("change", renderReadingLog);
 elements.logTitleInput.addEventListener("input", fillAuthorFromCollection);
+elements.generateReadingChartsButton?.addEventListener("click", () => {
+  readingChartsVisible = !readingChartsVisible;
+  renderReadingInsights();
+});
+elements.specificPagesInput?.addEventListener("input", suggestPagesRead);
 elements.startPageInput.addEventListener("input", suggestPagesRead);
 elements.endPageInput.addEventListener("input", suggestPagesRead);
 elements.startTimeInput.addEventListener("input", updateDurationPreview);
