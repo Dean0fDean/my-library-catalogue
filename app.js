@@ -2016,6 +2016,35 @@ function romanToNumber(value) {
   return total > 0 ? total : 0;
 }
 
+function numberToRoman(value) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number <= 0 || number > 3999) return "";
+  const numerals = [
+    [1000, "m"],
+    [900, "cm"],
+    [500, "d"],
+    [400, "cd"],
+    [100, "c"],
+    [90, "xc"],
+    [50, "l"],
+    [40, "xl"],
+    [10, "x"],
+    [9, "ix"],
+    [5, "v"],
+    [4, "iv"],
+    [1, "i"],
+  ];
+  let remaining = number;
+  let result = "";
+  numerals.forEach(([amount, numeral]) => {
+    while (remaining >= amount) {
+      result += numeral;
+      remaining -= amount;
+    }
+  });
+  return result;
+}
+
 function parsePageReference(value) {
   const raw = String(value || "").trim();
   if (!raw) return { raw, number: 0, isValid: true, isEmpty: true, label: "" };
@@ -2039,6 +2068,61 @@ function parsePageReference(value) {
     label: raw,
     kind: roman > 0 ? "roman" : "invalid",
   };
+}
+
+function countPagesBetweenReferences(startRef, endRef) {
+  if (
+    !startRef?.isValid ||
+    !endRef?.isValid ||
+    startRef.isEmpty ||
+    endRef.isEmpty ||
+    !startRef.number ||
+    !endRef.number
+  ) {
+    return 0;
+  }
+  if (startRef.kind === endRef.kind) {
+    return endRef.number >= startRef.number
+      ? endRef.number - startRef.number + 1
+      : 0;
+  }
+  if (startRef.kind === "roman" && endRef.kind === "numeric") {
+    return endRef.number + 1;
+  }
+  return 0;
+}
+
+function isPageRangeOrderValid(startRef, endRef) {
+  if (
+    !startRef?.isValid ||
+    !endRef?.isValid ||
+    startRef.isEmpty ||
+    endRef.isEmpty
+  ) {
+    return true;
+  }
+  if (startRef.kind === endRef.kind) return endRef.number >= startRef.number;
+  return startRef.kind === "roman" && endRef.kind === "numeric";
+}
+
+function isContinueBeforeFinish(endRef, continueRef) {
+  if (
+    !endRef?.isValid ||
+    !continueRef?.isValid ||
+    endRef.isEmpty ||
+    continueRef.isEmpty
+  ) {
+    return false;
+  }
+  if (endRef.kind === continueRef.kind) return continueRef.number < endRef.number;
+  return endRef.kind === "numeric" && continueRef.kind === "roman";
+}
+
+function suggestedContinuePage(endRef) {
+  if (!endRef?.isValid || endRef.isEmpty || !endRef.number) return "";
+  return endRef.kind === "roman"
+    ? numberToRoman(endRef.number + 1)
+    : String(endRef.number + 1);
 }
 
 function parseSpecificPageToken(value) {
@@ -3941,15 +4025,15 @@ function suggestPagesRead() {
   const startPageRef = parsePageReference(elements.startPageInput.value);
   const endPageRef = parsePageReference(elements.endPageInput.value);
   if (!startPageRef.isValid || !endPageRef.isValid) return;
-  const startPage = startPageRef.number;
-  const endPage = endPageRef.number;
+  const pagesFromRange = countPagesBetweenReferences(startPageRef, endPageRef);
   if (
     elements.startPageInput.value &&
     elements.endPageInput.value &&
-    endPage >= startPage
+    pagesFromRange
   ) {
-    elements.pagesReadInput.value = endPage - startPage + 1;
-    elements.continuePageInput.value = endPage + 1;
+    elements.pagesReadInput.value = pagesFromRange;
+    const continuePage = suggestedContinuePage(endPageRef);
+    if (continuePage) elements.continuePageInput.value = continuePage;
   }
 }
 
@@ -3991,9 +4075,7 @@ function addReadingSession(formData) {
   const startPage = startPageRef.number;
   const endPage = endPageRef.number;
   const continuePage = continuePageRef.number;
-  const pagesFromRange = startPage && endPage && endPage >= startPage
-    ? endPage - startPage + 1
-    : 0;
+  const pagesFromRange = countPagesBetweenReferences(startPageRef, endPageRef);
   const pagesRead = exactPages.count || Number(formData.get("pagesRead")) || pagesFromRange;
   if (!durationMinutes) return;
   elements.pagesReadInput.setCustomValidity("");
@@ -4028,15 +4110,15 @@ function addReadingSession(formData) {
     elements.pagesReadInput.reportValidity();
     return;
   }
-  if (startPage && endPage && endPage < startPage) {
+  if (!isPageRangeOrderValid(startPageRef, endPageRef)) {
     elements.endPageInput.setCustomValidity(
-      "The finishing page cannot be before the starting page.",
+      "The finishing page cannot be before the starting page. Roman front-matter pages can lead into regular page numbers, for example xiii to 3.",
     );
     elements.endPageInput.reportValidity();
     return;
   }
   elements.endPageInput.setCustomValidity("");
-  if (continuePage && endPage && continuePage < endPage) {
+  if (isContinueBeforeFinish(endPageRef, continuePageRef)) {
     elements.continuePageInput.setCustomValidity(
       "The continuation page cannot be before the finishing page.",
     );
