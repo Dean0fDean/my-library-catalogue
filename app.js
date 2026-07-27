@@ -679,6 +679,7 @@ let readerCatalogueExpanded = false;
 let highlightedCollectionBookId = "";
 let highlightedCollectionBookTimer;
 let readingChartsVisible = false;
+let readingAnalyticsRange = "recent-30";
 const CATALOGUE_PREVIEW_LIMIT = 8;
 
 async function apiRequest(action, options = {}) {
@@ -3208,7 +3209,12 @@ function ensureReadingEnhancementStyles() {
     .reading-chart-panel[hidden]{display:none}
     .reading-chart-heading{display:grid;grid-template-columns:minmax(0,.9fr) minmax(260px,1.1fr);gap:1.25rem;align-items:end;margin-bottom:1.2rem}
     .reading-chart-heading h3{margin:0;color:var(--paper);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:400}
-    .reading-chart-heading p:last-child{margin:0;color:rgba(244,240,231,.72);line-height:1.55}
+    .reading-chart-heading>div:last-child>p:first-child{margin:0;color:rgba(244,240,231,.72);line-height:1.55}
+    .reading-chart-period{margin:.4rem 0 0;color:rgba(244,240,231,.56);font-size:.82rem}
+    .reading-chart-controls{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem;align-items:end}
+    .reading-chart-controls label{display:grid;gap:.35rem;min-width:min(230px,100%)}
+    .reading-chart-controls span{color:rgba(244,240,231,.62);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase}
+    .reading-chart-controls select{min-height:42px;padding:0 .75rem;color:var(--ink);background:rgba(244,240,231,.9);border:1px solid rgba(244,240,231,.28);border-radius:2px}
     .reading-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
     .reading-chart-card{min-height:260px;padding:1.2rem;background:rgba(8,29,22,.34);border:1px solid rgba(244,240,231,.14)}
     .reading-chart-card.wide{min-height:auto}
@@ -3238,7 +3244,7 @@ function ensureReadingEnhancementStyles() {
     .reading-analytics-grid p{margin:.35rem 0 0;color:rgba(244,240,231,.62);font-size:.78rem;line-height:1.35}
     @media(max-width:900px){.reading-analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:800px){.reading-chart-heading,.reading-chart-grid{grid-template-columns:1fr}}
-    @media(max-width:540px){.reading-bar-chart li,.reading-speed-list li{grid-template-columns:1fr;align-items:start}.reading-analytics-grid{grid-template-columns:1fr}}
+    @media(max-width:540px){.reading-chart-controls,.reading-chart-controls button{width:100%}.reading-bar-chart li,.reading-speed-list li{grid-template-columns:1fr;align-items:start}.reading-analytics-grid{grid-template-columns:1fr}}
   `;
   document.head.appendChild(style);
 }
@@ -3377,6 +3383,157 @@ function medianNumber(values) {
     : Math.round((sorted[middle - 1] + sorted[middle]) / 2);
 }
 
+function readingMonthLabel(monthKey) {
+  const [year, month] = String(monthKey || "").split("-").map(Number);
+  if (!year || !month) return "Unknown month";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(year, month - 1, 1, 12));
+}
+
+function readingAnalyticsPeriodOptions(accountLog) {
+  const months = new Set();
+  const years = new Set();
+  accountLog.forEach((entry) => {
+    const date = String(entry.date || "");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      months.add(date.slice(0, 7));
+      years.add(date.slice(0, 4));
+    }
+  });
+  return [
+    { value: "recent-30", label: "Last 30 days" },
+    ...[...months]
+      .sort((first, second) => second.localeCompare(first))
+      .map((month) => ({ value: `month:${month}`, label: readingMonthLabel(month) })),
+    ...[...years]
+      .sort((first, second) => second.localeCompare(first))
+      .map((year) => ({ value: `year:${year}`, label: year })),
+    { value: "all", label: "All time" },
+  ];
+}
+
+function ensureReadingAnalyticsRange(accountLog) {
+  const options = readingAnalyticsPeriodOptions(accountLog);
+  if (!options.some((option) => option.value === readingAnalyticsRange)) {
+    readingAnalyticsRange = options[0]?.value || "recent-30";
+  }
+}
+
+function monthDays(year, monthIndex) {
+  const days = [];
+  const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+  for (let day = 1; day <= totalDays; day += 1) {
+    const date = new Date(year, monthIndex, day, 12);
+    days.push({
+      key: localDateString(date),
+      label: new Intl.DateTimeFormat(undefined, {
+        day: "numeric",
+        month: "short",
+      }).format(date),
+    });
+  }
+  return days;
+}
+
+function readingAnalyticsScope(accountLog, rangeValue = readingAnalyticsRange) {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  if (rangeValue.startsWith("month:")) {
+    const monthKey = rangeValue.replace("month:", "");
+    const [year, month] = monthKey.split("-").map(Number);
+    const entries = accountLog.filter((entry) => String(entry.date || "").startsWith(`${monthKey}-`));
+    const days = monthDays(year, month - 1);
+    const totals = entries.reduce((summary, entry) => {
+      summary[entry.date] = (summary[entry.date] || 0) + (Number(entry.pagesRead) || 0);
+      return summary;
+    }, {});
+    return {
+      entries,
+      intervalItems: days.map((day) => ({ label: day.label, value: totals[day.key] || 0 })),
+      label: readingMonthLabel(monthKey),
+      intervalLabel: `Pages during ${readingMonthLabel(monthKey)}`,
+      intervalUnit: "pages",
+      dayCount: days.length,
+    };
+  }
+  if (rangeValue.startsWith("year:")) {
+    const year = rangeValue.replace("year:", "");
+    const entries = accountLog.filter((entry) => String(entry.date || "").startsWith(`${year}-`));
+    const totals = entries.reduce((summary, entry) => {
+      const month = String(entry.date || "").slice(0, 7);
+      summary[month] = (summary[month] || 0) + (Number(entry.pagesRead) || 0);
+      return summary;
+    }, {});
+    const intervalItems = Array.from({ length: 12 }, (_, index) => {
+      const date = new Date(Number(year), index, 1, 12);
+      const key = `${year}-${String(index + 1).padStart(2, "0")}`;
+      return {
+        label: new Intl.DateTimeFormat(undefined, { month: "short" }).format(date),
+        value: totals[key] || 0,
+      };
+    });
+    return {
+      entries,
+      intervalItems,
+      label: year,
+      intervalLabel: `Pages by month in ${year}`,
+      intervalUnit: "pages",
+      dayCount: 365,
+    };
+  }
+  if (rangeValue === "all") {
+    const entries = [...accountLog];
+    const years = [...new Set(entries.map((entry) => String(entry.date || "").slice(0, 4)).filter(Boolean))]
+      .sort((first, second) => first.localeCompare(second));
+    const totals = entries.reduce((summary, entry) => {
+      const year = String(entry.date || "").slice(0, 4);
+      summary[year] = (summary[year] || 0) + (Number(entry.pagesRead) || 0);
+      return summary;
+    }, {});
+    return {
+      entries,
+      intervalItems: years.length
+        ? years.map((year) => ({ label: year, value: totals[year] || 0 }))
+        : [{ label: "No years yet", value: 0 }],
+      label: "All time",
+      intervalLabel: "Pages by year",
+      intervalUnit: "pages",
+      dayCount: Math.max(years.length * 365, 1),
+    };
+  }
+  const recentDays = getRecentReadingDays(30);
+  const recentDates = new Set(recentDays.map((day) => day.date));
+  const entries = accountLog.filter((entry) => recentDates.has(entry.date));
+  const pagesByDate = entries.reduce((summary, entry) => {
+    summary[entry.date] = (summary[entry.date] || 0) + (Number(entry.pagesRead) || 0);
+    return summary;
+  }, {});
+  return {
+    entries,
+    intervalItems: recentDays.map((day) => ({
+      label: day.label,
+      value: pagesByDate[day.date] || 0,
+    })),
+    label: "Last 30 days",
+    intervalLabel: "Pages over the last 30 days",
+    intervalUnit: "pages",
+    dayCount: 30,
+  };
+}
+
+function summarizeReadingLogByBook(logEntries) {
+  return logEntries.reduce((totals, entry) => {
+    const key = `${entry.title}\u0000${entry.author}`;
+    totals[key] ||= { title: entry.title, author: entry.author, pages: 0, minutes: 0, sessions: 0 };
+    totals[key].pages += Number(entry.pagesRead) || 0;
+    totals[key].minutes += Number(entry.durationMinutes) || 0;
+    totals[key].sessions += 1;
+    return totals;
+  }, {});
+}
+
 function renderColumnChart(items, label, unit = "pages") {
   const maximum = Math.max(...items.map((item) => item.value), 1);
   const bars = items
@@ -3487,7 +3644,6 @@ function readingSuggestion({
 
 function renderReadingCharts({
   accountLog,
-  byBook,
   periodMinutes,
   weekdayTotals,
   sessionCount,
@@ -3500,6 +3656,7 @@ function renderReadingCharts({
   strongestWeekday,
 }) {
   if (!elements.readingChartPanel) return;
+  ensureReadingAnalyticsRange(accountLog);
   elements.readingChartPanel.hidden = !readingChartsVisible;
   if (elements.generateReadingChartsButton) {
     elements.generateReadingChartsButton.textContent = readingChartsVisible
@@ -3507,32 +3664,64 @@ function renderReadingCharts({
       : "Generate charts";
   }
   if (!readingChartsVisible) return;
-  const pagesByBook = Object.values(byBook).reduce((totals, book) => {
+  const periodOptions = readingAnalyticsPeriodOptions(accountLog);
+  const scope = readingAnalyticsScope(accountLog, readingAnalyticsRange);
+  const chartLog = scope.entries;
+  const scopedSessionCount = chartLog.length;
+  const scopedMinutes = chartLog.reduce(
+    (total, entry) => total + (Number(entry.durationMinutes) || 0),
+    0,
+  );
+  const scopedPages = chartLog.reduce(
+    (total, entry) => total + (Number(entry.pagesRead) || 0),
+    0,
+  );
+  const scopedPace = scopedMinutes
+    ? Math.round((scopedPages / scopedMinutes) * 60)
+    : 0;
+  const scopedAverageMinutes = scopedSessionCount
+    ? Math.round(scopedMinutes / scopedSessionCount)
+    : 0;
+  const scopedAveragePages = scopedSessionCount
+    ? Math.round(scopedPages / scopedSessionCount)
+    : 0;
+  const scopedActiveDays = new Set(chartLog.map((entry) => entry.date)).size;
+  const scopedPeriodMinutes = chartLog.reduce((totals, entry) => {
+    const period = getTimePeriod(entry.startTime);
+    totals[period] = (totals[period] || 0) + (Number(entry.durationMinutes) || 0);
+    return totals;
+  }, {});
+  const scopedWeekdayTotals = chartLog.reduce((totals, entry) => {
+    const label = new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(
+      new Date(`${entry.date}T12:00:00`),
+    );
+    totals[label] = (totals[label] || 0) + (Number(entry.durationMinutes) || 0);
+    return totals;
+  }, {});
+  const scopedStrongestWeekday = Object.entries(scopedWeekdayTotals).sort(
+    (first, second) => second[1] - first[1],
+  )[0] || strongestWeekday;
+  const scopedFavoritePeriod = Object.entries(scopedPeriodMinutes).sort(
+    (first, second) => second[1] - first[1],
+  )[0]?.[0] || favoritePeriod || "your logged sessions";
+  const scopedByBook = summarizeReadingLogByBook(chartLog);
+  const pagesByBook = Object.values(scopedByBook).reduce((totals, book) => {
     totals[book.title] = (totals[book.title] || 0) + book.pages;
     return totals;
   }, {});
-  const pagesByGenre = accountLog.reduce((totals, entry) => {
+  const pagesByGenre = chartLog.reduce((totals, entry) => {
     const book = bookForLogEntry(entry);
     const genre = book?.genre || "Unmatched log entries";
     totals[genre] = (totals[genre] || 0) + (Number(entry.pagesRead) || 0);
     return totals;
   }, {});
-  const pagesByFormat = accountLog.reduce((totals, entry) => {
+  const pagesByFormat = chartLog.reduce((totals, entry) => {
     const book = bookForLogEntry(entry);
     const format = bookFormatLabel(book?.format || "print");
     totals[format] = (totals[format] || 0) + (Number(entry.pagesRead) || 0);
     return totals;
   }, {});
-  const recentDays = getRecentReadingDays(30);
-  const pagesByDate = accountLog.reduce((totals, entry) => {
-    totals[entry.date] = (totals[entry.date] || 0) + (Number(entry.pagesRead) || 0);
-    return totals;
-  }, {});
-  const dailyPageItems = recentDays.map((day) => ({
-    label: day.label,
-    value: pagesByDate[day.date] || 0,
-  }));
-  const sessionLengthTotals = accountLog.reduce((totals, entry) => {
+  const sessionLengthTotals = chartLog.reduce((totals, entry) => {
     const minutes = Number(entry.durationMinutes) || 0;
     const bucket =
       minutes <= 20
@@ -3545,43 +3734,59 @@ function renderReadingCharts({
     totals[bucket] = (totals[bucket] || 0) + 1;
     return totals;
   }, {});
-  const paceValues = accountLog
+  const paceValues = chartLog
     .filter((entry) => Number(entry.durationMinutes) > 0 && Number(entry.pagesRead) > 0)
     .map((entry) => Math.round(((Number(entry.pagesRead) || 0) / Number(entry.durationMinutes)) * 60));
   const medianPace = medianNumber(paceValues);
   const bestPace = Math.max(...paceValues, 0);
-  const quietDays = dailyPageItems.filter((item) => !item.value).length;
-  const consistencyScore = recentDays.length
-    ? Math.round(((recentDays.length - quietDays) / recentDays.length) * 100)
+  const quietIntervals = scope.intervalItems.filter((item) => !item.value).length;
+  const consistencyScore = scope.intervalItems.length
+    ? Math.round(((scope.intervalItems.length - quietIntervals) / scope.intervalItems.length) * 100)
     : 0;
-  const bestRecentDay = dailyPageItems
+  const bestPeriodInterval = scope.intervalItems
     .filter((item) => item.value > 0)
     .sort((first, second) => second.value - first.value)[0];
-  const expectedWeeklyPages = recentPages
-    ? Math.round((recentPages / 30) * 7)
+  const expectedWeeklyPages = scopedPages && scope.dayCount
+    ? Math.round((scopedPages / scope.dayCount) * 7)
     : 0;
   const speedNote =
-    medianPace && pace
-      ? medianPace > pace
-        ? "Your typical session is faster than your overall average, so early slower sessions are still in the mix."
-        : "Your typical session is at or below your overall average, suggesting a steady or more reflective pace."
+    medianPace && scopedPace
+      ? medianPace > scopedPace
+        ? "Your typical session in this period is faster than its overall average, so one or two slower sessions are weighing it down."
+        : "Your typical session is at or below this period's average, suggesting a steady or more reflective pace."
       : "More sessions will make this comparison stronger.";
+  const rangeOptionsHtml = periodOptions
+    .map(
+      (option) =>
+        `<option value="${escapeHtml(option.value)}"${option.value === readingAnalyticsRange ? " selected" : ""}>${escapeHtml(option.label)}</option>`,
+    )
+    .join("");
   elements.readingChartPanel.innerHTML = `
     <div class="reading-chart-heading">
       <div>
         <p class="eyebrow">VISUAL PATTERNS</p>
         <h3>Reading charts and suggestions</h3>
+        <p class="reading-chart-period">Currently viewing: ${escapeHtml(scope.label)}</p>
       </div>
-      <p>${escapeHtml(readingSuggestion({
-        sessionCount,
-        activeDays,
-        averageMinutes,
-        averagePages,
-        pace,
-        recentPages,
-        favoritePeriod,
-        strongestWeekday,
-      }))}</p>
+      <div>
+        <p>${escapeHtml(readingSuggestion({
+          sessionCount: scopedSessionCount,
+          activeDays: scopedActiveDays,
+          averageMinutes: scopedAverageMinutes,
+          averagePages: scopedAveragePages,
+          pace: scopedPace,
+          recentPages: scopedPages,
+          favoritePeriod: scopedFavoritePeriod,
+          strongestWeekday: scopedStrongestWeekday,
+        }))}</p>
+        <div class="reading-chart-controls">
+          <label>
+            <span>View period</span>
+            <select id="reading-analytics-range">${rangeOptionsHtml}</select>
+          </label>
+          <button class="primary-button light-button" type="button" id="print-reading-analytics">Print analytics</button>
+        </div>
+      </div>
     </div>
     <div class="reading-chart-grid">
       ${renderAnalyticsCards([
@@ -3596,30 +3801,39 @@ function renderReadingCharts({
           note: "Your quickest logged session, useful for spotting easier or more fluent reading.",
         },
         {
-          label: "30-day consistency",
-          value: sessionCount ? `${consistencyScore}%` : "--",
-          note: `${recentDays.length - quietDays} of the last 30 days include logged reading.`,
+          label: "Period consistency",
+          value: scopedSessionCount ? `${consistencyScore}%` : "--",
+          note: `${scope.intervalItems.length - quietIntervals} of ${scope.intervalItems.length} chart intervals include logged reading.`,
         },
         {
           label: "Likely weekly pages",
           value: expectedWeeklyPages ? expectedWeeklyPages.toLocaleString() : "--",
-          note: "Projected from the last 30 days, so it changes as your current rhythm changes.",
+          note: `Projected from ${scope.label}, so it changes with the period you choose.`,
         },
       ])}
-      ${renderPieChart(periodMinutes, "Time of day")}
-      ${renderPieChart(weekdayTotals, "Weekday rhythm")}
+      ${renderPieChart(scopedPeriodMinutes, "Time of day")}
+      ${renderPieChart(scopedWeekdayTotals, "Weekday rhythm")}
       ${renderPieChart(sessionLengthTotals, "Session length mix")}
       ${renderBarChart(pagesByBook, "Top books by pages")}
       ${renderBarChart(pagesByGenre, "Pages by genre")}
       ${renderBarChart(pagesByFormat, "Pages by book format")}
-      ${renderColumnChart(dailyPageItems, "Pages over the last 30 days")}
-      ${renderSpeedTrendChart(accountLog)}
+      ${renderColumnChart(scope.intervalItems, scope.intervalLabel)}
+      ${renderSpeedTrendChart(chartLog)}
       ${renderBarChart(
-        bestRecentDay ? { [bestRecentDay.label]: bestRecentDay.value } : {},
-        "Best recent reading day",
+        bestPeriodInterval ? { [bestPeriodInterval.label]: bestPeriodInterval.value } : {},
+        "Best interval in this period",
       )}
     </div>
   `;
+  elements.readingChartPanel
+    .querySelector("#reading-analytics-range")
+    ?.addEventListener("change", (event) => {
+      readingAnalyticsRange = event.target.value;
+      renderReadingInsights();
+    });
+  elements.readingChartPanel
+    .querySelector("#print-reading-analytics")
+    ?.addEventListener("click", printReadingAnalytics);
 }
 
 function renderReadingInsights() {
@@ -7289,6 +7503,92 @@ function deleteDream(id) {
 
 function printEmpty(message) {
   return `<p class="print-empty">${escapeHtml(message)}</p>`;
+}
+
+function printReadingAnalytics() {
+  const accountLog = ownedByCurrent(readingLog);
+  ensureReadingAnalyticsRange(accountLog);
+  const scope = readingAnalyticsScope(accountLog, readingAnalyticsRange);
+  const entries = scope.entries;
+  const totalPages = entries.reduce(
+    (total, entry) => total + (Number(entry.pagesRead) || 0),
+    0,
+  );
+  const totalMinutes = entries.reduce(
+    (total, entry) => total + (Number(entry.durationMinutes) || 0),
+    0,
+  );
+  const sessionCount = entries.length;
+  const paceValues = entries
+    .filter((entry) => Number(entry.durationMinutes) > 0 && Number(entry.pagesRead) > 0)
+    .map((entry) => Math.round(((Number(entry.pagesRead) || 0) / Number(entry.durationMinutes)) * 60));
+  const averagePace = totalMinutes
+    ? Math.round((totalPages / totalMinutes) * 60)
+    : 0;
+  const medianPace = medianNumber(paceValues);
+  const activeDays = new Set(entries.map((entry) => entry.date)).size;
+  const byBook = summarizeReadingLogByBook(entries);
+  const pagesByBook = Object.values(byBook)
+    .sort((first, second) => second.pages - first.pages)
+    .slice(0, 8);
+  const pagesByGenre = sortedTotals(entries.reduce((totals, entry) => {
+    const book = bookForLogEntry(entry);
+    const genre = book?.genre || "Unmatched log entries";
+    totals[genre] = (totals[genre] || 0) + (Number(entry.pagesRead) || 0);
+    return totals;
+  }, {})).slice(0, 8);
+  const intervalRows = scope.intervalItems
+    .filter((item) => item.value > 0)
+    .sort((first, second) => second.value - first.value)
+    .slice(0, 10);
+  const previousTitle = document.title;
+  elements.printSheet.innerHTML = `
+    <header>
+      <p>MY LIBRARY</p>
+      <h1>Reading Analytics</h1>
+      <span>${escapeHtml(currentAccount?.username || "Reader")} / ${escapeHtml(scope.label)} / Printed ${escapeHtml(new Date().toLocaleDateString())}</span>
+    </header>
+    <main>
+      <article>
+        <h2>Summary</h2>
+        <p class="print-meta">${sessionCount.toLocaleString()} sessions / ${totalPages.toLocaleString()} pages / ${formatDuration(totalMinutes)} total reading time</p>
+        <p>Average pace: ${averagePace ? `${averagePace} pages per hour` : "not enough data"}. Median speed: ${medianPace ? `${medianPace} pages per hour` : "not enough data"}. Active reading days: ${activeDays.toLocaleString()}.</p>
+      </article>
+      <article>
+        <h2>${escapeHtml(scope.intervalLabel)}</h2>
+        ${
+          intervalRows.length
+            ? `<ol>${intervalRows.map((item) => `<li><strong>${escapeHtml(item.label)}</strong><span>${item.value.toLocaleString()} pages</span></li>`).join("")}</ol>`
+            : printEmpty("No reading activity in this period.")
+        }
+      </article>
+      <article>
+        <h2>Top Books</h2>
+        ${
+          pagesByBook.length
+            ? `<ol>${pagesByBook.map((book) => `<li><strong>${escapeHtml(book.title)}</strong><span>${book.pages.toLocaleString()} pages / ${formatDuration(book.minutes)} / ${book.sessions} ${book.sessions === 1 ? "session" : "sessions"}</span></li>`).join("")}</ol>`
+            : printEmpty("No book-specific data in this period.")
+        }
+      </article>
+      <article>
+        <h2>Genre Pattern</h2>
+        ${
+          pagesByGenre.length
+            ? `<ol>${pagesByGenre.map(([genre, pages]) => `<li><strong>${escapeHtml(genre)}</strong><span>${pages.toLocaleString()} pages</span></li>`).join("")}</ol>`
+            : printEmpty("No genre data in this period.")
+        }
+      </article>
+    </main>
+  `;
+  elements.printSheet.setAttribute("aria-hidden", "false");
+  document.title = `${scope.label} Reading Analytics - My Library`;
+  const cleanUp = () => {
+    document.title = previousTitle;
+    elements.printSheet.setAttribute("aria-hidden", "true");
+    window.removeEventListener("afterprint", cleanUp);
+  };
+  window.addEventListener("afterprint", cleanUp);
+  window.print();
 }
 
 function buildPrintContent(kind) {
