@@ -1998,13 +1998,7 @@ function bookFormatLabel(format) {
 }
 
 function parsePageNumber(value) {
-  const text = String(value || "").trim();
-  if (!text) return 0;
-  if (/^\d+$/.test(text)) {
-    const parsed = Number(text);
-    return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-  }
-  return romanToNumber(text);
+  return parsePageReference(value).number;
 }
 
 function romanToNumber(value) {
@@ -2020,6 +2014,31 @@ function romanToNumber(value) {
     previous = Math.max(previous, current);
   }
   return total > 0 ? total : 0;
+}
+
+function parsePageReference(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return { raw, number: 0, isValid: true, isEmpty: true, label: "" };
+  if (/^\d+$/.test(raw)) {
+    const number = Number(raw);
+    return {
+      raw,
+      number: Number.isFinite(number) && number >= 0 ? Math.floor(number) : 0,
+      isValid: Number.isFinite(number) && number >= 0,
+      isEmpty: false,
+      label: raw,
+      kind: "numeric",
+    };
+  }
+  const roman = romanToNumber(raw);
+  return {
+    raw,
+    number: roman,
+    isValid: roman > 0,
+    isEmpty: false,
+    label: raw,
+    kind: roman > 0 ? "roman" : "invalid",
+  };
 }
 
 function parseSpecificPageToken(value) {
@@ -3120,10 +3139,41 @@ function ensureReadingEnhancementStyles() {
     .reading-bar-chart li{grid-template-columns:minmax(90px,.8fr) minmax(120px,1.2fr) auto}
     .reading-bar-chart div{height:.62rem;overflow:hidden;background:rgba(244,240,231,.12);border-radius:999px}
     .reading-bar-chart b{height:100%;display:block;border-radius:inherit}
+    .reading-line-chart{display:flex;align-items:end;gap:.25rem;height:150px;padding:.8rem .4rem;border-bottom:1px solid rgba(244,240,231,.18)}
+    .reading-line-chart span{flex:1;min-width:6px;background:linear-gradient(180deg,var(--gold),rgba(213,167,68,.38));border-radius:999px 999px 0 0}
+    .reading-line-chart span.quiet{background:rgba(244,240,231,.16)}
+    .reading-chart-note{margin:.75rem 0 0;color:rgba(244,240,231,.62);font-size:.82rem}
+    .reading-speed-list{display:grid;gap:.7rem;margin:0;padding:0;list-style:none}
+    .reading-speed-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;padding:.65rem .7rem;background:rgba(244,240,231,.08);border:1px solid rgba(244,240,231,.1)}
+    .reading-speed-list strong{color:var(--paper);font-weight:500}
+    .reading-speed-list small{color:rgba(244,240,231,.62)}
+    .reading-analytics-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem}
+    .reading-analytics-grid article{padding:.9rem;background:rgba(244,240,231,.08);border:1px solid rgba(244,240,231,.12)}
+    .reading-analytics-grid span{display:block;margin-bottom:.35rem;color:rgba(244,240,231,.56);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+    .reading-analytics-grid strong{display:block;color:var(--paper);font-size:clamp(1.25rem,2vw,1.65rem);font-weight:400}
+    .reading-analytics-grid p{margin:.35rem 0 0;color:rgba(244,240,231,.62);font-size:.78rem;line-height:1.35}
+    @media(max-width:900px){.reading-analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:800px){.reading-chart-heading,.reading-chart-grid{grid-template-columns:1fr}}
-    @media(max-width:540px){.reading-bar-chart li{grid-template-columns:1fr;align-items:start}}
+    @media(max-width:540px){.reading-bar-chart li,.reading-speed-list li{grid-template-columns:1fr;align-items:start}.reading-analytics-grid{grid-template-columns:1fr}}
   `;
   document.head.appendChild(style);
+}
+
+function configureReadingPageInputs() {
+  [
+    { input: elements.startPageInput, placeholder: "1 or x" },
+    { input: elements.endPageInput, placeholder: "25 or xiii" },
+    { input: elements.continuePageInput, placeholder: "26 or xiv" },
+  ].forEach(({ input, placeholder }) => {
+    if (!input) return;
+    input.type = "text";
+    input.setAttribute("inputmode", "text");
+    input.placeholder = placeholder;
+    input.removeAttribute("min");
+    input.removeAttribute("step");
+    input.removeAttribute("pattern");
+    input.removeAttribute("required");
+  });
 }
 
 function ensureReadingLogEnhancements() {
@@ -3134,17 +3184,7 @@ function ensureReadingLogEnhancements() {
   [elements.pagesReadInput, elements.startPageInput, elements.endPageInput, elements.continuePageInput]
     .filter(Boolean)
     .forEach((input) => input.removeAttribute("required"));
-  [
-    { input: elements.startPageInput, placeholder: "1 or x" },
-    { input: elements.endPageInput, placeholder: "25 or xiii" },
-  ].forEach(({ input, placeholder }) => {
-    if (!input) return;
-    input.type = "text";
-    input.inputMode = "text";
-    input.placeholder = placeholder;
-    input.removeAttribute("min");
-    input.removeAttribute("step");
-  });
+  configureReadingPageInputs();
 }
 
 function chartColor(index) {
@@ -3223,6 +3263,106 @@ function renderBarChart(totals, label, unit = "pages") {
   `;
 }
 
+function getRecentReadingDays(dayCount = 30) {
+  const days = [];
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - offset);
+    days.push({
+      date: localDateString(date),
+      label: new Intl.DateTimeFormat(undefined, {
+        day: "numeric",
+        month: "short",
+      }).format(date),
+      shortLabel: new Intl.DateTimeFormat(undefined, { day: "numeric" }).format(date),
+    });
+  }
+  return days;
+}
+
+function medianNumber(values) {
+  const sorted = values
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((first, second) => first - second);
+  if (!sorted.length) return 0;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : Math.round((sorted[middle - 1] + sorted[middle]) / 2);
+}
+
+function renderColumnChart(items, label, unit = "pages") {
+  const maximum = Math.max(...items.map((item) => item.value), 1);
+  const bars = items
+    .map((item) => {
+      const height = item.value ? Math.max(8, (item.value / maximum) * 100) : 3;
+      return `<span class="${item.value ? "" : "quiet"}" style="height:${height}%" title="${escapeHtml(item.label)}: ${item.value.toLocaleString()} ${unit}"></span>`;
+    })
+    .join("");
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  return `
+    <article class="reading-chart-card wide">
+      <h4>${escapeHtml(label)}</h4>
+      <div class="reading-line-chart" role="img" aria-label="${escapeHtml(label)} column chart">${bars}</div>
+      <p class="reading-chart-note">${total.toLocaleString()} ${unit} across ${items.length} days. Hover over a bar to see the day value.</p>
+    </article>
+  `;
+}
+
+function renderSpeedTrendChart(entries) {
+  const paceEntries = entries
+    .filter((entry) => Number(entry.durationMinutes) > 0 && Number(entry.pagesRead) > 0)
+    .sort((first, second) =>
+      `${first.date}T${first.startTime || "00:00"}`.localeCompare(`${second.date}T${second.startTime || "00:00"}`),
+    )
+    .slice(-8)
+    .map((entry) => ({
+      ...entry,
+      pace: Math.round(((Number(entry.pagesRead) || 0) / Number(entry.durationMinutes)) * 60),
+    }));
+  const rows = paceEntries.length
+    ? paceEntries
+        .map(
+          (entry) => `
+            <li>
+              <span>
+                <strong>${escapeHtml(entry.title)}</strong>
+                <small>${formatDate(entry.date)} / ${Number(entry.pagesRead) || 0} pages in ${formatDuration(entry.durationMinutes)}</small>
+              </span>
+              <strong>${entry.pace} p/h</strong>
+            </li>
+          `,
+        )
+        .join("")
+    : "<li>No speed data yet.</li>";
+  return `
+    <article class="reading-chart-card wide">
+      <h4>Reading speed trend</h4>
+      <ul class="reading-speed-list">${rows}</ul>
+    </article>
+  `;
+}
+
+function renderAnalyticsCards(cards) {
+  return `
+    <div class="reading-analytics-grid">
+      ${cards
+        .map(
+          (card) => `
+            <article>
+              <span>${escapeHtml(card.label)}</span>
+              <strong>${escapeHtml(card.value)}</strong>
+              <p>${escapeHtml(card.note)}</p>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function bookForLogEntry(entry) {
   const titleKey = normalize(entry.title);
   const authorKey = normalize(entry.author);
@@ -3293,6 +3433,55 @@ function renderReadingCharts({
     totals[genre] = (totals[genre] || 0) + (Number(entry.pagesRead) || 0);
     return totals;
   }, {});
+  const pagesByFormat = accountLog.reduce((totals, entry) => {
+    const book = bookForLogEntry(entry);
+    const format = bookFormatLabel(book?.format || "print");
+    totals[format] = (totals[format] || 0) + (Number(entry.pagesRead) || 0);
+    return totals;
+  }, {});
+  const recentDays = getRecentReadingDays(30);
+  const pagesByDate = accountLog.reduce((totals, entry) => {
+    totals[entry.date] = (totals[entry.date] || 0) + (Number(entry.pagesRead) || 0);
+    return totals;
+  }, {});
+  const dailyPageItems = recentDays.map((day) => ({
+    label: day.label,
+    value: pagesByDate[day.date] || 0,
+  }));
+  const sessionLengthTotals = accountLog.reduce((totals, entry) => {
+    const minutes = Number(entry.durationMinutes) || 0;
+    const bucket =
+      minutes <= 20
+        ? "Short sessions"
+        : minutes <= 45
+        ? "Steady sessions"
+        : minutes <= 90
+        ? "Deep sessions"
+        : "Very long sessions";
+    totals[bucket] = (totals[bucket] || 0) + 1;
+    return totals;
+  }, {});
+  const paceValues = accountLog
+    .filter((entry) => Number(entry.durationMinutes) > 0 && Number(entry.pagesRead) > 0)
+    .map((entry) => Math.round(((Number(entry.pagesRead) || 0) / Number(entry.durationMinutes)) * 60));
+  const medianPace = medianNumber(paceValues);
+  const bestPace = Math.max(...paceValues, 0);
+  const quietDays = dailyPageItems.filter((item) => !item.value).length;
+  const consistencyScore = recentDays.length
+    ? Math.round(((recentDays.length - quietDays) / recentDays.length) * 100)
+    : 0;
+  const bestRecentDay = dailyPageItems
+    .filter((item) => item.value > 0)
+    .sort((first, second) => second.value - first.value)[0];
+  const expectedWeeklyPages = recentPages
+    ? Math.round((recentPages / 30) * 7)
+    : 0;
+  const speedNote =
+    medianPace && pace
+      ? medianPace > pace
+        ? "Your typical session is faster than your overall average, so early slower sessions are still in the mix."
+        : "Your typical session is at or below your overall average, suggesting a steady or more reflective pace."
+      : "More sessions will make this comparison stronger.";
   elements.readingChartPanel.innerHTML = `
     <div class="reading-chart-heading">
       <div>
@@ -3311,10 +3500,40 @@ function renderReadingCharts({
       }))}</p>
     </div>
     <div class="reading-chart-grid">
+      ${renderAnalyticsCards([
+        {
+          label: "Median speed",
+          value: medianPace ? `${medianPace} p/h` : "--",
+          note: speedNote,
+        },
+        {
+          label: "Fastest pace",
+          value: bestPace ? `${bestPace} p/h` : "--",
+          note: "Your quickest logged session, useful for spotting easier or more fluent reading.",
+        },
+        {
+          label: "30-day consistency",
+          value: sessionCount ? `${consistencyScore}%` : "--",
+          note: `${recentDays.length - quietDays} of the last 30 days include logged reading.`,
+        },
+        {
+          label: "Likely weekly pages",
+          value: expectedWeeklyPages ? expectedWeeklyPages.toLocaleString() : "--",
+          note: "Projected from the last 30 days, so it changes as your current rhythm changes.",
+        },
+      ])}
       ${renderPieChart(periodMinutes, "Time of day")}
       ${renderPieChart(weekdayTotals, "Weekday rhythm")}
+      ${renderPieChart(sessionLengthTotals, "Session length mix")}
       ${renderBarChart(pagesByBook, "Top books by pages")}
       ${renderBarChart(pagesByGenre, "Pages by genre")}
+      ${renderBarChart(pagesByFormat, "Pages by book format")}
+      ${renderColumnChart(dailyPageItems, "Pages over the last 30 days")}
+      ${renderSpeedTrendChart(accountLog)}
+      ${renderBarChart(
+        bestRecentDay ? { [bestRecentDay.label]: bestRecentDay.value } : {},
+        "Best recent reading day",
+      )}
     </div>
   `;
 }
@@ -3701,7 +3920,11 @@ function fillAuthorFromCollection() {
 }
 
 function suggestPagesRead() {
+  configureReadingPageInputs();
   const specific = parseSpecificPages(elements.specificPagesInput?.value || "");
+  elements.startPageInput?.setCustomValidity("");
+  elements.endPageInput?.setCustomValidity("");
+  elements.continuePageInput?.setCustomValidity("");
   if (specific.count) {
     elements.pagesReadInput.value = specific.count;
     if (!elements.startPageInput.value && specific.firstNumericPage) {
@@ -3715,8 +3938,11 @@ function suggestPagesRead() {
     }
     return;
   }
-  const startPage = parsePageNumber(elements.startPageInput.value);
-  const endPage = parsePageNumber(elements.endPageInput.value);
+  const startPageRef = parsePageReference(elements.startPageInput.value);
+  const endPageRef = parsePageReference(elements.endPageInput.value);
+  if (!startPageRef.isValid || !endPageRef.isValid) return;
+  const startPage = startPageRef.number;
+  const endPage = endPageRef.number;
   if (
     elements.startPageInput.value &&
     elements.endPageInput.value &&
@@ -3759,15 +3985,42 @@ function addReadingSession(formData) {
   const rawStartPage = String(formData.get("startPage") || "").trim();
   const rawEndPage = String(formData.get("endPage") || "").trim();
   const rawContinuePage = String(formData.get("continuePage") || "").trim();
-  const startPage = parsePageNumber(rawStartPage);
-  const endPage = parsePageNumber(rawEndPage);
-  const continuePage = parsePageNumber(rawContinuePage);
+  const startPageRef = parsePageReference(rawStartPage);
+  const endPageRef = parsePageReference(rawEndPage);
+  const continuePageRef = parsePageReference(rawContinuePage);
+  const startPage = startPageRef.number;
+  const endPage = endPageRef.number;
+  const continuePage = continuePageRef.number;
   const pagesFromRange = startPage && endPage && endPage >= startPage
     ? endPage - startPage + 1
     : 0;
   const pagesRead = exactPages.count || Number(formData.get("pagesRead")) || pagesFromRange;
   if (!durationMinutes) return;
   elements.pagesReadInput.setCustomValidity("");
+  elements.startPageInput.setCustomValidity("");
+  elements.endPageInput.setCustomValidity("");
+  elements.continuePageInput.setCustomValidity("");
+  if (!startPageRef.isValid) {
+    elements.startPageInput.setCustomValidity(
+      "Enter a page number or a Roman numeral, such as 1 or x.",
+    );
+    elements.startPageInput.reportValidity();
+    return;
+  }
+  if (!endPageRef.isValid) {
+    elements.endPageInput.setCustomValidity(
+      "Enter a page number or a Roman numeral, such as 25 or xiii.",
+    );
+    elements.endPageInput.reportValidity();
+    return;
+  }
+  if (!continuePageRef.isValid) {
+    elements.continuePageInput.setCustomValidity(
+      "Enter a page number or a Roman numeral, such as 26 or xiv.",
+    );
+    elements.continuePageInput.reportValidity();
+    return;
+  }
   if (!pagesRead) {
     elements.pagesReadInput.setCustomValidity(
       "Enter the number of pages read, a page range, or specific pages read.",
