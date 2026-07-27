@@ -2144,29 +2144,46 @@ function pageRangeTokens(startToken, endToken) {
   const start = parseSpecificPageToken(startToken);
   const end = parseSpecificPageToken(endToken);
   if (!start || !end) return [];
-  const startNumber = /^\d+$/.test(String(startToken).trim())
-    ? start.numeric
-    : romanToNumber(startToken);
-  const endNumber = /^\d+$/.test(String(endToken).trim())
-    ? end.numeric
-    : romanToNumber(endToken);
-  const sameType =
-    (/^\d+$/.test(String(startToken).trim()) &&
-      /^\d+$/.test(String(endToken).trim())) ||
-    (romanToNumber(startToken) && romanToNumber(endToken));
-  if (!sameType || !startNumber || !endNumber || endNumber < startNumber) {
+  const startRef = parsePageReference(startToken);
+  const endRef = parsePageReference(endToken);
+  const keys = pageReferenceKeysBetween(startRef, endRef);
+  if (!keys.length) {
     return [start, end];
   }
-  const rangeSize = Math.min(endNumber - startNumber + 1, 1000);
-  return Array.from({ length: rangeSize }, (_, index) => {
-    const value = startNumber + index;
-    const isNumeric = /^\d+$/.test(String(startToken).trim());
+  return keys.map((key) => {
+    const [type, valueText] = key.split(":");
+    const value = Number(valueText);
     return {
-      key: `${isNumeric ? "n" : "r"}:${value}`,
-      label: isNumeric ? String(value) : `${startToken}-${endToken}`,
-      numeric: isNumeric ? value : 0,
+      key,
+      label: type === "n" ? String(value) : numberToRoman(value),
+      numeric: type === "n" ? value : 0,
     };
   });
+}
+
+function pageReferenceKey(ref) {
+  if (!ref?.isValid || ref.isEmpty || !ref.number) return "";
+  return `${ref.kind === "roman" ? "r" : "n"}:${ref.number}`;
+}
+
+function pageReferenceKeysBetween(startRef, endRef) {
+  if (!countPagesBetweenReferences(startRef, endRef)) return [];
+  if (startRef.kind === endRef.kind) {
+    const prefix = startRef.kind === "roman" ? "r" : "n";
+    const rangeSize = Math.min(endRef.number - startRef.number + 1, 1500);
+    return Array.from(
+      { length: rangeSize },
+      (_, index) => `${prefix}:${startRef.number + index}`,
+    );
+  }
+  if (startRef.kind === "roman" && endRef.kind === "numeric") {
+    const numericKeys = Array.from(
+      { length: Math.min(endRef.number, 1500) },
+      (_, index) => `n:${index + 1}`,
+    );
+    return [`r:${startRef.number}`, ...numericKeys];
+  }
+  return [];
 }
 
 function parseSpecificPages(value) {
@@ -2193,6 +2210,7 @@ function parseSpecificPages(value) {
   return {
     count: entries.length,
     display: String(value || "").trim(),
+    pageKeys: entries.map((item) => item.key),
     numericPages,
     firstNumericPage: numericPages[0] || 0,
     highestNumericPage: numericPages[numericPages.length - 1] || 0,
@@ -2259,19 +2277,65 @@ function loggedPagesForBook(book) {
   );
 }
 
+function loggedPageKeysForEntry(entry) {
+  if (entry?.specificPages) {
+    return parseSpecificPages(entry.specificPages).pageKeys || [];
+  }
+  const startRef = parsePageReference(entry?.startPageLabel || entry?.startPage);
+  const endRef = parsePageReference(entry?.endPageLabel || entry?.endPage);
+  return pageReferenceKeysBetween(startRef, endRef);
+}
+
+function distinctLoggedPagesFromSessions(sessions) {
+  const pageKeys = new Set();
+  let unkeyedPages = 0;
+  sessions.forEach((entry) => {
+    const keys = loggedPageKeysForEntry(entry);
+    if (keys.length) {
+      keys.forEach((key) => pageKeys.add(key));
+    } else {
+      unkeyedPages += Number(entry.pagesRead) || 0;
+    }
+  });
+  return pageKeys.size + unkeyedPages;
+}
+
+function progressPagesForBook(book) {
+  const { firstPage, lastPage, currentPage } = normalizeBookPages(book);
+  if (!firstPage || !lastPage || lastPage < firstPage) return 0;
+  const reachedPage = Math.min(Math.max(currentPage || firstPage - 1, firstPage - 1), lastPage);
+  return Math.max(0, reachedPage - firstPage + 1);
+}
+
+function lifetimePagesForBook(book) {
+  const pageCount = bookPageCount(book);
+  const loggedPages = distinctLoggedPagesFromSessions(readingSessionsForBook(book));
+  if (book.status === "read" && pageCount) return pageCount;
+  const progressPages = progressPagesForBook(book);
+  const bestKnownPages = Math.max(progressPages, loggedPages);
+  return pageCount ? Math.min(pageCount, bestKnownPages) : bestKnownPages;
+}
+
 function lifetimePagesReadFrom(accountLog) {
-  const loggedPages = accountLog.reduce(
-    (total, entry) => total + (Number(entry.pagesRead) || 0),
+  const accountBooks = booksFor(currentAccount?.id);
+  const matchedEntryIds = new Set();
+  const bookPages = accountBooks.reduce((total, book) => {
+    readingSessionsForBook(book).forEach((entry) => matchedEntryIds.add(entry.id));
+    return total + lifetimePagesForBook(book);
+  }, 0);
+  const unmatchedGroups = accountLog
+    .filter((entry) => !matchedEntryIds.has(entry.id))
+    .reduce((groups, entry) => {
+      const key = `${normalize(entry.title)}\u0000${normalize(entry.author)}`;
+      groups[key] ||= [];
+      groups[key].push(entry);
+      return groups;
+    }, {});
+  const unmatchedPages = Object.values(unmatchedGroups).reduce(
+    (total, sessions) => total + distinctLoggedPagesFromSessions(sessions),
     0,
   );
-  const completedBookPages = booksFor(currentAccount?.id)
-    .filter((book) => book.status === "read")
-    .reduce((total, book) => {
-      const pageCount = bookPageCount(book);
-      if (!pageCount) return total;
-      return total + Math.max(0, pageCount - loggedPagesForBook(book));
-    }, 0);
-  return loggedPages + completedBookPages;
+  return bookPages + unmatchedPages;
 }
 
 function bookProgressInfo(book) {
@@ -3141,7 +3205,7 @@ function ensureLifetimePagesCard() {
   card.innerHTML = `
     <span>Lifetime pages</span>
     <strong id="lifetime-pages-insight">0</strong>
-    <small>Logged pages plus completed books</small>
+    <small>Completed books plus unique logged progress</small>
   `;
   pagesCard.insertAdjacentElement("afterend", card);
   elements.lifetimePagesInsight = card.querySelector("#lifetime-pages-insight");
