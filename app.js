@@ -313,6 +313,8 @@ const elements = {
   storyEditorEmpty: document.querySelector("#story-editor-empty"),
   storyIdInput: document.querySelector("#story-id-input"),
   writingDashboard: document.querySelector("#writing-dashboard"),
+  writingResearchLibrary: document.querySelector("#writing-research-library"),
+  openResearchLibraryButton: document.querySelector("#open-research-library-button"),
   storySearchInput: document.querySelector("#story-search-input"),
   storySortInput: document.querySelector("#story-sort-input"),
   storyStatusFilter: document.querySelector("#story-status-filter"),
@@ -5297,6 +5299,7 @@ function filteredStories() {
 function renderStories() {
   if (!currentAccount) return;
   renderWritingDashboard();
+  renderResearchLibrary();
   const stories = filteredStories();
   const activeId = elements.storyIdInput.value;
   elements.storyCount.textContent = stories.length;
@@ -5758,7 +5761,7 @@ function writingResearchSource(key) {
 }
 
 function renderResearchLibrary(project = currentStory()) {
-  if (!project || !elements.researchLibraryResults) return;
+  if (!elements.researchLibraryResults) return;
   const query = normalize(elements.researchLibrarySearch.value);
   const kind = elements.researchLibraryFilter.value;
   const sources = allWritingResearchSources()
@@ -5777,9 +5780,9 @@ function renderResearchLibrary(project = currentStory()) {
   elements.researchResultCount.textContent = `${sources.length} result${sources.length === 1 ? "" : "s"}`;
   elements.researchLibraryResults.innerHTML = sources.length
     ? sources.map((source) => {
-        const pinned = project.researchShelf.some(
+        const pinned = project?.researchShelf.some(
           (entry) => entry.sourceType === source.kind && entry.sourceId === source.id,
-        );
+        ) || false;
         return `
           <article class="research-source-card">
             <span class="research-source-kind">${escapeHtml(source.kind)}</span>
@@ -5787,8 +5790,8 @@ function renderResearchLibrary(project = currentStory()) {
             <p class="writing-card-meta">${escapeHtml(source.author || "Personal note")} / ${escapeHtml(source.meta || "Saved in the app")}</p>
             <p>${escapeHtml(researchPreview(source.excerpt) || "No preview available.")}</p>
             <div class="research-source-actions">
-              <button type="button" data-library-research-action="insert" data-key="${escapeHtml(source.key)}">Insert citation</button>
-              <button type="button" data-library-research-action="pin" data-key="${escapeHtml(source.key)}" ${pinned ? "disabled" : ""}>${pinned ? "Pinned" : "Pin to project"}</button>
+              ${project ? `<button type="button" data-library-research-action="insert" data-key="${escapeHtml(source.key)}">Insert citation</button>` : ""}
+              ${project ? `<button type="button" data-library-research-action="pin" data-key="${escapeHtml(source.key)}" ${pinned ? "disabled" : ""}>${pinned ? "Pinned" : "Pin to project"}</button>` : ""}
               ${source.kind === "journal" ? `<button type="button" data-library-research-action="import-journal" data-key="${escapeHtml(source.key)}">Open as document</button>` : ""}
               ${source.kind !== "journal" ? `<button type="button" data-library-research-action="open-source" data-key="${escapeHtml(source.key)}">Open source</button>` : ""}
             </div>
@@ -9977,6 +9980,15 @@ document
   .querySelector("#empty-new-story-button")
   .addEventListener("click", () => createStory());
 elements.newJournalDocumentButton.addEventListener("click", createJournalDocument);
+elements.openResearchLibraryButton.addEventListener("click", () => {
+  elements.writingResearchLibrary.open = true;
+  renderResearchLibrary();
+  elements.writingResearchLibrary.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+  window.setTimeout(() => elements.researchLibrarySearch.focus(), 350);
+});
 document
   .querySelector("#delete-story-button")
   .addEventListener("click", deleteOpenStory);
