@@ -350,6 +350,27 @@ const elements = {
   storyLastSaved: document.querySelector("#story-last-saved"),
   storyManualSaveButton: document.querySelector("#story-manual-save-button"),
   storyFocusButton: document.querySelector("#story-focus-button"),
+  publishJournalButton: document.querySelector("#publish-journal-button"),
+  newJournalDocumentButton: document.querySelector("#new-journal-document-button"),
+  writingStyleSelect: document.querySelector("#writing-style-select"),
+  writingFontSelect: document.querySelector("#writing-font-select"),
+  writingSizeSelect: document.querySelector("#writing-size-select"),
+  writingTextColour: document.querySelector("#writing-text-colour"),
+  writingHighlightColour: document.querySelector("#writing-highlight-colour"),
+  writingLinkButton: document.querySelector("#writing-link-button"),
+  writingRuleButton: document.querySelector("#writing-rule-button"),
+  writingPageBreakButton: document.querySelector("#writing-page-break-button"),
+  writingFindInput: document.querySelector("#writing-find-input"),
+  writingReplaceInput: document.querySelector("#writing-replace-input"),
+  writingFindNextButton: document.querySelector("#writing-find-next-button"),
+  writingReplaceButton: document.querySelector("#writing-replace-button"),
+  writingReplaceAllButton: document.querySelector("#writing-replace-all-button"),
+  writingParagraphCount: document.querySelector("#writing-paragraph-count"),
+  writingReadingTime: document.querySelector("#writing-reading-time"),
+  writingPageCount: document.querySelector("#writing-page-count"),
+  writingZoomOut: document.querySelector("#writing-zoom-out"),
+  writingZoomIn: document.querySelector("#writing-zoom-in"),
+  writingZoomLabel: document.querySelector("#writing-zoom-label"),
   writingProjectMeta: document.querySelector("#writing-project-meta"),
   storyProgressBarFill: document.querySelector("#story-progress-bar-fill"),
   storyProgressLabel: document.querySelector("#story-progress-label"),
@@ -440,6 +461,10 @@ const elements = {
   researchSceneInput: document.querySelector("#research-scene-input"),
   researchNotesInput: document.querySelector("#research-notes-input"),
   researchList: document.querySelector("#research-list"),
+  researchLibrarySearch: document.querySelector("#research-library-search"),
+  researchLibraryFilter: document.querySelector("#research-library-filter"),
+  researchLibraryResults: document.querySelector("#research-library-results"),
+  researchResultCount: document.querySelector("#research-result-count"),
   quoteForm: document.querySelector("#quote-form"),
   quoteIdInput: document.querySelector("#quote-id-input"),
   quoteFormTitle: document.querySelector("#quote-form-title"),
@@ -483,6 +508,7 @@ const elements = {
   exportTxtButton: document.querySelector("#export-txt-button"),
   exportMarkdownButton: document.querySelector("#export-markdown-button"),
   exportPdfButton: document.querySelector("#export-pdf-button"),
+  exportWordButton: document.querySelector("#export-word-button"),
   wordhubForm: document.querySelector("#wordhub-form"),
   wordhubIdInput: document.querySelector("#wordhub-id-input"),
   wordhubFormTitle: document.querySelector("#wordhub-form-title"),
@@ -668,6 +694,9 @@ let storySaveTimer;
 let currentWritingView = "overview";
 let currentGeneratedPrompt = "";
 let writingFocusMode = false;
+let writingZoom = 100;
+let lastWritingSelectionRange = null;
+let writingFindCursor = 0;
 let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 let activeReaderCatalogue = [];
@@ -5022,8 +5051,12 @@ function ensureWritingProject(project) {
   item.researchShelf = item.researchShelf.map((entry) => ({
     id: entry.id || crypto.randomUUID(),
     catalogueItemId: entry.catalogueItemId || "",
+    sourceType: entry.sourceType || (entry.catalogueItemId ? "book" : "note"),
+    sourceId: entry.sourceId || entry.catalogueItemId || "",
     title: entry.title || "",
     author: entry.author || "",
+    excerpt: entry.excerpt || "",
+    citation: entry.citation || "",
     notes: entry.notes || "",
     tags: Array.isArray(entry.tags) ? entry.tags : parseTagList(entry.tags),
     chapterId: entry.chapterId || "",
@@ -5366,6 +5399,13 @@ function renderWritingProjectMeta(project) {
 function renderManuscriptInsights(project = currentStory()) {
   if (!project) return;
   const text = richTextToPlain(elements.storyDraftInput.innerHTML);
+  const words = storyWordTotal(text);
+  const paragraphs = Array.from(
+    elements.storyDraftInput.querySelectorAll("p, h1, h2, h3, blockquote, li"),
+  ).filter((node) => node.textContent.trim()).length || (text.trim() ? 1 : 0);
+  elements.writingParagraphCount.textContent = paragraphs;
+  elements.writingReadingTime.textContent = words ? Math.max(1, Math.ceil(words / 225)) : 0;
+  elements.writingPageCount.textContent = Math.max(1, Math.ceil(words / 500));
   const query = normalize(elements.storyManuscriptSearchInput.value);
   if (!query) {
     elements.storySearchResults.textContent =
@@ -5594,15 +5634,17 @@ function renderResearchShelf(project = currentStory()) {
     .map(
       (entry) => `
         <article class="writing-item-card">
-          <p class="writing-card-meta">Research shelf</p>
+          <p class="writing-card-meta">${escapeHtml(entry.sourceType || "Research shelf")}</p>
           <h3>${escapeHtml(entry.title || "Unlinked title")}</h3>
           <p><strong>Author:</strong> ${escapeHtml(entry.author || "Unknown")}</p>
+          ${entry.excerpt ? `<p>${escapeHtml(entry.excerpt)}</p>` : ""}
           <p>${escapeHtml(entry.notes || "No notes yet.")}</p>
           <div class="writing-tag-cloud">
             ${(entry.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
           </div>
           <div class="writing-card-actions">
-            <button type="button" data-research-action="open-book" data-book-id="${entry.catalogueItemId}">Open book</button>
+            ${entry.catalogueItemId ? `<button type="button" data-research-action="open-book" data-book-id="${entry.catalogueItemId}">Open book</button>` : ""}
+            <button type="button" data-research-action="insert-pinned" data-id="${entry.id}">Insert citation</button>
             <button type="button" data-research-action="edit" data-id="${entry.id}">Edit</button>
             <button type="button" data-research-action="delete" data-id="${entry.id}">Delete</button>
           </div>
@@ -5610,6 +5652,274 @@ function renderResearchShelf(project = currentStory()) {
       `,
     )
     .join("") || '<p class="writing-card-meta">No research items yet. Link books from your catalogue to build this shelf.</p>';
+}
+
+function researchPreview(value, limit = 230) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return text.length > limit ? `${text.slice(0, limit).trim()}...` : text;
+}
+
+function allWritingResearchSources() {
+  if (!currentAccount) return [];
+  const sources = [];
+  ownedByCurrent(books).forEach((book) => {
+    sources.push({
+      key: `book:${book.id}`,
+      kind: "book",
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      meta: [book.genre, book.format, book.status].filter(Boolean).join(" / "),
+      excerpt: book.notes || "Book in your collection.",
+      citation: `${book.title} by ${book.author}`,
+    });
+  });
+  ownedByCurrent(passages).forEach((passage) => {
+    const page = passage.page ? `, p. ${passage.page}` : "";
+    sources.push({
+      key: `passage:${passage.id}`,
+      kind: "passage",
+      id: passage.id,
+      title: passage.title,
+      author: passage.author,
+      meta: `Saved passage${page}`,
+      excerpt: passage.text || passage.reflection || "Photographed passage",
+      citation: `${passage.title} by ${passage.author}${page}`,
+    });
+  });
+  journals.forEach((entry) => {
+    const bookNames = (entry.books || []).map((book) => book.title).join(", ");
+    sources.push({
+      key: `journal:${entry.id}`,
+      kind: "journal",
+      id: entry.id,
+      title: `Journal - ${journalDateLabel(entry.entryDate)}`,
+      author: currentAccount.username,
+      meta: bookNames || "General reflection",
+      excerpt: entry.reflection,
+      citation: `Personal journal, ${journalDateLabel(entry.entryDate)}`,
+      original: entry,
+    });
+  });
+  ownedByCurrent(readingLog).forEach((entry) => {
+    const pageDetail = entry.specificPages || [entry.startPageLabel, entry.endPageLabel].filter(Boolean).join("-");
+    sources.push({
+      key: `reading:${entry.id}`,
+      kind: "reading",
+      id: entry.id,
+      title: entry.title,
+      author: entry.author,
+      meta: `${formatDate(entry.date)} / ${entry.pagesRead || 0} pages / ${formatDuration(entry.durationMinutes)}`,
+      excerpt: pageDetail ? `Pages recorded: ${pageDetail}` : "Reading session",
+      citation: `Reading log: ${entry.title}, ${formatDate(entry.date)}`,
+    });
+  });
+  ownedByCurrent(dreams).forEach((dream) => {
+    sources.push({
+      key: `dream:${dream.id}`,
+      kind: "dream",
+      id: dream.id,
+      title: dream.title,
+      author: currentAccount.username,
+      meta: `Dream journal / ${dreamDateLabel(dream.dreamDate)}`,
+      excerpt: [dream.dream, dream.symbols, dream.archetypes, dream.motifs].filter(Boolean).join(" "),
+      citation: `Dream journal: ${dream.title}, ${dreamDateLabel(dream.dreamDate)}`,
+    });
+  });
+  ownedByCurrent(wordhub).forEach((entry) => {
+    sources.push({
+      key: `word:${entry.id}`,
+      kind: "word",
+      id: entry.id,
+      title: entry.word,
+      author: entry.book || "WordHub Alcove",
+      meta: entry.page ? `Found on page ${entry.page}` : "Vocabulary note",
+      excerpt: [entry.meaning, entry.sentence].filter(Boolean).join(" Example: "),
+      citation: `${entry.word}: ${entry.meaning}`,
+    });
+  });
+  ownedByCurrent(wishlist).forEach((item) => {
+    sources.push({
+      key: `wishlist:${item.id}`,
+      kind: "wishlist",
+      id: item.id,
+      title: item.title,
+      author: item.author || "Unknown author",
+      meta: "Wishlist",
+      excerpt: item.note || item.notes || "Book saved for future purchase.",
+      citation: `${item.title} by ${item.author || "Unknown author"}`,
+    });
+  });
+  return sources;
+}
+
+function writingResearchSource(key) {
+  return allWritingResearchSources().find((source) => source.key === key);
+}
+
+function renderResearchLibrary(project = currentStory()) {
+  if (!project || !elements.researchLibraryResults) return;
+  const query = normalize(elements.researchLibrarySearch.value);
+  const kind = elements.researchLibraryFilter.value;
+  const sources = allWritingResearchSources()
+    .filter((source) => kind === "all" || source.kind === kind)
+    .filter((source) => {
+      if (!query) return true;
+      return normalize([
+        source.title,
+        source.author,
+        source.meta,
+        source.excerpt,
+        source.citation,
+      ].join(" ")).includes(query);
+    })
+    .sort((first, second) => first.title.localeCompare(second.title, undefined, { sensitivity: "base" }));
+  elements.researchResultCount.textContent = `${sources.length} result${sources.length === 1 ? "" : "s"}`;
+  elements.researchLibraryResults.innerHTML = sources.length
+    ? sources.map((source) => {
+        const pinned = project.researchShelf.some(
+          (entry) => entry.sourceType === source.kind && entry.sourceId === source.id,
+        );
+        return `
+          <article class="research-source-card">
+            <span class="research-source-kind">${escapeHtml(source.kind)}</span>
+            <h4>${escapeHtml(source.title || "Untitled source")}</h4>
+            <p class="writing-card-meta">${escapeHtml(source.author || "Personal note")} / ${escapeHtml(source.meta || "Saved in the app")}</p>
+            <p>${escapeHtml(researchPreview(source.excerpt) || "No preview available.")}</p>
+            <div class="research-source-actions">
+              <button type="button" data-library-research-action="insert" data-key="${escapeHtml(source.key)}">Insert citation</button>
+              <button type="button" data-library-research-action="pin" data-key="${escapeHtml(source.key)}" ${pinned ? "disabled" : ""}>${pinned ? "Pinned" : "Pin to project"}</button>
+              ${source.kind === "journal" ? `<button type="button" data-library-research-action="import-journal" data-key="${escapeHtml(source.key)}">Open as document</button>` : ""}
+              ${source.kind !== "journal" ? `<button type="button" data-library-research-action="open-source" data-key="${escapeHtml(source.key)}">Open source</button>` : ""}
+            </div>
+          </article>`;
+      }).join("")
+    : '<p class="writing-card-meta">No saved information matches this search.</p>';
+}
+
+function sourceCitationHtml(source) {
+  const excerpt = researchPreview(source.excerpt, 700);
+  if (source.kind === "passage" || source.kind === "journal" || source.kind === "dream") {
+    return `<blockquote>${escapeHtml(excerpt)}</blockquote><p><cite>${escapeHtml(source.citation)}</cite></p><p><br></p>`;
+  }
+  return `<p><cite>${escapeHtml(source.citation)}</cite>${excerpt ? ` - ${escapeHtml(excerpt)}` : ""}</p><p><br></p>`;
+}
+
+function insertHtmlIntoWritingDocument(html) {
+  setWritingView("manuscript");
+  elements.storyDraftInput.focus();
+  const selection = window.getSelection();
+  if (lastWritingSelectionRange) {
+    selection.removeAllRanges();
+    selection.addRange(lastWritingSelectionRange);
+  } else {
+    const range = document.createRange();
+    range.selectNodeContents(elements.storyDraftInput);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+  document.execCommand("insertHTML", false, html);
+  lastWritingSelectionRange = selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+  scheduleStorySave();
+}
+
+function insertResearchSource(key) {
+  const source = writingResearchSource(key);
+  if (!source) return;
+  insertHtmlIntoWritingDocument(sourceCitationHtml(source));
+  showToast(`Inserted reference to "${source.title}".`);
+}
+
+function pinResearchSource(key) {
+  const story = currentStory();
+  const source = writingResearchSource(key);
+  if (!story || !source) return;
+  if (story.researchShelf.some((entry) => entry.sourceType === source.kind && entry.sourceId === source.id)) {
+    showToast("That source is already pinned to this document.");
+    return;
+  }
+  story.researchShelf.unshift({
+    id: crypto.randomUUID(),
+    catalogueItemId: source.kind === "book" ? source.id : "",
+    sourceType: source.kind,
+    sourceId: source.id,
+    title: source.title,
+    author: source.author,
+    excerpt: researchPreview(source.excerpt, 500),
+    citation: source.citation,
+    notes: "",
+    tags: [],
+    chapterId: "",
+    sceneId: "",
+  });
+  story.updatedAt = new Date().toISOString();
+  saveCreativeWriting();
+  renderResearchShelf(story);
+  renderResearchLibrary(story);
+  showToast(`"${source.title}" pinned to this document.`);
+}
+
+function importJournalAsDocument(key) {
+  const source = writingResearchSource(key);
+  const entry = source?.original;
+  if (!entry || !currentAccount) return;
+  const existing = allStoryProjects().find((project) => project.sourceJournalId === entry.id);
+  if (existing) {
+    openStory(existing.id);
+    setWritingView("manuscript");
+    return;
+  }
+  const linkedBooks = (entry.books || []).map((book) => ({
+    id: crypto.randomUUID(),
+    catalogueItemId: book.id || "",
+    sourceType: "book",
+    sourceId: book.id || "",
+    title: book.title || "",
+    author: book.author || "",
+    excerpt: "",
+    citation: `${book.title || "Untitled"} by ${book.author || "Unknown author"}`,
+    notes: "Imported from a journal entry.",
+    tags: ["journal"],
+    chapterId: "",
+    sceneId: "",
+  }));
+  const project = ensureWritingProject({
+    id: crypto.randomUUID(),
+    title: source.title,
+    type: "journal entry",
+    genre: "Reflection",
+    status: "drafting",
+    description: source.meta,
+    manuscriptHtml: plainTextToParagraphHtml(entry.reflection || ""),
+    manuscriptText: entry.reflection || "",
+    researchShelf: linkedBooks,
+    sourceJournalId: entry.id,
+    publishedJournalId: entry.id,
+    createdAt: entry.createdAt || `${String(entry.entryDate).slice(0, 10)}T12:00:00`,
+    updatedAt: new Date().toISOString(),
+    ownerId: currentAccount.id,
+  });
+  creativeWriting.unshift(project);
+  saveCreativeWriting();
+  openStory(project.id);
+  setWritingView("manuscript");
+  showToast("Journal entry opened as a Writing Studio document.");
+}
+
+function openWritingResearchSource(key) {
+  const source = writingResearchSource(key);
+  if (!source) return;
+  const routes = {
+    book: "collection",
+    passage: "passages",
+    reading: "reading-log",
+    dream: "dream-journal",
+    word: "wordhub",
+    wishlist: "wishlist",
+  };
+  const route = routes[source.kind];
+  if (route) window.location.hash = route;
 }
 
 function renderQuotes(project = currentStory()) {
@@ -5786,6 +6096,7 @@ function renderActiveStoryDetails(project = currentStory()) {
   renderWorldbuilding(project);
   renderTimeline(project);
   renderResearchShelf(project);
+  renderResearchLibrary(project);
   renderQuotes(project);
   renderGoals(project);
   renderPrompts(project);
@@ -5821,6 +6132,7 @@ function setWritingView(view) {
   if (view === "manuscript") {
     elements.storyDraftInput.focus();
   }
+  if (view === "research") renderResearchLibrary();
 }
 
 function populateProjectForm(project) {
@@ -5851,6 +6163,7 @@ function populateProjectForm(project) {
   elements.writingWeeklyGoalInput.value = toNumber(project.weeklyWordGoal) || "";
   elements.writingProjectGoalInput.value = toNumber(project.projectWordGoal) || "";
   elements.writingDeadlineInput.value = project.deadline || "";
+  elements.publishJournalButton.hidden = project.type !== "journal entry";
 }
 
 function openStory(storyId) {
@@ -5867,16 +6180,19 @@ function openStory(storyId) {
   setWritingView(currentWritingView);
 }
 
-function createStory() {
+function createStory(type = "novel") {
   if (!currentAccount) return;
+  const isJournal = type === "journal entry";
   const project = ensureWritingProject({
     id: crypto.randomUUID(),
-    title: "Untitled project",
-    type: "novel",
+    title: isJournal
+      ? `Journal - ${new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
+      : "Untitled document",
+    type,
     genre: "",
     description: "",
-    targetWordCount: 50000,
-    status: "idea",
+    targetWordCount: isJournal ? 0 : 50000,
+    status: isJournal ? "drafting" : "idea",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ownerId: currentAccount.id,
@@ -5885,6 +6201,11 @@ function createStory() {
   saveCreativeWriting();
   openStory(project.id);
   elements.storyTitleInput.select();
+}
+
+function createJournalDocument() {
+  createStory("journal entry");
+  setWritingView("manuscript");
 }
 
 function duplicateStoryProject(project) {
@@ -6009,7 +6330,47 @@ function saveProjectOverview() {
   renderWritingProjectMeta(story);
   elements.storyCurrentCountInput.value = currentStoryWordCount(story);
   elements.storyUpdatedInput.value = storyDateTimeLabel(story.updatedAt);
+  elements.publishJournalButton.hidden = story.type !== "journal entry";
   showToast(`"${story.title}" updated.`);
+}
+
+async function publishJournalDocument() {
+  const story = currentStory();
+  if (!story || story.type !== "journal entry") return;
+  saveOpenStory({ manual: true });
+  if (!story.manuscriptText.trim()) {
+    showToast("Write the journal entry before sharing it.");
+    return;
+  }
+  const linkedBookIds = new Set(
+    story.researchShelf
+      .filter((entry) => entry.sourceType === "book" || entry.catalogueItemId)
+      .map((entry) => entry.catalogueItemId || entry.sourceId),
+  );
+  const taggedBooks = ownedByCurrent(books)
+    .filter((book) => linkedBookIds.has(book.id))
+    .map(({ id, title, author }) => ({ id, title, author }));
+  try {
+    story.publishedJournalId ||= crypto.randomUUID();
+    await apiRequest("journal-save", {
+      method: "POST",
+      body: {
+        id: story.publishedJournalId,
+        entryDate: String(story.createdAt).slice(0, 10),
+        reflection: story.manuscriptText.trim(),
+        books: taggedBooks,
+        isShared: true,
+      },
+    });
+    saveCreativeWriting();
+    await Promise.all([loadJournals(), loadCommunity()]);
+    renderJournals();
+    renderCommunity();
+    renderResearchLibrary(story);
+    showToast("Journal entry shared with the community.");
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function saveOpenStory(options = {}) {
@@ -6086,8 +6447,128 @@ function duplicateOpenStory() {
 
 function applyWritingFormat(action, value = null) {
   elements.storyDraftInput.focus();
+  restoreWritingSelection();
   document.execCommand(action, false, value);
   scheduleStorySave();
+}
+
+function rememberWritingSelection() {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return;
+  const range = selection.getRangeAt(0);
+  if (elements.storyDraftInput.contains(range.commonAncestorContainer)) {
+    lastWritingSelectionRange = range.cloneRange();
+  }
+}
+
+function restoreWritingSelection() {
+  if (!lastWritingSelectionRange) return;
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(lastWritingSelectionRange);
+}
+
+function selectWritingTextRange(start, end) {
+  const walker = document.createTreeWalker(
+    elements.storyDraftInput,
+    NodeFilter.SHOW_TEXT,
+  );
+  const nodes = [];
+  let total = 0;
+  let node;
+  while ((node = walker.nextNode())) {
+    nodes.push({ node, start: total, end: total + node.nodeValue.length });
+    total += node.nodeValue.length;
+  }
+  const first = nodes.find((item) => start >= item.start && start <= item.end);
+  const last = nodes.find((item) => end >= item.start && end <= item.end) || nodes[nodes.length - 1];
+  if (!first || !last) return false;
+  const range = document.createRange();
+  range.setStart(first.node, Math.max(0, start - first.start));
+  range.setEnd(last.node, Math.max(0, Math.min(last.node.nodeValue.length, end - last.start)));
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  lastWritingSelectionRange = range.cloneRange();
+  elements.storyDraftInput.focus();
+  return true;
+}
+
+function findNextInWritingDocument() {
+  const query = elements.writingFindInput.value;
+  const text = richTextToPlain(elements.storyDraftInput.innerHTML);
+  if (!query.trim() || !text) return false;
+  const haystack = text.toLocaleLowerCase();
+  const needle = query.toLocaleLowerCase();
+  let index = haystack.indexOf(needle, writingFindCursor);
+  if (index < 0 && writingFindCursor > 0) index = haystack.indexOf(needle);
+  if (index < 0) {
+    showToast(`No match for "${query}".`);
+    writingFindCursor = 0;
+    return false;
+  }
+  writingFindCursor = index + needle.length;
+  selectWritingTextRange(index, index + query.length);
+  return true;
+}
+
+function replaceCurrentWritingMatch() {
+  const query = elements.writingFindInput.value;
+  const selection = window.getSelection();
+  if (!query.trim()) return;
+  if (selection?.toString().toLocaleLowerCase() !== query.toLocaleLowerCase()) {
+    if (!findNextInWritingDocument()) return;
+  }
+  document.execCommand("insertText", false, elements.writingReplaceInput.value);
+  scheduleStorySave();
+  findNextInWritingDocument();
+}
+
+function replaceAllWritingMatches() {
+  const query = elements.writingFindInput.value;
+  if (!query.trim()) return;
+  const replacement = elements.writingReplaceInput.value;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const matcher = new RegExp(escaped, "gi");
+  const walker = document.createTreeWalker(
+    elements.storyDraftInput,
+    NodeFilter.SHOW_TEXT,
+  );
+  const nodes = [];
+  let node;
+  while ((node = walker.nextNode())) nodes.push(node);
+  let count = 0;
+  nodes.forEach((textNode) => {
+    const matches = textNode.nodeValue.match(matcher);
+    if (!matches) return;
+    count += matches.length;
+    textNode.nodeValue = textNode.nodeValue.replace(matcher, replacement);
+  });
+  writingFindCursor = 0;
+  if (count) scheduleStorySave();
+  showToast(count ? `Replaced ${count} occurrence${count === 1 ? "" : "s"}.` : `No match for "${query}".`);
+}
+
+function addWritingLink() {
+  restoreWritingSelection();
+  const selection = window.getSelection();
+  if (!selection?.toString()) {
+    showToast("Select text in the document before adding a link.");
+    return;
+  }
+  const url = window.prompt("Enter the web address for this link:", "https://");
+  if (!url) return;
+  applyWritingFormat("createLink", url);
+}
+
+function insertWritingPageBreak() {
+  insertHtmlIntoWritingDocument('<div class="writing-page-break" contenteditable="false" aria-label="Page break"></div><p><br></p>');
+}
+
+function updateWritingZoom(nextZoom) {
+  writingZoom = Math.max(70, Math.min(150, nextZoom));
+  elements.storyDraftInput.style.zoom = `${writingZoom}%`;
+  elements.writingZoomLabel.textContent = `${writingZoom}%`;
 }
 
 function saveChapter() {
@@ -6459,6 +6940,18 @@ function deleteResearchItem(id) {
   renderActiveStoryDetails(story);
 }
 
+function insertPinnedResearchItem(id) {
+  const entry = currentStory()?.researchShelf.find((item) => item.id === id);
+  if (!entry) return;
+  insertHtmlIntoWritingDocument(
+    sourceCitationHtml({
+      kind: entry.sourceType || "note",
+      excerpt: entry.excerpt || entry.notes,
+      citation: entry.citation || `${entry.title}${entry.author ? ` by ${entry.author}` : ""}`,
+    }),
+  );
+}
+
 function saveQuoteReference() {
   const story = currentStory();
   if (!story) return;
@@ -6710,6 +7203,26 @@ function downloadWritingExport(extension, content, mimeType) {
   link.download = `${story.title || "writing-project"}.${extension}`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function exportWritingProjectForWord() {
+  const story = currentStory();
+  if (!story) return;
+  saveOpenStory({ manual: true });
+  const research = story.researchShelf.length
+    ? `<h2>Research references</h2><ul>${story.researchShelf
+        .map((entry) => `<li><strong>${escapeHtml(entry.title)}</strong>${entry.author ? ` by ${escapeHtml(entry.author)}` : ""}${entry.citation ? `<br>${escapeHtml(entry.citation)}` : ""}</li>`)
+        .join("")}</ul>`
+    : "";
+  const documentHtml = `<!doctype html>
+    <html><head><meta charset="utf-8"><title>${escapeHtml(story.title)}</title>
+    <style>body{font:12pt/1.6 Georgia,serif;margin:1in;color:#172a22}h1,h2,h3{font-family:Georgia,serif}blockquote{border-left:3px solid #c98945;padding-left:1em;color:#435249}.writing-page-break{page-break-after:always}</style>
+    </head><body><h1>${escapeHtml(story.title)}</h1>${story.manuscriptHtml || ""}${research}</body></html>`;
+  downloadWritingExport(
+    "doc",
+    documentHtml,
+    "application/msword;charset=utf-8",
+  );
 }
 
 function resetWordhubForm() {
@@ -9459,10 +9972,11 @@ document
   .addEventListener("click", openJournalForm);
 document
   .querySelector("#new-story-button")
-  .addEventListener("click", createStory);
+  .addEventListener("click", () => createStory());
 document
   .querySelector("#empty-new-story-button")
-  .addEventListener("click", createStory);
+  .addEventListener("click", () => createStory());
+elements.newJournalDocumentButton.addEventListener("click", createJournalDocument);
 document
   .querySelector("#delete-story-button")
   .addEventListener("click", deleteOpenStory);
@@ -9744,6 +10258,48 @@ document.querySelectorAll("[data-format-action]").forEach((button) => {
     );
   });
 });
+elements.writingStyleSelect.addEventListener("change", () => {
+  applyWritingFormat("formatBlock", elements.writingStyleSelect.value);
+});
+elements.writingFontSelect.addEventListener("change", () => {
+  applyWritingFormat("fontName", elements.writingFontSelect.value);
+});
+elements.writingSizeSelect.addEventListener("change", () => {
+  applyWritingFormat("fontSize", elements.writingSizeSelect.value);
+});
+elements.writingTextColour.addEventListener("input", () => {
+  applyWritingFormat("foreColor", elements.writingTextColour.value);
+});
+elements.writingHighlightColour.addEventListener("input", () => {
+  applyWritingFormat("hiliteColor", elements.writingHighlightColour.value);
+});
+elements.writingLinkButton.addEventListener("click", addWritingLink);
+elements.writingRuleButton.addEventListener("click", () =>
+  applyWritingFormat("insertHorizontalRule"),
+);
+elements.writingPageBreakButton.addEventListener("click", insertWritingPageBreak);
+elements.writingFindNextButton.addEventListener("click", findNextInWritingDocument);
+elements.writingReplaceButton.addEventListener("click", replaceCurrentWritingMatch);
+elements.writingReplaceAllButton.addEventListener("click", replaceAllWritingMatches);
+elements.writingFindInput.addEventListener("input", () => {
+  writingFindCursor = 0;
+});
+elements.writingZoomOut.addEventListener("click", () => updateWritingZoom(writingZoom - 10));
+elements.writingZoomIn.addEventListener("click", () => updateWritingZoom(writingZoom + 10));
+elements.publishJournalButton.addEventListener("click", publishJournalDocument);
+document.addEventListener("selectionchange", rememberWritingSelection);
+elements.storyDraftInput.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "s") {
+    event.preventDefault();
+    saveOpenStory({ manual: true });
+    showToast("Document saved.");
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === "f") {
+    event.preventDefault();
+    elements.writingFindInput.focus();
+    elements.writingFindInput.select();
+  }
+});
 
 elements.storySearchInput.addEventListener("input", renderStories);
 elements.storySortInput.addEventListener("change", renderStories);
@@ -9878,9 +10434,24 @@ elements.researchList.addEventListener("click", (event) => {
   if (!button) return;
   if (button.dataset.researchAction === "edit") editResearchItem(button.dataset.id);
   if (button.dataset.researchAction === "delete") deleteResearchItem(button.dataset.id);
+  if (button.dataset.researchAction === "insert-pinned") {
+    insertPinnedResearchItem(button.dataset.id);
+  }
   if (button.dataset.researchAction === "open-book") {
     focusCollectionBook(button.dataset.bookId);
   }
+});
+elements.researchLibrarySearch.addEventListener("input", () => renderResearchLibrary());
+elements.researchLibraryFilter.addEventListener("change", () => renderResearchLibrary());
+elements.researchLibraryResults.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-library-research-action]");
+  if (!button) return;
+  const action = button.dataset.libraryResearchAction;
+  const key = button.dataset.key;
+  if (action === "insert") insertResearchSource(key);
+  if (action === "pin") pinResearchSource(key);
+  if (action === "import-journal") importJournalAsDocument(key);
+  if (action === "open-source") openWritingResearchSource(key);
 });
 
 elements.quoteForm.addEventListener("submit", (event) => {
@@ -9955,6 +10526,7 @@ elements.exportMarkdownButton.addEventListener("click", () => {
   );
 });
 elements.exportPdfButton.addEventListener("click", printCurrentWritingProject);
+elements.exportWordButton.addEventListener("click", exportWritingProjectForWord);
 
 elements.wordhubForm.addEventListener("submit", (event) => {
   event.preventDefault();
