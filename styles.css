@@ -6782,6 +6782,67 @@ body.feature-menu-open::after {
   background: white;
 }
 
+.standalone-research-library {
+  margin: 1.25rem 0 1.75rem;
+  border: 1px solid rgba(23, 42, 34, 0.16);
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.standalone-research-library > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.standalone-research-library > summary::-webkit-details-marker {
+  display: none;
+}
+
+.standalone-research-library > summary strong,
+.standalone-research-library > summary small {
+  display: block;
+}
+
+.standalone-research-library > summary strong {
+  color: var(--forest);
+  font-size: 1rem;
+}
+
+.standalone-research-library > summary small {
+  margin-top: 0.25rem;
+  color: rgba(23, 42, 34, 0.62);
+  line-height: 1.45;
+}
+
+.standalone-research-library > summary > span:last-child {
+  flex: 0 0 auto;
+  color: var(--terracotta);
+  font: 700 0.6rem/1 Arial, sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.standalone-research-library[open] > summary {
+  border-bottom: 1px solid rgba(23, 42, 34, 0.12);
+}
+
+.standalone-research-library[open] > summary > span:last-child {
+  font-size: 0;
+}
+
+.standalone-research-library[open] > summary > span:last-child::after {
+  content: "Close library";
+  font-size: 0.6rem;
+}
+
+.standalone-research-library .research-explorer {
+  border: 0;
+}
+
 .research-explorer {
   padding: 1.25rem;
   background: linear-gradient(145deg, rgba(23, 63, 49, 0.09), rgba(201, 137, 69, 0.09));
