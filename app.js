@@ -10,6 +10,7 @@ const API_TOKEN_KEY = "my-library-api-token-v1";
 const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
 const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
 const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
+const NILLION_VOICE_KEY = "my-library-nillion-voice-v1";
 const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 
@@ -144,13 +145,13 @@ const WRITING_PROMPT_BANK = {
 
 const elements = {
   bookGrid: document.querySelector("#book-grid"),
-  bookshelfSort: document.querySelector("#bookshelf-sort"),
-  bookshelfDiagram: document.querySelector("#bookshelf-diagram"),
-  bookshelfCount: document.querySelector("#bookshelf-count"),
-  bookshelfDetails: document.querySelector("#bookshelf-details"),
-  bookshelfDetailCode: document.querySelector("#bookshelf-detail-code"),
-  bookshelfDetailTitle: document.querySelector("#bookshelf-detail-title"),
-  bookshelfDetailMeta: document.querySelector("#bookshelf-detail-meta"),
+  nillionAssistant: document.querySelector("#nillion-assistant"),
+  nillionStage: document.querySelector("#nillion-stage"),
+  nillionForm: document.querySelector("#nillion-form"),
+  nillionInput: document.querySelector("#nillion-input"),
+  nillionResponse: document.querySelector("#nillion-response"),
+  nillionVoiceToggle: document.querySelector("#nillion-voice-toggle"),
+  nillionVoiceLabel: document.querySelector("#nillion-voice-label"),
   catalogueExpandButton: document.querySelector("#catalogue-expand-button"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
@@ -677,6 +678,8 @@ let breakReminderTimer;
 let knownNotificationIds = new Set();
 let notificationBaselineReady = false;
 let audioContext;
+let nillionVoiceEnabled = localStorage.getItem(NILLION_VOICE_KEY) === "1";
+let nillionResponseTimer;
 let openMenuId = null;
 let activeCoverBookId = null;
 let activeEditingBookId = null;
@@ -1902,25 +1905,6 @@ function filteredBooks() {
     );
 }
 
-function sortedBookshelfBooks() {
-  const sortMode = elements.bookshelfSort?.value || "title";
-  return ownedByCurrent(books).sort((first, second) => {
-    if (sortMode === "genre") {
-      return (
-        String(first.genre || "").localeCompare(String(second.genre || ""), undefined, {
-          sensitivity: "base",
-        }) ||
-        first.title.localeCompare(second.title, undefined, { sensitivity: "base" }) ||
-        first.author.localeCompare(second.author, undefined, { sensitivity: "base" })
-      );
-    }
-    return (
-      first.title.localeCompare(second.title, undefined, { sensitivity: "base" }) ||
-      first.author.localeCompare(second.author, undefined, { sensitivity: "base" })
-    );
-  });
-}
-
 function bookStatusLabel(status) {
   return {
     read: "Read",
@@ -1929,51 +1913,349 @@ function bookStatusLabel(status) {
   }[status] || "To be read";
 }
 
-function showBookshelfDetails(book, code) {
-  if (!book || !elements.bookshelfDetails) return;
-  elements.bookshelfDetailCode.textContent = code;
-  elements.bookshelfDetailTitle.textContent = book.title;
-  elements.bookshelfDetailMeta.textContent =
-    `${book.author} · ${book.genre || "Uncategorized"} · ${bookStatusLabel(book.status)}`;
-  elements.bookshelfDetails.classList.add("active");
+function nillionList(values, limit = 5) {
+  const cleaned = values.filter(Boolean);
+  const visible = cleaned.slice(0, limit);
+  if (!visible.length) return "none";
+  const joined = visible.length === 1
+    ? visible[0]
+    : `${visible.slice(0, -1).join(", ")} and ${visible[visible.length - 1]}`;
+  return cleaned.length > limit
+    ? `${joined}, plus ${cleaned.length - limit} more`
+    : joined;
 }
 
-function renderBookshelfDiagram() {
-  if (!elements.bookshelfDiagram) return;
-  const shelfBooks = sortedBookshelfBooks();
-  elements.bookshelfCount.textContent = `${shelfBooks.length} ${
-    shelfBooks.length === 1 ? "book" : "books"
-  } on the shelf`;
-  elements.bookshelfDiagram.innerHTML = shelfBooks.length
-    ? shelfBooks
-        .map((book, index) => {
-          const code = `#${index + 1}`;
-          const title = `${code} ${book.title} by ${book.author}`;
-          return `
-            <button
-              class="bookshelf-spine ${escapeHtml(book.status || "unread")}"
-              type="button"
-              data-book-id="${book.id}"
-              data-code="${code}"
-              title="${escapeHtml(title)}"
-              aria-label="${escapeHtml(title)}"
-              style="--spine-accent: ${colorForGenre(book.genre)}"
-            >
-              <span>${code}</span>
-              <small>${escapeHtml(book.title)}</small>
-            </button>
-          `;
-        })
-        .join("")
-    : '<p class="bookshelf-empty">Add books to your Collection to fill this shelf.</p>';
-  if (shelfBooks.length) {
-    showBookshelfDetails(shelfBooks[0], "#1");
-  } else {
-    elements.bookshelfDetailCode.textContent = "#";
-    elements.bookshelfDetailTitle.textContent = "Hover or tap a book spine.";
-    elements.bookshelfDetailMeta.textContent = "The full title will appear here.";
-    elements.bookshelfDetails.classList.remove("active");
+function nillionReadingScope(query, accountLog) {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const todayKey = localDateString(today);
+  if (query.includes("today")) {
+    return {
+      label: "today",
+      entries: accountLog.filter((entry) => entry.date === todayKey),
+    };
   }
+  if (query.includes("yesterday")) {
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const key = localDateString(yesterday);
+    return {
+      label: "yesterday",
+      entries: accountLog.filter((entry) => entry.date === key),
+    };
+  }
+  if (query.includes("this week") || query.includes("past week") || query.includes("last 7 days")) {
+    const start = new Date(today);
+    start.setDate(today.getDate() - 6);
+    const startKey = localDateString(start);
+    return {
+      label: "over the last seven days",
+      entries: accountLog.filter((entry) => entry.date >= startKey && entry.date <= todayKey),
+    };
+  }
+  if (query.includes("this month")) {
+    const monthKey = todayKey.slice(0, 7);
+    return {
+      label: "this month",
+      entries: accountLog.filter((entry) => String(entry.date || "").startsWith(monthKey)),
+    };
+  }
+  if (query.includes("this year")) {
+    const yearKey = todayKey.slice(0, 4);
+    return {
+      label: "this year",
+      entries: accountLog.filter((entry) => String(entry.date || "").startsWith(yearKey)),
+    };
+  }
+  return { label: "across your complete reading log", entries: accountLog };
+}
+
+function nillionReadingSummary(entries) {
+  const byBook = new Map();
+  entries.forEach((entry) => {
+    const key = `${normalize(entry.title)}\u0000${normalize(entry.author)}`;
+    const current = byBook.get(key) || {
+      title: entry.title || "Untitled book",
+      author: entry.author || "Unknown author",
+      pages: 0,
+      minutes: 0,
+      sessions: 0,
+    };
+    current.pages += Number(entry.pagesRead) || 0;
+    current.minutes += Number(entry.durationMinutes) || 0;
+    current.sessions += 1;
+    byBook.set(key, current);
+  });
+  return [...byBook.values()].sort(
+    (first, second) => second.pages - first.pages || first.title.localeCompare(second.title),
+  );
+}
+
+function nillionBookAnswer(book) {
+  const progress = bookProgressInfo(book);
+  const rating = Number(book.rating) || 0;
+  const details = [
+    `${book.title} by ${book.author}`,
+    book.genre || "Uncategorized",
+    bookFormatLabel(book.format),
+    bookStatusLabel(book.status),
+  ];
+  if (progress.hasRange) details.push(`${progress.percent}% complete`);
+  if (rating) details.push(`${rating} out of 5 stars`);
+  const sessions = readingSessionsForBook(book);
+  const pages = sessions.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0);
+  if (sessions.length) {
+    details.push(`${sessions.length} logged ${sessions.length === 1 ? "session" : "sessions"} and ${pages} logged pages`);
+  }
+  return `${details.join("; ")}.`;
+}
+
+function nillionSearchAnswer(query) {
+  const accountBooks = ownedByCurrent(books);
+  const exactBook = [...accountBooks]
+    .sort((first, second) => second.title.length - first.title.length)
+    .find((book) => normalize(book.title).length > 2 && query.includes(normalize(book.title)));
+  if (exactBook) return nillionBookAnswer(exactBook);
+
+  const matchingAuthor = accountBooks.filter(
+    (book) => normalize(book.author).length > 2 && query.includes(normalize(book.author)),
+  );
+  if (matchingAuthor.length) {
+    return `You own ${matchingAuthor.length} ${matchingAuthor.length === 1 ? "book" : "books"} by ${matchingAuthor[0].author}: ${nillionList(matchingAuthor.map((book) => book.title))}.`;
+  }
+
+  const accountWords = ownedByCurrent(wordhub);
+  const matchingWord = accountWords.find(
+    (entry) => normalize(entry.word).length > 2 && query.includes(normalize(entry.word)),
+  );
+  if (matchingWord) {
+    return `${matchingWord.word}: ${matchingWord.meaning}${matchingWord.book ? ` You found it in ${matchingWord.book}${matchingWord.page ? ` on page ${matchingWord.page}` : ""}.` : ""}`;
+  }
+
+  const stopWords = new Set([
+    "about", "could", "from", "have", "library", "nillion", "please", "show", "tell", "that", "the", "this", "what", "where", "which", "with", "would", "your",
+  ]);
+  const tokens = query.split(/[^a-z0-9]+/).filter((word) => word.length > 2 && !stopWords.has(word));
+  if (!tokens.length) return "";
+  const sources = [
+    ...accountBooks.map((book) => ({ category: "Collection", title: book.title, text: `${book.title} ${book.author} ${book.genre}` })),
+    ...ownedByCurrent(passages).map((item) => ({ category: "Passage", title: item.title, text: `${item.title} ${item.author} ${item.text || ""} ${item.reflection || ""}` })),
+    ...journals.map((item) => ({ category: "Writing", title: journalDateLabel(item.entryDate), text: `${item.reflection || ""} ${(item.books || []).map((book) => book.title).join(" ")}` })),
+    ...ownedByCurrent(dreams).map((item) => ({ category: "Dream", title: item.title, text: `${item.title} ${item.dream} ${item.archetypes} ${item.motifs} ${item.symbols}` })),
+    ...allStoryProjects().map((item) => ({ category: "Writing project", title: item.title, text: `${item.title} ${item.genre} ${item.description} ${item.notes}` })),
+    ...accountWords.map((item) => ({ category: "WordHub", title: item.word, text: `${item.word} ${item.meaning} ${item.book} ${item.sentence}` })),
+  ]
+    .map((item) => ({
+      ...item,
+      score: tokens.filter((token) => normalize(item.text).includes(token)).length,
+    }))
+    .filter((item) => item.score > 0)
+    .sort((first, second) => second.score - first.score)
+    .slice(0, 5);
+  return sources.length
+    ? `I found these relevant records: ${sources.map((item) => `${item.category}: ${item.title}`).join("; ")}.`
+    : "";
+}
+
+function answerNillionQuestion(rawQuestion) {
+  const query = normalize(rawQuestion).replace(/[?!.]+$/g, "");
+  if (!query) return "Ask me a question and I will search your saved library data.";
+  if (!currentAccount) return "Please sign in so I can read your library data.";
+
+  const accountBooks = ownedByCurrent(books);
+  const accountLog = ownedByCurrent(readingLog);
+  const accountPassages = ownedByCurrent(passages);
+  const accountWishlist = ownedByCurrent(wishlist);
+  const accountDreams = ownedByCurrent(dreams);
+  const accountWords = ownedByCurrent(wordhub);
+  const projects = allStoryProjects();
+  const scope = nillionReadingScope(query, accountLog);
+  const scopedBooks = nillionReadingSummary(scope.entries);
+  const scopedPages = scope.entries.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0);
+  const scopedMinutes = scope.entries.reduce((total, entry) => total + (Number(entry.durationMinutes) || 0), 0);
+
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening)\b/.test(query)) {
+    return `Hello${currentAccount.username ? `, ${currentAccount.username}` : ""}. I am Nillion. What would you like to know about your library?`;
+  }
+  if (query.includes("what can you do") || query.includes("how can you help") || query === "help") {
+    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, dreams, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can also look up a specific saved title, author, or word.";
+  }
+  if (query.includes("currently reading") || query.includes("busy reading") || query.includes("reading now")) {
+    const current = accountBooks.filter((book) => book.status === "reading");
+    return current.length
+      ? `You are currently reading ${nillionList(current.map((book) => `${book.title} by ${book.author}`))}.`
+      : "No book in your collection is marked Busy Reading right now.";
+  }
+  if ((query.includes("book") && (query.includes("did i read") || query.includes("have i read") || query.includes("read today") || query.includes("read yesterday"))) || query.includes("reading sessions today")) {
+    if (!scope.entries.length) return `You have no reading sessions logged ${scope.label}.`;
+    return `You logged ${scope.entries.length} ${scope.entries.length === 1 ? "session" : "sessions"} ${scope.label}: ${nillionList(scopedBooks.map((book) => `${book.title} (${book.pages} pages)`), 6)}. Total time: ${formatDuration(scopedMinutes)}.`;
+  }
+  if (query.includes("how fast") || query.includes("reading speed") || query.includes("reading pace") || query.includes("pages per hour")) {
+    const paced = scope.entries.filter(
+      (entry) => Number(entry.pagesRead) > 0 && Number(entry.durationMinutes) > 0,
+    );
+    const pages = paced.reduce((total, entry) => total + Number(entry.pagesRead), 0);
+    const minutes = paced.reduce((total, entry) => total + Number(entry.durationMinutes), 0);
+    if (!paced.length || !minutes) {
+      return `I need at least one reading session with both pages and duration to calculate your pace ${scope.label}.`;
+    }
+    const pace = Math.round((pages / minutes) * 60);
+    const averageMinutes = Math.round(minutes / paced.length);
+    return `Your measured pace ${scope.label} is about ${pace} pages per hour across ${paced.length} ${paced.length === 1 ? "session" : "sessions"}. The average timed session lasted ${formatDuration(averageMinutes)}. Different formats and difficult books can naturally change this rate.`;
+  }
+  if (query.includes("how many pages") || query.includes("pages read") || query.includes("page total")) {
+    const pages = scope.label === "across your complete reading log"
+      ? lifetimePagesReadFrom(accountLog)
+      : scopedPages;
+    return `You have read ${pages.toLocaleString()} ${pages === 1 ? "page" : "pages"} ${scope.label}. ${scope.entries.length ? `That period contains ${scope.entries.length} logged ${scope.entries.length === 1 ? "session" : "sessions"}.` : "There are no sessions in that period."}`;
+  }
+  if (query.includes("how long") || query.includes("reading time") || query.includes("time spent reading")) {
+    return `You logged ${formatDuration(scopedMinutes)} of reading ${scope.label} across ${scope.entries.length} ${scope.entries.length === 1 ? "session" : "sessions"}.`;
+  }
+  if (query.includes("reading habit") || query.includes("reading insight") || query.includes("reading pattern")) {
+    if (!accountLog.length) return "Log a few reading sessions and I will be able to identify your pace, session length, and active reading days.";
+    const timed = accountLog.filter((entry) => Number(entry.durationMinutes) > 0);
+    const totalMinutes = timed.reduce((total, entry) => total + Number(entry.durationMinutes), 0);
+    const totalPages = timed.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0);
+    const dates = new Set(accountLog.map((entry) => entry.date)).size;
+    const averagePages = Math.round(accountLog.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0) / accountLog.length);
+    const pace = totalMinutes ? Math.round((totalPages / totalMinutes) * 60) : 0;
+    return `Across ${accountLog.length} sessions on ${dates} active days, you average ${averagePages} pages per session${pace ? ` and about ${pace} pages per hour in timed sessions` : ""}. Your current reading streak is ${calculateStreak()} ${calculateStreak() === 1 ? "day" : "days"}. Open Reading Log for the full charts and period comparisons.`;
+  }
+  if (query.includes("wishlist") || query.includes("want to buy") || query.includes("want to purchase")) {
+    return accountWishlist.length
+      ? `Your wishlist contains ${accountWishlist.length} ${accountWishlist.length === 1 ? "book" : "books"}: ${nillionList(accountWishlist.map((item) => item.title), 7)}.`
+      : "Your wishlist is empty.";
+  }
+  if (query.includes("passage") || query.includes("quote")) {
+    const recent = [...accountPassages].sort((first, second) => String(second.createdAt).localeCompare(String(first.createdAt)));
+    return recent.length
+      ? `You have ${recent.length} saved ${recent.length === 1 ? "passage" : "passages"}. Your most recent is from ${recent[0].title} by ${recent[0].author}${recent[0].page ? `, page ${recent[0].page}` : ""}.`
+      : "You have not saved any passages yet.";
+  }
+  if (query.includes("journal") || query.includes("reflection")) {
+    const recent = [...journals].sort((first, second) => String(second.entryDate).localeCompare(String(first.entryDate)));
+    return recent.length
+      ? `You have ${recent.length} saved writing ${recent.length === 1 ? "entry" : "entries"}. The latest is dated ${journalDateLabel(recent[0].entryDate)}${recent[0].books?.length ? ` and references ${nillionList(recent[0].books.map((book) => book.title), 3)}` : ""}.`
+      : "You have not saved a journal reflection yet.";
+  }
+  if (query.includes("dream")) {
+    const recent = [...accountDreams].sort((first, second) => String(second.dreamDate).localeCompare(String(first.dreamDate)));
+    return recent.length
+      ? `Your Dream Journal contains ${recent.length} ${recent.length === 1 ? "dream" : "dreams"} and about ${estimatedDreamSymbolCount()} listed symbols. The latest entry is ${recent[0].title}, dated ${dreamDateLabel(recent[0].dreamDate)}.`
+      : "Your Dream Journal is empty.";
+  }
+  if (query.includes("wordhub") || query.includes("vocabulary") || query.includes("saved words")) {
+    return accountWords.length
+      ? `Your WordHub Alcove holds ${accountWords.length} ${accountWords.length === 1 ? "word" : "words"}: ${nillionList(accountWords.map((entry) => entry.word), 8)}.`
+      : "Your WordHub Alcove is empty.";
+  }
+  if (query.includes("writing project") || query.includes("manuscript") || query.includes("creative writing")) {
+    const totalWords = projects.reduce((total, project) => total + currentStoryWordCount(project), 0);
+    return projects.length
+      ? `Your Writing Studio has ${projects.length} ${projects.length === 1 ? "project" : "projects"} with ${totalWords.toLocaleString()} manuscript words in total: ${nillionList(projects.map((project) => project.title), 6)}.`
+      : "You have no Writing Studio projects yet.";
+  }
+  if (query.includes("follower") || query.includes("following")) {
+    const followers = follows.filter((follow) => follow.followingId === currentAccount.id).length;
+    const following = follows.filter((follow) => follow.followerId === currentAccount.id).length;
+    return `You have ${followers} ${followers === 1 ? "follower" : "followers"} and you follow ${following} ${following === 1 ? "reader" : "readers"}.`;
+  }
+  if (query.includes("recommendation")) {
+    const received = shares.filter((share) => share.recipientId === currentAccount.id && share.kind === "book");
+    const sent = shares.filter((share) => share.senderId === currentAccount.id && share.kind === "book");
+    const unread = received.filter((share) => !share.recipientReadAt).length;
+    return `You have received ${received.length} book ${received.length === 1 ? "recommendation" : "recommendations"} and sent ${sent.length}. ${unread ? `${unread} received ${unread === 1 ? "recommendation is" : "recommendations are"} unread.` : "You have no unread recommendations."}`;
+  }
+  if (query.includes("notification")) {
+    const unread = profileNotifications.filter((item) => !item.readAt).length;
+    return `You have ${profileNotifications.length} notifications in total, with ${unread} unread.`;
+  }
+  if (query.includes("achievement")) {
+    return profileAchievements.length
+      ? `You have unlocked ${profileAchievements.length} ${profileAchievements.length === 1 ? "achievement" : "achievements"}: ${nillionList(profileAchievements.map((item) => item.title), 6)}.`
+      : "You have not unlocked an achievement yet.";
+  }
+  if (query.includes("rune") || query.includes("streak")) {
+    return `You have ${runesBalance.toLocaleString()} Runes. Your current daily streak is ${streakCurrent} ${streakCurrent === 1 ? "day" : "days"}, and your longest is ${streakLongest} ${streakLongest === 1 ? "day" : "days"}.`;
+  }
+  if (query.includes("genre")) {
+    const totals = accountBooks.reduce((result, book) => {
+      const genre = book.genre || "Uncategorized";
+      result[genre] = (result[genre] || 0) + 1;
+      return result;
+    }, {});
+    const ordered = Object.entries(totals).sort((first, second) => second[1] - first[1]);
+    return ordered.length
+      ? `Your most represented genres are ${nillionList(ordered.map(([genre, count]) => `${genre} (${count})`), 6)}.`
+      : "Add books with genres and I can summarize your collection by genre.";
+  }
+  if (query.includes("finished") || query.includes("books have i read") || query.includes("read books")) {
+    const finished = accountBooks.filter((book) => book.status === "read");
+    return finished.length
+      ? `You have marked ${finished.length} ${finished.length === 1 ? "book" : "books"} as read: ${nillionList(finished.map((book) => book.title), 7)}.`
+      : "No books in your collection are marked Read yet.";
+  }
+  if (query.includes("to be read") || query.includes("unread book") || query.includes("not read")) {
+    const unread = accountBooks.filter((book) => book.status === "unread");
+    return unread.length
+      ? `You have ${unread.length} ${unread.length === 1 ? "book" : "books"} waiting to be read: ${nillionList(unread.map((book) => book.title), 7)}.`
+      : "Every book in your collection has been started or marked Read.";
+  }
+  if (query.includes("collection") || query.includes("my library") || query.includes("library overview") || query.includes("how many books")) {
+    const read = accountBooks.filter((book) => book.status === "read").length;
+    const reading = accountBooks.filter((book) => book.status === "reading").length;
+    const unread = accountBooks.length - read - reading;
+    return `Your collection has ${accountBooks.length} ${accountBooks.length === 1 ? "book" : "books"}: ${read} read, ${reading} busy reading, and ${unread} to be read. You also have ${accountWishlist.length} on your wishlist and ${accountPassages.length} saved passages.`;
+  }
+
+  const searchResult = nillionSearchAnswer(query);
+  return searchResult || "I could not find a confident answer in your saved data. Try asking about a title, author, reading period, passage, project, dream, word, wishlist, recommendation, or profile statistic.";
+}
+
+function updateNillionVoiceControl() {
+  if (!elements.nillionVoiceToggle) return;
+  const supported = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  if (!supported) nillionVoiceEnabled = false;
+  elements.nillionVoiceToggle.setAttribute("aria-pressed", String(nillionVoiceEnabled));
+  elements.nillionVoiceToggle.setAttribute("aria-disabled", String(!supported));
+  elements.nillionVoiceToggle.title = supported
+    ? `${nillionVoiceEnabled ? "Disable" : "Enable"} spoken answers`
+    : "Spoken answers are not supported by this browser";
+  elements.nillionVoiceLabel.textContent = supported
+    ? `Voice ${nillionVoiceEnabled ? "on" : "off"}`
+    : "Voice unavailable";
+}
+
+function speakNillionAnswer(answer) {
+  if (!nillionVoiceEnabled || !("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(answer);
+  const voices = window.speechSynthesis.getVoices();
+  utterance.voice = voices.find((voice) => /^en(-|_)/i.test(voice.lang)) || null;
+  utterance.rate = 0.94;
+  utterance.pitch = 0.96;
+  const finish = () => elements.nillionAssistant?.classList.remove("speaking");
+  utterance.onstart = () => elements.nillionAssistant?.classList.add("speaking");
+  utterance.onend = finish;
+  utterance.onerror = finish;
+  window.speechSynthesis.speak(utterance);
+}
+
+function askNillion(question) {
+  const trimmed = String(question || "").trim();
+  if (!trimmed) return;
+  window.clearTimeout(nillionResponseTimer);
+  window.speechSynthesis?.cancel();
+  elements.nillionAssistant.classList.remove("speaking");
+  elements.nillionAssistant.classList.add("thinking");
+  elements.nillionResponse.textContent = "Searching your library...";
+  nillionResponseTimer = window.setTimeout(() => {
+    const answer = answerNillionQuestion(trimmed);
+    elements.nillionResponse.textContent = answer;
+    elements.nillionAssistant.classList.remove("thinking");
+    speakNillionAnswer(answer);
+  }, 360);
 }
 
 function updateGenreOptions() {
@@ -2522,7 +2804,6 @@ function renderBooks() {
   updateAuthorSuggestions();
   updateStats();
   updateBookSuggestions();
-  renderBookshelfDiagram();
 
   const matchingBooks = filteredBooks();
   const visibleBooks = catalogueExpanded
@@ -10681,37 +10962,46 @@ elements.bookGrid.addEventListener("click", (event) => {
   }
 });
 
-elements.bookshelfSort.addEventListener("change", renderBookshelfDiagram);
-elements.bookshelfDiagram.addEventListener("mouseover", (event) => {
-  const spine = event.target.closest(".bookshelf-spine");
-  if (!spine) return;
-  const book = books.find(
-    (item) =>
-      item.id === spine.dataset.bookId &&
-      item.ownerId === currentAccount?.id,
-  );
-  showBookshelfDetails(book, spine.dataset.code);
+elements.nillionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!elements.nillionForm.reportValidity()) return;
+  askNillion(elements.nillionInput.value);
 });
-elements.bookshelfDiagram.addEventListener("focusin", (event) => {
-  const spine = event.target.closest(".bookshelf-spine");
-  if (!spine) return;
-  const book = books.find(
-    (item) =>
-      item.id === spine.dataset.bookId &&
-      item.ownerId === currentAccount?.id,
-  );
-  showBookshelfDetails(book, spine.dataset.code);
+
+document.querySelectorAll("[data-nillion-prompt]").forEach((button) => {
+  button.addEventListener("click", () => {
+    elements.nillionInput.value = button.dataset.nillionPrompt;
+    askNillion(button.dataset.nillionPrompt);
+  });
 });
-elements.bookshelfDiagram.addEventListener("click", (event) => {
-  const spine = event.target.closest(".bookshelf-spine");
-  if (!spine) return;
-  const book = books.find(
-    (item) =>
-      item.id === spine.dataset.bookId &&
-      item.ownerId === currentAccount?.id,
-  );
-  showBookshelfDetails(book, spine.dataset.code);
+
+elements.nillionVoiceToggle.addEventListener("click", () => {
+  if (elements.nillionVoiceToggle.getAttribute("aria-disabled") === "true") return;
+  nillionVoiceEnabled = !nillionVoiceEnabled;
+  localStorage.setItem(NILLION_VOICE_KEY, nillionVoiceEnabled ? "1" : "0");
+  if (!nillionVoiceEnabled) {
+    window.speechSynthesis.cancel();
+    elements.nillionAssistant.classList.remove("speaking");
+  }
+  updateNillionVoiceControl();
+  showToast(`Nillion voice ${nillionVoiceEnabled ? "enabled" : "disabled"}.`);
 });
+
+elements.nillionStage.addEventListener("pointermove", (event) => {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const bounds = elements.nillionStage.getBoundingClientRect();
+  const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+  const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+  elements.nillionStage.style.setProperty("--nillion-tilt-y", `${x * 8}deg`);
+  elements.nillionStage.style.setProperty("--nillion-tilt-x", `${y * -5}deg`);
+});
+
+elements.nillionStage.addEventListener("pointerleave", () => {
+  elements.nillionStage.style.setProperty("--nillion-tilt-y", "0deg");
+  elements.nillionStage.style.setProperty("--nillion-tilt-x", "0deg");
+});
+
+updateNillionVoiceControl();
 
 elements.logList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-log-action]");

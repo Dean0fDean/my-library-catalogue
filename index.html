@@ -340,42 +340,159 @@
             </label>
           </div>
 
-          <section class="bookshelf-map" aria-labelledby="bookshelf-map-title">
-            <div class="bookshelf-map-heading">
-              <div>
-                <p class="eyebrow">VISUAL SHELF MAP</p>
-                <h3 id="bookshelf-map-title">Bookshelf diagram</h3>
-                <p>
-                  Each spine represents one book in your Collection. Gold means
-                  read, gray means busy reading, and plain spines are still to be read.
+          <section
+            class="nillion-assistant"
+            id="nillion-assistant"
+            aria-labelledby="nillion-title"
+          >
+            <div class="nillion-copy">
+              <p class="nillion-kicker"><span aria-hidden="true"></span> IN-APP RESEARCH ASSISTANT</p>
+              <h3 id="nillion-title">Ask Nillion</h3>
+              <p class="nillion-introduction">
+                Nillion searches the information saved throughout your account and
+                turns it into a direct answer. Your library data stays within this app.
+              </p>
+
+              <div class="nillion-answer" id="nillion-answer">
+                <span class="nillion-answer-label">NILLION</span>
+                <p id="nillion-response" role="status" aria-live="polite">
+                  I am online. Ask me about your books, reading habits, passages,
+                  writing, dreams, vocabulary, or community activity.
                 </p>
               </div>
-              <label class="bookshelf-sort-control">
-                <span>Arrange by</span>
-                <select id="bookshelf-sort">
-                  <option value="title">Alphabetical title</option>
-                  <option value="genre">Genre, then title</option>
-                </select>
+
+              <div class="nillion-prompts" aria-label="Suggested questions">
+                <button type="button" data-nillion-prompt="What books did I read today?">
+                  Books read today
+                </button>
+                <button type="button" data-nillion-prompt="How fast do I read?">
+                  Reading pace
+                </button>
+                <button type="button" data-nillion-prompt="What am I currently reading?">
+                  Current reads
+                </button>
+                <button type="button" data-nillion-prompt="What can you tell me about my library?">
+                  Library overview
+                </button>
+              </div>
+            </div>
+
+            <div class="nillion-visual" id="nillion-stage" aria-hidden="true">
+              <span class="nillion-orbit orbit-one"></span>
+              <span class="nillion-orbit orbit-two"></span>
+              <span class="nillion-particle particle-one"></span>
+              <span class="nillion-particle particle-two"></span>
+              <span class="nillion-particle particle-three"></span>
+              <svg class="nillion-hologram" viewBox="0 0 420 500" focusable="false">
+                <defs>
+                  <radialGradient id="nillion-halo" cx="48%" cy="42%" r="58%">
+                    <stop offset="0" stop-color="#8dffe1" stop-opacity="0.98" />
+                    <stop offset="0.48" stop-color="#18e5b7" stop-opacity="0.86" />
+                    <stop offset="1" stop-color="#087d75" stop-opacity="0.08" />
+                  </radialGradient>
+                  <linearGradient id="nillion-body" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#071b24" />
+                    <stop offset="0.54" stop-color="#0a2029" />
+                    <stop offset="1" stop-color="#102e34" />
+                  </linearGradient>
+                  <linearGradient id="nillion-edge" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0" stop-color="#16e7bd" stop-opacity="0.18" />
+                    <stop offset="0.5" stop-color="#8affdf" stop-opacity="0.92" />
+                    <stop offset="1" stop-color="#16e7bd" stop-opacity="0.25" />
+                  </linearGradient>
+                  <filter id="nillion-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  </filter>
+                </defs>
+
+                <circle class="nillion-halo" cx="210" cy="224" r="164" fill="url(#nillion-halo)" />
+                <g class="nillion-body-group">
+                  <path
+                    class="nillion-shoulders"
+                    d="M72 494c7-83 47-121 108-137l60 1c67 14 105 56 112 136z"
+                    fill="url(#nillion-body)"
+                    stroke="url(#nillion-edge)"
+                    stroke-width="3"
+                  />
+                  <g class="nillion-head-group">
+                    <path
+                      class="nillion-hair"
+                      d="M116 310c-22-40-28-102-10-151 18-50 62-83 113-79 48 4 87 35 101 80 13 42 7 91-9 131l-21 66-47-21-79 18z"
+                      fill="#061720"
+                      stroke="#22e9bd"
+                      stroke-width="3"
+                    />
+                    <path
+                      class="nillion-face"
+                      d="M166 136c45-13 92 13 108 54 10 26 7 58-8 81-12 18-27 32-31 61l-52-1c-4-25-21-33-33-54-13-23-15-55-7-82 5-18 12-41 23-59z"
+                      fill="url(#nillion-body)"
+                      stroke="#57fbd5"
+                      stroke-width="2.5"
+                    />
+                    <g class="nillion-glasses" fill="none" stroke="#9affdf" stroke-width="4">
+                      <path d="M151 205c18-9 37-8 52 2l-5 28c-14 8-31 7-43-4z" />
+                      <path d="M219 207c17-9 36-6 49 6l-8 27c-15 6-30 2-40-8z" />
+                      <path d="M201 213c7-4 13-4 20 1M149 210l-13-6" />
+                    </g>
+                    <path class="nillion-nose" d="M211 219l-8 35 18 4" fill="none" stroke="#48e8c4" stroke-width="2" />
+                    <g class="nillion-mouth" stroke="#8affdf" stroke-linecap="round">
+                      <path d="M195 278c12 6 25 6 37-1" stroke-width="2.5" />
+                      <path class="nillion-voice-wave wave-one" d="M192 288h43" />
+                      <path class="nillion-voice-wave wave-two" d="M198 295h31" />
+                    </g>
+                    <g class="nillion-curls" fill="none" stroke="#24dcb4" stroke-width="2.4" opacity="0.86">
+                      <path d="M145 113c-39 16-44 63-24 85s-6 35-13 57 18 32 10 59" />
+                      <path d="M126 139c-24 22-12 50 5 63s-20 39-14 63 25 27 13 64" />
+                      <path d="M278 109c40 19 43 57 26 81s11 35 13 61-19 34-6 67" />
+                      <path d="M300 137c26 29 7 53-5 68s24 37 15 66-24 29-9 62" />
+                      <path d="M151 96c18-25 48-33 71-17 18-17 55-6 66 16" />
+                    </g>
+                  </g>
+                  <g class="nillion-arm nillion-arm-left">
+                    <path d="M137 381c-47 24-59 70-69 111h82l33-93z" fill="#0a2029" stroke="#23dcb5" stroke-width="2" />
+                    <path d="M115 416c17-16 34-20 48-10" fill="none" stroke="#6fffd8" stroke-width="2" />
+                  </g>
+                  <g class="nillion-arm nillion-arm-right">
+                    <path d="M276 379c53 21 69 70 76 113h-82l-31-94z" fill="#0a2029" stroke="#23dcb5" stroke-width="2" />
+                    <path d="M258 406c17-9 34-4 49 12" fill="none" stroke="#6fffd8" stroke-width="2" />
+                  </g>
+                  <path class="nillion-core" d="M184 378l26 24 28-24 18 69-47 29-47-29z" fill="none" stroke="#65fbd4" stroke-width="2" />
+                </g>
+                <g class="nillion-scanlines" stroke="#83ffe0" stroke-width="1" opacity="0.23">
+                  <path d="M74 174h272M59 216h302M63 258h294M77 300h266M99 342h222M113 384h194M95 426h232" />
+                </g>
+              </svg>
+              <span class="nillion-status"><i></i> Linked to your library</span>
+            </div>
+
+            <form class="nillion-composer" id="nillion-form">
+              <label class="nillion-input-wrap" for="nillion-input">
+                <span class="sr-only">Ask Nillion a question about your library</span>
+                <input
+                  id="nillion-input"
+                  name="question"
+                  type="text"
+                  maxlength="240"
+                  autocomplete="off"
+                  placeholder="Ask Nillion about your library..."
+                  required
+                />
               </label>
-            </div>
-            <div class="bookshelf-legend" aria-label="Bookshelf status legend">
-              <span><i class="legend-read"></i> Read</span>
-              <span><i class="legend-reading"></i> Busy reading</span>
-              <span><i class="legend-unread"></i> To be read</span>
-            </div>
-            <div class="bookshelf-stage">
-              <div
-                id="bookshelf-diagram"
-                class="bookshelf-diagram"
-                aria-label="Bookshelf diagram of collection"
-              ></div>
-              <aside id="bookshelf-details" class="bookshelf-details">
-                <strong id="bookshelf-detail-code">#</strong>
-                <span id="bookshelf-detail-title">Hover or tap a book spine.</span>
-                <small id="bookshelf-detail-meta">The full title will appear here.</small>
-              </aside>
-            </div>
-            <p id="bookshelf-count" class="bookshelf-count">0 books on the shelf</p>
+              <button
+                class="nillion-voice-toggle"
+                id="nillion-voice-toggle"
+                type="button"
+                aria-pressed="false"
+                title="Enable spoken answers"
+              >
+                <span class="nillion-speaker" aria-hidden="true"></span>
+                <span id="nillion-voice-label">Voice off</span>
+              </button>
+              <button class="nillion-ask-button" type="submit">
+                Ask <span aria-hidden="true">-&gt;</span>
+              </button>
+            </form>
           </section>
 
           <div id="book-grid" class="book-grid" aria-live="polite"></div>
