@@ -694,6 +694,9 @@
               <button class="print-list-button" type="button" data-print-list="writing">
                 Print list
               </button>
+              <button class="secondary-writing-button" id="open-research-library-button" type="button">
+                Research Library
+              </button>
               <button class="secondary-writing-button" id="new-journal-document-button" type="button">
                 New journal entry
               </button>
@@ -737,6 +740,51 @@
               </select>
             </label>
           </div>
+
+          <details id="writing-research-library" class="standalone-research-library">
+            <summary>
+              <span>
+                <strong>Research Library</strong>
+                <small>Search your books, passages, archived journals, reading history, dreams, and vocabulary.</small>
+              </span>
+              <span aria-hidden="true">Open library</span>
+            </summary>
+            <section class="research-explorer" aria-labelledby="research-explorer-title">
+              <div class="entity-form-heading">
+                <div>
+                  <p class="eyebrow">EVERYTHING YOU HAVE GATHERED</p>
+                  <h3 id="research-explorer-title">Research Library</h3>
+                </div>
+                <span id="research-result-count">0 results</span>
+              </div>
+              <p class="research-explorer-intro">
+                Search across your collection, saved passages, journal archive,
+                reading sessions, dreams, wishlist, and WordHub. Archived journal
+                entries can be opened as editable Writing Studio documents.
+              </p>
+              <div class="research-explorer-toolbar">
+                <label class="search-box">
+                  <span class="search-icon" aria-hidden="true"></span>
+                  <span class="sr-only">Search all saved research</span>
+                  <input id="research-library-search" type="search" placeholder="Search titles, authors, passages, notes, symbols, and words..." />
+                </label>
+                <label class="select-wrap">
+                  <span class="sr-only">Filter research source</span>
+                  <select id="research-library-filter">
+                    <option value="all">All saved information</option>
+                    <option value="book">Collection</option>
+                    <option value="passage">Saved passages</option>
+                    <option value="journal">Journal archive</option>
+                    <option value="reading">Reading log</option>
+                    <option value="dream">Dream journal</option>
+                    <option value="word">WordHub</option>
+                    <option value="wishlist">Wishlist</option>
+                  </select>
+                </label>
+              </div>
+              <div id="research-library-results" class="research-library-results" aria-live="polite"></div>
+            </section>
+          </details>
 
           <div class="writing-workspace">
             <aside class="story-library" aria-labelledby="story-library-title">
@@ -834,7 +882,7 @@
                   Timeline
                 </button>
                 <button type="button" data-writing-view="research" aria-selected="false">
-                  Research Library
+                  Research Shelf
                 </button>
                 <button type="button" data-writing-view="quotes" aria-selected="false">
                   Quotes
@@ -1383,45 +1431,13 @@
               </div>
 
               <div id="story-research-view" class="writing-tab-panel" hidden>
-                <section class="research-explorer" aria-labelledby="research-explorer-title">
-                  <div class="entity-form-heading">
-                    <div>
-                      <p class="eyebrow">EVERYTHING YOU HAVE GATHERED</p>
-                      <h3 id="research-explorer-title">Research Library</h3>
-                    </div>
-                    <span id="research-result-count">0 results</span>
-                  </div>
-                  <p class="research-explorer-intro">
-                    Search across your collection, saved passages, journal archive,
-                    reading sessions, dreams, wishlist, and WordHub. Insert a citation
-                    into the document or pin the source to this project.
-                  </p>
-                  <div class="research-explorer-toolbar">
-                    <label class="search-box">
-                      <span class="search-icon" aria-hidden="true"></span>
-                      <span class="sr-only">Search all saved research</span>
-                      <input id="research-library-search" type="search" placeholder="Search titles, authors, passages, notes, symbols, and words..." />
-                    </label>
-                    <label class="select-wrap">
-                      <span class="sr-only">Filter research source</span>
-                      <select id="research-library-filter">
-                        <option value="all">All saved information</option>
-                        <option value="book">Collection</option>
-                        <option value="passage">Saved passages</option>
-                        <option value="journal">Journal archive</option>
-                        <option value="reading">Reading log</option>
-                        <option value="dream">Dream journal</option>
-                        <option value="word">WordHub</option>
-                        <option value="wishlist">Wishlist</option>
-                      </select>
-                    </label>
-                  </div>
-                  <div id="research-library-results" class="research-library-results" aria-live="polite"></div>
-                </section>
                 <form id="research-form" class="writing-entity-form">
                   <input id="research-id-input" type="hidden" />
                   <div class="entity-form-heading">
-                    <h3 id="research-form-title">Add to Research Shelf</h3>
+                    <div>
+                      <p class="eyebrow">SOURCES PINNED TO THIS DOCUMENT</p>
+                      <h3 id="research-form-title">Research Shelf</h3>
+                    </div>
                     <button id="research-cancel-edit" type="button" hidden>Cancel edit</button>
                   </div>
                   <div class="form-row three-columns">
