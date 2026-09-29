@@ -1036,19 +1036,19 @@
 
               <div class="writing-tabs" role="tablist" aria-label="Writing Studio workspace">
                 <button
-                  class="active"
                   type="button"
                   data-writing-view="overview"
-                  aria-selected="true"
+                  aria-selected="false"
                 >
                   Overview
                 </button>
                 <button
+                  class="active"
                   type="button"
                   data-writing-view="manuscript"
-                  aria-selected="false"
+                  aria-selected="true"
                 >
-                  Manuscript
+                  Document
                 </button>
                 <button type="button" data-writing-view="chapters" aria-selected="false">
                   Chapters &amp; Scenes
@@ -1086,7 +1086,7 @@
                 </button>
               </div>
 
-              <div id="story-overview-view" class="story-plan-view">
+              <div id="story-overview-view" class="story-plan-view" hidden>
                 <form id="writing-project-form" class="writing-entity-form">
                   <div class="form-row three-columns">
                     <label>
@@ -1210,7 +1210,7 @@
                 </form>
               </div>
 
-              <div id="story-manuscript-view" class="story-draft-view" hidden>
+              <div id="story-manuscript-view" class="story-draft-view">
                 <div class="word-processor-window" id="word-processor-window" data-orientation="portrait">
                   <div class="word-title-bar">
                     <div class="word-quick-access" aria-label="Quick access toolbar">

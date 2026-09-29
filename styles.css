@@ -7086,6 +7086,8 @@ body.feature-menu-open::after {
 
 /* Creative writing and WordHub */
 .creative-writing-section {
+  display: flex;
+  flex-direction: column;
   padding: 5.5rem clamp(1.25rem, 6vw, 6rem) 6rem;
   color: var(--ink);
   background:
@@ -7093,6 +7095,27 @@ body.feature-menu-open::after {
       0 0 / 42px 42px,
     #eee7da;
   border-top: 1px solid var(--line);
+}
+
+.creative-writing-section > .creative-heading {
+  order: 1;
+}
+
+.creative-writing-section > .writing-workspace {
+  order: 2;
+  margin-top: 2rem;
+}
+
+.creative-writing-section > .writing-dashboard {
+  order: 3;
+}
+
+.creative-writing-section > .writing-toolbar-panel {
+  order: 4;
+}
+
+.creative-writing-section > .standalone-research-library {
+  order: 5;
 }
 
 .creative-heading > div > p:last-child,

@@ -696,7 +696,7 @@ let toastTimer;
 let statsSyncTimer;
 let dataSyncTimer;
 let storySaveTimer;
-let currentWritingView = "overview";
+let currentWritingView = "manuscript";
 let currentGeneratedPrompt = "";
 let writingFocusMode = false;
 let writingZoom = 100;
@@ -5829,6 +5829,8 @@ function renderStories() {
   renderResearchLibrary();
   const stories = filteredStories();
   const activeId = elements.storyIdInput.value;
+  const shouldOpenLatest =
+    !activeId && stories.length > 0 && elements.storyEditor.hidden;
   elements.storyCount.textContent = stories.length;
   elements.storyList.innerHTML = stories
     .map((story) => {
@@ -5847,6 +5849,10 @@ function renderStories() {
     })
     .join("");
   elements.storyEmpty.hidden = stories.length > 0;
+  if (shouldOpenLatest) {
+    currentWritingView = "manuscript";
+    openStory(stories[0].id);
+  }
 }
 
 function updateWritingSelectionOptions(project = currentStory()) {
@@ -6782,7 +6788,9 @@ function createStory(type = "novel") {
   });
   creativeWriting.unshift(project);
   saveCreativeWriting();
+  currentWritingView = "manuscript";
   openStory(project.id);
+  setWritingView("manuscript");
   elements.storyTitleInput.select();
 }
 
@@ -11119,7 +11127,9 @@ elements.storyList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-story-id]");
   if (button) {
     saveOpenStory();
+    currentWritingView = "manuscript";
     openStory(button.dataset.storyId);
+    setWritingView("manuscript");
   }
 });
 
