@@ -28,10 +28,14 @@ earns each day's streak reward opens a dedicated popup showing the increased
 streak and five awarded Runes. Log out is always available in the header, and
 the quandary reporting action is available directly from Home.
 
-Creative Writing provides private synchronized story projects with fields for
-genre, point of view, premise, characters, setting, plot outline, and a full
-manuscript. Drafts autosave, show a live word count, and use the browser's
-spellchecker. WordHub Alcove stores words encountered while reading, their
+Writing Studio provides private synchronized documents with planning tools for
+genre, characters, setting, chapters, scenes, research, and revision. Its
+manuscript editor uses a familiar Word-style interface with a blue title bar,
+quick-access commands, File, Home, Insert, Layout, References, Review, and View
+ribbon tabs, a page ruler, a white document canvas, and a status bar. Drafts
+autosave, retain manual versions, show live word and character counts, use the
+browser's spellchecker, and preserve each document's margins, orientation, and
+line spacing. WordHub Alcove stores words encountered while reading, their
 meanings, source books and pages, and original practice sentences. WordHub
 entries can be searched, edited, and removed, and its writing fields also use
 spellcheck.

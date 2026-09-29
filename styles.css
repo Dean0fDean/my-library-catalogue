@@ -10169,3 +10169,424 @@ body.feature-menu-open::after {
     white-space: pre-wrap;
   }
 }
+
+@media screen {
+  .word-processor-window {
+    --word-blue: #2b579a;
+    --word-blue-dark: #1e3f73;
+    color: #252525;
+    background: #e6e6e6;
+    border: 1px solid #aeb5bd;
+    border-radius: 3px;
+    box-shadow: 0 20px 50px rgba(24, 37, 54, 0.2);
+    font-family: "Segoe UI", Arial, sans-serif;
+  }
+
+  .word-processor-window .word-title-bar {
+    min-height: 46px;
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(220px, 1.35fr) minmax(160px, 1fr);
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.38rem 0.7rem;
+    background: linear-gradient(90deg, var(--word-blue-dark), var(--word-blue) 58%, #3265ad);
+  }
+
+  .word-title-bar > .word-quick-access,
+  .word-title-bar > .word-title-actions {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .word-title-bar > .word-document-identity {
+    min-width: 0;
+    display: grid;
+    justify-items: center;
+    gap: 0.05rem;
+  }
+
+  .word-title-bar .word-app-mark {
+    width: 31px;
+    height: 31px;
+    color: var(--word-blue);
+    background: white;
+    border: 0;
+    border-radius: 2px;
+    opacity: 1;
+  }
+
+  .word-title-bar .word-cloud-status {
+    margin-left: 0;
+    padding-left: 0;
+  }
+
+  .word-processor-window .writing-ribbon-tabs {
+    min-height: 39px;
+    padding: 0 0.35rem;
+    background: #fdfdfd;
+  }
+
+  .word-processor-window .writing-ribbon-tabs button {
+    min-width: 68px;
+    height: 39px;
+    padding-inline: 0.85rem;
+  }
+
+  .word-processor-window .writing-ribbon-tabs .word-file-tab {
+    margin-left: -0.35rem;
+    color: white;
+    background: var(--word-blue);
+    border-bottom-color: var(--word-blue);
+  }
+
+  .word-processor-window .writing-ribbon-tabs .word-file-tab:hover,
+  .word-processor-window .writing-ribbon-tabs .word-file-tab:focus-visible,
+  .word-processor-window .writing-ribbon-tabs .word-file-tab.active {
+    color: white;
+    background: var(--word-blue-dark);
+    border-bottom-color: var(--word-blue-dark);
+  }
+
+  .word-processor-window .writing-format-toolbar {
+    min-height: 104px;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 0.35rem 0.45rem 0.25rem;
+    background: white;
+  }
+
+  .word-processor-window .writing-ribbon-group {
+    min-width: max-content;
+    min-height: 92px;
+    align-items: stretch;
+    align-content: stretch;
+    position: relative;
+    padding: 0.2rem 0.62rem 1.35rem;
+    border-right: 1px solid #d7d7d7;
+  }
+
+  .word-processor-window .writing-format-toolbar button,
+  .word-processor-window .writing-format-toolbar select {
+    min-height: 30px;
+    padding: 0.36rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    font-size: 0.68rem;
+  }
+
+  .word-processor-window .writing-format-toolbar select {
+    border-color: #c9c9c9;
+  }
+
+  .word-processor-window .writing-colour-control {
+    width: 32px;
+    height: 30px;
+    background: white;
+    border-color: transparent;
+  }
+
+  .word-processor-window .writing-find-replace {
+    grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto auto auto;
+    margin: 0;
+    padding: 0.5rem 0.7rem;
+    background: #f5f6f8;
+    border-bottom: 1px solid #cfd3d7;
+  }
+
+  .word-processor-window .writing-page-stage {
+    min-height: 720px;
+    padding: clamp(1rem, 4vw, 2.8rem);
+    background: #d9dde2;
+  }
+
+  .word-processor-window #story-draft-input {
+    width: min(100%, 816px);
+    min-height: 1056px;
+    padding: 92px 96px;
+    color: #171717;
+    background: white;
+    font: 400 11pt/1.15 Aptos, Calibri, Arial, sans-serif;
+    white-space: normal;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.24);
+  }
+
+  .word-processor-window[data-orientation="landscape"] #story-draft-input {
+    width: min(100%, 1056px);
+    min-height: 816px;
+  }
+
+  .word-processor-window #story-draft-input[data-margins="narrow"] {
+    padding: 52px 58px;
+  }
+
+  .word-processor-window #story-draft-input[data-margins="wide"] {
+    padding-right: 132px;
+    padding-left: 132px;
+  }
+
+  .word-processor-window #story-draft-input[data-line-spacing="1"] { line-height: 1; }
+  .word-processor-window #story-draft-input[data-line-spacing="1.15"] { line-height: 1.15; }
+  .word-processor-window #story-draft-input[data-line-spacing="1.5"] { line-height: 1.5; }
+  .word-processor-window #story-draft-input[data-line-spacing="2"] { line-height: 2; }
+
+  .word-processor-window .writing-status-bar {
+    min-height: 31px;
+    gap: 0.55rem 1rem;
+    margin: 0;
+    padding: 0.35rem 0.75rem;
+    color: #333;
+    background: #f8f8f8;
+    border: 0;
+    border-top: 1px solid #c7c7c7;
+    font-size: 0.62rem;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .word-processor-window .writing-zoom-controls button {
+    color: #333;
+    background: white;
+    border-color: #c8c8c8;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .word-processor-window .word-title-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .word-title-bar > .word-document-identity {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .word-processor-window .writing-format-toolbar {
+    min-height: 88px;
+  }
+
+  .word-processor-window .writing-ribbon-group {
+    min-height: 76px;
+    padding-bottom: 0.35rem;
+    border-right: 1px solid #d7d7d7;
+    border-bottom: 0;
+  }
+
+  .word-processor-window .writing-find-replace {
+    grid-template-columns: 1fr;
+  }
+
+  .word-processor-window .writing-page-stage {
+    min-height: 600px;
+    padding: 0.65rem;
+  }
+
+  .word-processor-window #story-draft-input,
+  .word-processor-window[data-orientation="landscape"] #story-draft-input {
+    width: 100%;
+    min-height: 760px;
+    padding: 3.3rem 2rem;
+  }
+
+  .word-processor-window #story-draft-input[data-margins="narrow"] {
+    padding: 2.25rem 1.25rem;
+  }
+
+  .word-processor-window #story-draft-input[data-margins="wide"] {
+    padding-right: 2.8rem;
+    padding-left: 2.8rem;
+  }
+}
+
+@media screen {
+  .word-quick-access,
+  .word-title-actions,
+  .word-ribbon-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .word-title-actions {
+    justify-content: flex-end;
+  }
+
+  .word-quick-access button,
+  .word-title-actions button {
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0.3rem 0.55rem;
+    color: white;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    font: 500 0.68rem/1 "Segoe UI", Arial, sans-serif;
+  }
+
+  .word-quick-access button:hover,
+  .word-title-actions button:hover,
+  .word-quick-access button:focus-visible,
+  .word-title-actions button:focus-visible {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.26);
+  }
+
+  .word-document-identity {
+    text-align: center;
+  }
+
+  .word-document-identity strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .word-document-identity span {
+    font-size: 0.6rem;
+  }
+
+  .word-ribbon-controls {
+    max-width: 430px;
+    align-content: center;
+  }
+
+  .word-ribbon-label {
+    position: absolute;
+    right: 0.4rem;
+    bottom: 0.18rem;
+    left: 0.4rem;
+    color: #666;
+    font-size: 0.58rem;
+    text-align: center;
+  }
+
+  .word-ribbon-help {
+    align-self: center;
+    max-width: 300px;
+    color: #666;
+    font-size: 0.66rem;
+    line-height: 1.35;
+  }
+
+  .word-font-controls {
+    display: grid;
+    grid-template-columns: minmax(132px, 1fr) 72px repeat(8, auto);
+    align-items: center;
+  }
+
+  .word-font-controls #writing-font-select { grid-column: 1; }
+  .word-font-controls #writing-size-select { grid-column: 2; }
+
+  .word-font-controls button,
+  .word-font-controls .writing-colour-control {
+    grid-row: 2;
+  }
+
+  .word-styles-ribbon select {
+    min-width: 120px;
+  }
+
+  .word-file-ribbon,
+  .word-insert-ribbon,
+  .word-layout-ribbon,
+  .writing-reference-ribbon,
+  .word-review-ribbon,
+  .writing-view-ribbon {
+    width: 100%;
+  }
+
+  .word-file-ribbon .word-ribbon-controls button,
+  .word-insert-ribbon .word-ribbon-controls button,
+  .writing-reference-ribbon .word-ribbon-controls button,
+  .word-review-ribbon .word-ribbon-controls button,
+  .writing-view-ribbon .word-ribbon-controls button {
+    min-width: 80px;
+    min-height: 58px;
+    display: grid;
+    place-items: center;
+    gap: 0.2rem;
+  }
+
+  .word-file-ribbon .word-ribbon-controls button span,
+  .word-insert-ribbon .word-ribbon-controls button span,
+  .writing-reference-ribbon .word-ribbon-controls button span,
+  .word-review-ribbon .word-ribbon-controls button span {
+    color: var(--word-blue);
+    font-size: 1.25rem;
+  }
+
+  .word-layout-ribbon label {
+    display: grid;
+    gap: 0.22rem;
+    margin: 0;
+    color: #555;
+    font-size: 0.62rem;
+  }
+
+  .word-layout-ribbon select {
+    min-width: 120px;
+  }
+
+  .word-ruler {
+    height: 25px;
+    position: relative;
+    overflow: hidden;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 9px, #a5a5a5 9px 10px, transparent 10px 19px),
+      linear-gradient(#f8f8f8, #e9e9e9);
+    border-bottom: 1px solid #bfc3c7;
+  }
+
+  .word-ruler::before,
+  .word-ruler::after {
+    content: "";
+    width: 0;
+    height: 0;
+    position: absolute;
+    top: 2px;
+    z-index: 2;
+    border-right: 5px solid transparent;
+    border-left: 5px solid transparent;
+    border-top: 7px solid #5d6570;
+  }
+
+  .word-ruler::before { left: max(24px, calc(50% - 350px)); }
+  .word-ruler::after { right: max(24px, calc(50% - 350px)); }
+
+  #story-draft-input:empty::before {
+    content: attr(data-placeholder);
+    color: #8a8a8a;
+    pointer-events: none;
+  }
+
+  #story-draft-input .writing-document-table {
+    width: 100%;
+    margin: 1rem 0;
+    border-collapse: collapse;
+  }
+
+  #story-draft-input .writing-document-table td {
+    min-width: 80px;
+    padding: 0.45rem;
+    border: 1px solid #777;
+  }
+
+  .word-processor-window .writing-status-bar > span:not(.writing-zoom-controls) {
+    padding-right: 0.8rem;
+    border-right: 1px solid #d2d2d2;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .word-ribbon-help,
+  .word-ribbon-label {
+    display: none;
+  }
+}

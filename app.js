@@ -338,6 +338,8 @@ const elements = {
   storyFocusButton: document.querySelector("#story-focus-button"),
   publishJournalButton: document.querySelector("#publish-journal-button"),
   newJournalDocumentButton: document.querySelector("#new-journal-document-button"),
+  wordProcessorWindow: document.querySelector("#word-processor-window"),
+  wordDocumentTitle: document.querySelector("#word-document-title"),
   writingStyleSelect: document.querySelector("#writing-style-select"),
   writingFontSelect: document.querySelector("#writing-font-select"),
   writingSizeSelect: document.querySelector("#writing-size-select"),
@@ -348,6 +350,11 @@ const elements = {
   writingOpenResearchButton: document.querySelector("#writing-open-research-button"),
   writingRuleButton: document.querySelector("#writing-rule-button"),
   writingPageBreakButton: document.querySelector("#writing-page-break-button"),
+  writingInsertDateButton: document.querySelector("#writing-insert-date-button"),
+  writingInsertTableButton: document.querySelector("#writing-insert-table-button"),
+  writingMarginSelect: document.querySelector("#writing-margin-select"),
+  writingOrientationSelect: document.querySelector("#writing-orientation-select"),
+  writingLineSpacingSelect: document.querySelector("#writing-line-spacing-select"),
   writingFindInput: document.querySelector("#writing-find-input"),
   writingReplaceInput: document.querySelector("#writing-replace-input"),
   writingFindNextButton: document.querySelector("#writing-find-next-button"),
@@ -5499,6 +5506,18 @@ function ensureWritingProject(project) {
   if (!item.draftNotes) item.draftNotes = "";
   if (!item.manuscriptHtml) item.manuscriptHtml = plainTextToParagraphHtml(item.draft || "");
   if (!item.manuscriptText) item.manuscriptText = richTextToPlain(item.manuscriptHtml);
+  if (!item.documentLayout || typeof item.documentLayout !== "object") {
+    item.documentLayout = {};
+  }
+  if (!["normal", "narrow", "wide"].includes(item.documentLayout.margins)) {
+    item.documentLayout.margins = "normal";
+  }
+  if (!["portrait", "landscape"].includes(item.documentLayout.orientation)) {
+    item.documentLayout.orientation = "portrait";
+  }
+  if (!["1", "1.15", "1.5", "2"].includes(String(item.documentLayout.lineSpacing))) {
+    item.documentLayout.lineSpacing = "1.15";
+  }
   if (!Array.isArray(item.chapters)) item.chapters = [];
   if (!Array.isArray(item.charactersList)) item.charactersList = [];
   if (!Array.isArray(item.worldbuilding)) item.worldbuilding = [];
@@ -6714,6 +6733,8 @@ function populateProjectForm(project) {
   elements.storyConflictInput.value = formatTagList(project.conflictTags);
   elements.storyOutlineInput.value = project.notes || "";
   elements.storyDraftInput.innerHTML = project.manuscriptHtml || "";
+  elements.wordDocumentTitle.textContent = project.title || "Untitled document";
+  applyWritingDocumentLayout(project);
   elements.storyDraftNotesInput.value = project.draftNotes || "";
   elements.storyRevisionNotesInput.value = project.revisionNotes || "";
   elements.storyContinuityNotesInput.value = project.continuityNotes || "";
@@ -6887,6 +6908,7 @@ function saveProjectOverview() {
   story.conflictTags = parseTagList(elements.storyConflictInput.value);
   story.notes = elements.storyOutlineInput.value.trim();
   story.updatedAt = new Date().toISOString();
+  elements.wordDocumentTitle.textContent = story.title;
   saveCreativeWriting();
   renderStories();
   renderWritingProjectMeta(story);
@@ -6940,6 +6962,7 @@ function saveOpenStory(options = {}) {
   if (!story) return;
   const previousWords = currentStoryWordCount(story);
   story.title = elements.storyTitleInput.value.trim() || "Untitled project";
+  elements.wordDocumentTitle.textContent = story.title;
   story.manuscriptHtml = elements.storyDraftInput.innerHTML.trim();
   story.manuscriptText = richTextToPlain(story.manuscriptHtml);
   story.draftNotes = elements.storyDraftNotesInput.value.trim();
@@ -7011,11 +7034,11 @@ function applyWritingFormat(action, value = null) {
   elements.storyDraftInput.focus();
   restoreWritingSelection();
   document.execCommand(action, false, value);
-  scheduleStorySave();
+  if (action !== "copy") scheduleStorySave();
 }
 
 function setWritingRibbon(tab) {
-  activeWritingRibbon = ["home", "insert", "references", "review", "view"].includes(tab)
+  activeWritingRibbon = ["file", "home", "insert", "layout", "references", "review", "view"].includes(tab)
     ? tab
     : "home";
   document.querySelectorAll("[data-writing-ribbon]").forEach((button) => {
@@ -7029,6 +7052,77 @@ function setWritingRibbon(tab) {
   document.querySelectorAll("[data-writing-ribbon-content]").forEach((panel) => {
     panel.hidden = panel.dataset.writingRibbonContent !== activeWritingRibbon;
   });
+}
+
+function writingDocumentLayout(project = currentStory()) {
+  const layout = project?.documentLayout || {};
+  return {
+    margins: ["normal", "narrow", "wide"].includes(layout.margins)
+      ? layout.margins
+      : "normal",
+    orientation: ["portrait", "landscape"].includes(layout.orientation)
+      ? layout.orientation
+      : "portrait",
+    lineSpacing: ["1", "1.15", "1.5", "2"].includes(String(layout.lineSpacing))
+      ? String(layout.lineSpacing)
+      : "1.15",
+  };
+}
+
+function applyWritingDocumentLayout(project = currentStory(), persist = false) {
+  if (!project) return;
+  const layout = persist
+    ? {
+        margins: elements.writingMarginSelect.value,
+        orientation: elements.writingOrientationSelect.value,
+        lineSpacing: elements.writingLineSpacingSelect.value,
+      }
+    : writingDocumentLayout(project);
+  elements.writingMarginSelect.value = layout.margins;
+  elements.writingOrientationSelect.value = layout.orientation;
+  elements.writingLineSpacingSelect.value = layout.lineSpacing;
+  elements.wordProcessorWindow.dataset.orientation = layout.orientation;
+  elements.storyDraftInput.dataset.margins = layout.margins;
+  elements.storyDraftInput.dataset.lineSpacing = layout.lineSpacing;
+  if (!persist) return;
+  project.documentLayout = layout;
+  project.updatedAt = new Date().toISOString();
+  saveCreativeWriting();
+  elements.storyUpdatedInput.value = storyDateTimeLabel(project.updatedAt);
+  elements.storyLastSaved.textContent = storyDateTimeLabel(project.updatedAt);
+  elements.storySaveStatus.textContent = "Layout saved";
+  window.setTimeout(() => {
+    if (elements.storySaveStatus.textContent === "Layout saved") {
+      elements.storySaveStatus.textContent = "All changes saved";
+    }
+  }, 1200);
+}
+
+function insertWritingDateTime() {
+  insertHtmlIntoWritingDocument(
+    `<time datetime="${new Date().toISOString()}">${escapeHtml(new Date().toLocaleString())}</time>`,
+  );
+}
+
+function insertWritingTable() {
+  insertHtmlIntoWritingDocument(`
+    <table class="writing-document-table">
+      <tbody>
+        <tr><td><br></td><td><br></td></tr>
+        <tr><td><br></td><td><br></td></tr>
+      </tbody>
+    </table><p><br></p>
+  `);
+}
+
+function runWritingFileCommand(command) {
+  if (command === "save" || command === "snapshot") {
+    saveOpenStory({ manual: true });
+    showToast(command === "snapshot" ? "A new document version was saved." : "Document saved.");
+  }
+  if (command === "duplicate") duplicateOpenStory();
+  if (command === "print") printCurrentWritingProject();
+  if (command === "word") exportWritingProjectForWord();
 }
 
 function rememberWritingSelection() {
@@ -11052,6 +11146,9 @@ document.querySelectorAll("[data-word-window-action]").forEach((button) => {
     if (button.dataset.wordWindowAction === "zoom-in") updateWritingZoom(writingZoom + 10);
   });
 });
+document.querySelectorAll("[data-word-command]").forEach((button) => {
+  button.addEventListener("click", () => runWritingFileCommand(button.dataset.wordCommand));
+});
 elements.writingStyleSelect.addEventListener("change", () => {
   applyWritingFormat("formatBlock", elements.writingStyleSelect.value);
 });
@@ -11096,6 +11193,12 @@ elements.writingRuleButton.addEventListener("click", () =>
   applyWritingFormat("insertHorizontalRule"),
 );
 elements.writingPageBreakButton.addEventListener("click", insertWritingPageBreak);
+elements.writingInsertDateButton.addEventListener("click", insertWritingDateTime);
+elements.writingInsertTableButton.addEventListener("click", insertWritingTable);
+[elements.writingMarginSelect, elements.writingOrientationSelect, elements.writingLineSpacingSelect]
+  .forEach((control) => {
+    control.addEventListener("change", () => applyWritingDocumentLayout(currentStory(), true));
+  });
 elements.writingFindNextButton.addEventListener("click", findNextInWritingDocument);
 elements.writingReplaceButton.addEventListener("click", replaceCurrentWritingMatch);
 elements.writingReplaceAllButton.addEventListener("click", replaceAllWritingMatches);

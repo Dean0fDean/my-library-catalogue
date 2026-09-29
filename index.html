@@ -1211,123 +1211,156 @@
               </div>
 
               <div id="story-manuscript-view" class="story-draft-view" hidden>
-                <div class="word-processor-window">
-                <div class="word-title-bar">
-                  <span class="word-app-mark" aria-hidden="true">W</span>
-                  <div>
-                    <strong>Writing Studio</strong>
-                    <span>Manuscript editor</span>
+                <div class="word-processor-window" id="word-processor-window" data-orientation="portrait">
+                  <div class="word-title-bar">
+                    <div class="word-quick-access" aria-label="Quick access toolbar">
+                      <span class="word-app-mark" aria-hidden="true">W</span>
+                      <button id="story-manual-save-button" type="button" title="Save (Ctrl+S)" aria-label="Save document">&#128190;</button>
+                      <button type="button" data-format-action="undo" title="Undo (Ctrl+Z)" aria-label="Undo">&#8630;</button>
+                      <button type="button" data-format-action="redo" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
+                    </div>
+                    <div class="word-document-identity">
+                      <strong id="word-document-title">Untitled document</strong>
+                      <span>Writing Studio</span>
+                    </div>
+                    <div class="word-title-actions">
+                      <span class="word-cloud-status">Saved to your private library</span>
+                      <button id="story-focus-button" type="button">Focus</button>
+                      <button id="publish-journal-button" type="button" hidden>Share</button>
+                    </div>
                   </div>
-                  <span class="word-cloud-status">Saved to your private library</span>
-                </div>
-                <div class="manuscript-toolbar">
-                  <div class="manuscript-stats">
-                    <span><strong id="story-word-count">0</strong> words</span>
-                    <span><strong id="story-character-count">0</strong> characters</span>
-                    <span id="story-save-status">All changes saved</span>
-                    <span id="story-last-saved">Not yet saved</span>
-                  </div>
-                  <div class="manuscript-toolbar-actions">
-                    <button
-                      class="secondary-writing-button"
-                      id="story-manual-save-button"
-                      type="button"
-                    >
-                      Save now
-                    </button>
-                    <button
-                      class="secondary-writing-button"
-                      id="story-focus-button"
-                      type="button"
-                    >
-                      Distraction-free
-                    </button>
-                    <button
-                      class="secondary-writing-button"
-                      id="publish-journal-button"
-                      type="button"
-                      hidden
-                    >
-                      Share journal entry
-                    </button>
-                    <span class="spellcheck-status">Spellcheck on</span>
-                  </div>
-                </div>
 
-                <div class="writing-ribbon-tabs" role="tablist" aria-label="Writing ribbon">
-                  <button class="active" type="button" role="tab" data-writing-ribbon="home" aria-selected="true">Home</button>
-                  <button type="button" role="tab" data-writing-ribbon="insert" aria-selected="false">Insert</button>
-                  <button type="button" role="tab" data-writing-ribbon="references" aria-selected="false">References</button>
-                  <button type="button" role="tab" data-writing-ribbon="review" aria-selected="false">Review</button>
-                  <button type="button" role="tab" data-writing-ribbon="view" aria-selected="false">View</button>
-                </div>
-                <div class="writing-format-toolbar" role="toolbar" aria-label="Document formatting tools">
-                  <div class="writing-ribbon-group" data-writing-ribbon-panel="home" aria-label="History">
-                    <button type="button" data-format-action="undo" title="Undo (Ctrl+Z)">Undo</button>
-                    <button type="button" data-format-action="redo" title="Redo (Ctrl+Y)">Redo</button>
+                  <div class="writing-ribbon-tabs" role="tablist" aria-label="Document ribbon">
+                    <button class="word-file-tab" type="button" role="tab" data-writing-ribbon="file" aria-selected="false">File</button>
+                    <button class="active" type="button" role="tab" data-writing-ribbon="home" aria-selected="true">Home</button>
+                    <button type="button" role="tab" data-writing-ribbon="insert" aria-selected="false">Insert</button>
+                    <button type="button" role="tab" data-writing-ribbon="layout" aria-selected="false">Layout</button>
+                    <button type="button" role="tab" data-writing-ribbon="references" aria-selected="false">References</button>
+                    <button type="button" role="tab" data-writing-ribbon="review" aria-selected="false">Review</button>
+                    <button type="button" role="tab" data-writing-ribbon="view" aria-selected="false">View</button>
                   </div>
-                  <div class="writing-ribbon-group writing-ribbon-selects" data-writing-ribbon-panel="home" aria-label="Text style">
-                    <select id="writing-style-select" aria-label="Paragraph style">
-                      <option value="p">Normal</option>
-                      <option value="h1">Title</option>
-                      <option value="h2">Heading 1</option>
-                      <option value="h3">Heading 2</option>
-                      <option value="blockquote">Quote</option>
-                    </select>
-                    <select id="writing-font-select" aria-label="Font family">
-                      <option value="Georgia">Georgia</option>
-                      <option value="Arial">Arial</option>
-                      <option value="Times New Roman">Times New Roman</option>
-                      <option value="Verdana">Verdana</option>
-                      <option value="Courier New">Courier New</option>
-                    </select>
-                    <select id="writing-size-select" aria-label="Font size">
-                      <option value="2">Small</option>
-                      <option value="3" selected>11 pt</option>
-                      <option value="4">14 pt</option>
-                      <option value="5">18 pt</option>
-                      <option value="6">24 pt</option>
-                      <option value="7">36 pt</option>
-                    </select>
+
+                  <div class="writing-format-toolbar" role="toolbar" aria-label="Document editing tools">
+                    <div class="writing-ribbon-group word-file-ribbon" data-writing-ribbon-panel="file" aria-label="File commands" hidden>
+                      <div class="word-ribbon-controls">
+                        <button type="button" data-word-command="save"><span aria-hidden="true">&#128190;</span> Save</button>
+                        <button type="button" data-word-command="duplicate"><span aria-hidden="true">&#10697;</span> Save a copy</button>
+                        <button type="button" data-word-command="print"><span aria-hidden="true">&#128424;</span> Print / PDF</button>
+                        <button type="button" data-word-command="word"><span aria-hidden="true">W</span> Export Word</button>
+                      </div>
+                      <span class="word-ribbon-label">File</span>
+                    </div>
+
+                    <div class="writing-ribbon-group word-clipboard-ribbon" data-writing-ribbon-panel="home" aria-label="Clipboard">
+                      <div class="word-ribbon-controls">
+                        <button type="button" data-format-action="cut" title="Cut (Ctrl+X)">Cut</button>
+                        <button type="button" data-format-action="copy" title="Copy (Ctrl+C)">Copy</button>
+                      </div>
+                      <span class="word-ribbon-label">Clipboard</span>
+                    </div>
+                    <div class="writing-ribbon-group writing-ribbon-selects" data-writing-ribbon-panel="home" aria-label="Font">
+                      <div class="word-ribbon-controls word-font-controls">
+                        <select id="writing-font-select" aria-label="Font family">
+                          <option value="Aptos">Aptos</option>
+                          <option value="Arial">Arial</option>
+                          <option value="Calibri">Calibri</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Times New Roman">Times New Roman</option>
+                          <option value="Verdana">Verdana</option>
+                          <option value="Courier New">Courier New</option>
+                        </select>
+                        <select id="writing-size-select" aria-label="Font size">
+                          <option value="2">9 pt</option>
+                          <option value="3" selected>11 pt</option>
+                          <option value="4">14 pt</option>
+                          <option value="5">18 pt</option>
+                          <option value="6">24 pt</option>
+                          <option value="7">36 pt</option>
+                        </select>
+                        <button type="button" data-format-action="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                        <button type="button" data-format-action="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+                        <button type="button" data-format-action="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+                        <button type="button" data-format-action="strikeThrough" title="Strikethrough"><s>ab</s></button>
+                        <button type="button" data-format-action="subscript" title="Subscript">X<sub>2</sub></button>
+                        <button type="button" data-format-action="superscript" title="Superscript">X<sup>2</sup></button>
+                        <label class="writing-colour-control" title="Text colour">A<input id="writing-text-colour" type="color" value="#172a22" aria-label="Text colour" /></label>
+                        <label class="writing-colour-control" title="Highlight colour">H<input id="writing-highlight-colour" type="color" value="#f5df8f" aria-label="Highlight colour" /></label>
+                      </div>
+                      <span class="word-ribbon-label">Font</span>
+                    </div>
+                    <div class="writing-ribbon-group" data-writing-ribbon-panel="home" aria-label="Paragraph">
+                      <div class="word-ribbon-controls">
+                        <button type="button" data-format-action="insertUnorderedList" title="Bullets">&#8226; List</button>
+                        <button type="button" data-format-action="insertOrderedList" title="Numbering">1. List</button>
+                        <button type="button" data-format-action="outdent" title="Decrease indent">&#8676;</button>
+                        <button type="button" data-format-action="indent" title="Increase indent">&#8677;</button>
+                        <button type="button" data-format-action="justifyLeft" title="Align left">&#8676;</button>
+                        <button type="button" data-format-action="justifyCenter" title="Centre">&#8596;</button>
+                        <button type="button" data-format-action="justifyRight" title="Align right">&#8677;</button>
+                        <button type="button" data-format-action="justifyFull" title="Justify">&#9776;</button>
+                      </div>
+                      <span class="word-ribbon-label">Paragraph</span>
+                    </div>
+                    <div class="writing-ribbon-group word-styles-ribbon" data-writing-ribbon-panel="home" aria-label="Styles">
+                      <div class="word-ribbon-controls">
+                        <select id="writing-style-select" aria-label="Paragraph style">
+                          <option value="p">Normal</option>
+                          <option value="h1">Title</option>
+                          <option value="h2">Heading 1</option>
+                          <option value="h3">Heading 2</option>
+                          <option value="blockquote">Quote</option>
+                        </select>
+                        <button type="button" data-format-action="removeFormat">Clear formatting</button>
+                      </div>
+                      <span class="word-ribbon-label">Styles</span>
+                    </div>
+
+                    <div class="writing-ribbon-group word-insert-ribbon" data-writing-ribbon-panel="insert" aria-label="Insert" hidden>
+                      <div class="word-ribbon-controls">
+                        <button type="button" id="writing-link-button"><span aria-hidden="true">&#128279;</span> Web link</button>
+                        <button type="button" id="writing-insert-date-button"><span aria-hidden="true">&#128197;</span> Date &amp; time</button>
+                        <button type="button" id="writing-insert-table-button"><span aria-hidden="true">&#9638;</span> Table</button>
+                        <button type="button" id="writing-rule-button"><span aria-hidden="true">&#8213;</span> Horizontal line</button>
+                        <button type="button" id="writing-page-break-button"><span aria-hidden="true">&#8617;</span> Page break</button>
+                      </div>
+                      <span class="word-ribbon-label">Insert</span>
+                    </div>
+
+                    <div class="writing-ribbon-group word-layout-ribbon" data-writing-ribbon-panel="layout" aria-label="Page setup" hidden>
+                      <div class="word-ribbon-controls">
+                        <label>Margins<select id="writing-margin-select"><option value="normal">Normal</option><option value="narrow">Narrow</option><option value="wide">Wide</option></select></label>
+                        <label>Orientation<select id="writing-orientation-select"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
+                        <label>Line spacing<select id="writing-line-spacing-select"><option value="1">Single</option><option value="1.15" selected>1.15</option><option value="1.5">1.5</option><option value="2">Double</option></select></label>
+                      </div>
+                      <span class="word-ribbon-label">Page setup</span>
+                    </div>
+
+                    <div class="writing-ribbon-group writing-reference-ribbon" data-writing-ribbon-panel="references" aria-label="References" hidden>
+                      <div class="word-ribbon-controls">
+                        <button type="button" id="writing-research-link-button"><span aria-hidden="true">&#128206;</span> Link research files</button>
+                        <button type="button" id="writing-open-research-button"><span aria-hidden="true">&#128218;</span> Research Library</button>
+                      </div>
+                      <span class="word-ribbon-help">Select words, then connect books, passages, notes, or documents from your library.</span>
+                      <span class="word-ribbon-label">Library references</span>
+                    </div>
+                    <div class="writing-ribbon-group word-review-ribbon" data-writing-ribbon-panel="review" aria-label="Review" hidden>
+                      <div class="word-ribbon-controls">
+                        <button type="button" data-word-command="snapshot"><span aria-hidden="true">&#9201;</span> Save version</button>
+                        <button type="button" data-format-action="removeFormat">Clear formatting</button>
+                        <span class="spellcheck-status">&#10003; Browser spellcheck is on</span>
+                      </div>
+                      <span class="word-ribbon-label">Review</span>
+                    </div>
+                    <div class="writing-ribbon-group writing-view-ribbon" data-writing-ribbon-panel="view" aria-label="View" hidden>
+                      <div class="word-ribbon-controls">
+                        <button type="button" data-word-window-action="focus">Focus view</button>
+                        <button type="button" data-word-window-action="zoom-out">Zoom out</button>
+                        <button type="button" data-word-window-action="zoom-in">Zoom in</button>
+                      </div>
+                      <span class="word-ribbon-help">Use the status bar to review document statistics and zoom.</span>
+                      <span class="word-ribbon-label">Document view</span>
+                    </div>
                   </div>
-                  <div class="writing-ribbon-group" data-writing-ribbon-panel="home" aria-label="Character formatting">
-                    <button type="button" data-format-action="bold"><strong>B</strong></button>
-                    <button type="button" data-format-action="italic"><em>I</em></button>
-                    <button type="button" data-format-action="underline"><u>U</u></button>
-                    <button type="button" data-format-action="strikeThrough"><s>S</s></button>
-                    <label class="writing-colour-control" title="Text colour">A<input id="writing-text-colour" type="color" value="#172a22" aria-label="Text colour" /></label>
-                    <label class="writing-colour-control" title="Highlight colour">H<input id="writing-highlight-colour" type="color" value="#f5df8f" aria-label="Highlight colour" /></label>
-                  </div>
-                  <div class="writing-ribbon-group" data-writing-ribbon-panel="home" aria-label="Paragraph formatting">
-                    <button type="button" data-format-action="justifyLeft">Left</button>
-                    <button type="button" data-format-action="justifyCenter">Centre</button>
-                    <button type="button" data-format-action="justifyRight">Right</button>
-                    <button type="button" data-format-action="justifyFull">Justify</button>
-                    <button type="button" data-format-action="insertUnorderedList">Bullets</button>
-                    <button type="button" data-format-action="insertOrderedList">Numbering</button>
-                    <button type="button" data-format-action="outdent">Outdent</button>
-                    <button type="button" data-format-action="indent">Indent</button>
-                  </div>
-                  <div class="writing-ribbon-group" data-writing-ribbon-panel="insert" aria-label="Insert" hidden>
-                    <button type="button" id="writing-link-button">Web link</button>
-                    <button type="button" id="writing-rule-button">Rule</button>
-                    <button type="button" id="writing-page-break-button">Page break</button>
-                  </div>
-                  <div class="writing-ribbon-group writing-reference-ribbon" data-writing-ribbon-panel="references" aria-label="References" hidden>
-                    <button type="button" id="writing-research-link-button">Link research files</button>
-                    <button type="button" id="writing-open-research-button">Open Research Library</button>
-                    <span>Select words, then connect books, passages, notes, or documents.</span>
-                  </div>
-                  <div class="writing-ribbon-group" data-writing-ribbon-panel="review" aria-label="Review" hidden>
-                    <button type="button" data-format-action="removeFormat">Clear format</button>
-                  </div>
-                  <div class="writing-ribbon-group writing-view-ribbon" data-writing-ribbon-panel="view" aria-label="View" hidden>
-                    <button type="button" data-word-window-action="focus">Focus view</button>
-                    <button type="button" data-word-window-action="zoom-out">Zoom out</button>
-                    <button type="button" data-word-window-action="zoom-in">Zoom in</button>
-                    <span>Use the status bar for the current zoom level.</span>
-                  </div>
-                </div>
 
                 <div class="writing-find-replace" data-writing-ribbon-content="review" aria-label="Find and replace" hidden>
                   <label><span>Find</span><input id="writing-find-input" type="search" placeholder="Find in document" /></label>
@@ -1337,29 +1370,36 @@
                   <button class="secondary-writing-button" id="writing-replace-all-button" type="button">Replace all</button>
                 </div>
 
-                <div class="writing-page-stage">
-                  <div
-                    id="story-draft-input"
-                    class="writing-rich-editor"
-                    contenteditable="true"
-                    role="textbox"
-                    aria-multiline="true"
-                    spellcheck="true"
-                    data-placeholder="Begin your manuscript..."
-                  ></div>
-                  <aside id="writing-link-popover" class="writing-link-popover" aria-live="polite" hidden></aside>
-                </div>
+                  <div class="word-ruler" aria-hidden="true"><span></span><i></i><i></i></div>
+                  <div class="writing-page-stage">
+                    <div
+                      id="story-draft-input"
+                      class="writing-rich-editor"
+                      contenteditable="true"
+                      role="textbox"
+                      aria-multiline="true"
+                      spellcheck="true"
+                      data-placeholder="Start writing..."
+                      data-margins="normal"
+                      data-line-spacing="1.15"
+                    ></div>
+                    <aside id="writing-link-popover" class="writing-link-popover" aria-live="polite" hidden></aside>
+                  </div>
 
-                <div class="writing-status-bar" aria-label="Document statistics">
-                  <span><strong id="writing-paragraph-count">0</strong> paragraphs</span>
-                  <span><strong id="writing-reading-time">0</strong> min read</span>
-                  <span><strong id="writing-page-count">1</strong> estimated pages</span>
-                  <span class="writing-zoom-controls">
-                    <button id="writing-zoom-out" type="button" aria-label="Zoom out">-</button>
-                    <output id="writing-zoom-label">100%</output>
-                    <button id="writing-zoom-in" type="button" aria-label="Zoom in">+</button>
-                  </span>
-                </div>
+                  <div class="writing-status-bar" aria-label="Document statistics">
+                    <span>Page <strong id="writing-page-count">1</strong></span>
+                    <span><strong id="story-word-count">0</strong> words</span>
+                    <span><strong id="story-character-count">0</strong> characters</span>
+                    <span><strong id="writing-paragraph-count">0</strong> paragraphs</span>
+                    <span><strong id="writing-reading-time">0</strong> min read</span>
+                    <span id="story-save-status">All changes saved</span>
+                    <span id="story-last-saved">Not yet saved</span>
+                    <span class="writing-zoom-controls">
+                      <button id="writing-zoom-out" type="button" aria-label="Zoom out">-</button>
+                      <output id="writing-zoom-label">100%</output>
+                      <button id="writing-zoom-in" type="button" aria-label="Zoom in">+</button>
+                    </span>
+                  </div>
                 </div>
 
                 <div class="form-row two-columns manuscript-lower-grid">
