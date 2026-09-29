@@ -495,7 +495,70 @@
             </form>
           </section>
 
+          <div class="collection-display-bar">
+            <div class="collection-display-copy">
+              <span>COLLECTION DISPLAY</span>
+              <strong id="collection-view-description">Catalogue cards</strong>
+            </div>
+            <div class="collection-view-switch" role="group" aria-label="Choose collection display">
+              <button
+                class="active"
+                type="button"
+                data-collection-view="catalogue"
+                aria-pressed="true"
+              >
+                <span class="catalogue-view-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                Catalogue
+              </button>
+              <button
+                type="button"
+                data-collection-view="coverflow"
+                aria-pressed="false"
+              >
+                <span class="cover-flow-view-icon" aria-hidden="true"><i></i><i></i><i></i></span>
+                Cover flow
+              </button>
+            </div>
+          </div>
+
           <div id="book-grid" class="book-grid" aria-live="polite"></div>
+          <section
+            class="cover-flow"
+            id="cover-flow"
+            aria-label="Collection cover flow"
+            hidden
+          >
+            <div class="cover-flow-browser">
+              <div class="cover-flow-stage">
+                <button
+                  class="cover-flow-arrow previous"
+                  id="cover-flow-previous"
+                  type="button"
+                  aria-label="Show previous book"
+                ><span aria-hidden="true">&larr;</span></button>
+                <div class="cover-flow-viewport">
+                  <div
+                    class="cover-flow-track"
+                    id="cover-flow-track"
+                    role="listbox"
+                    aria-label="Books in the filtered collection"
+                    tabindex="0"
+                  ></div>
+                </div>
+                <button
+                  class="cover-flow-arrow next"
+                  id="cover-flow-next"
+                  type="button"
+                  aria-label="Show next book"
+                ><span aria-hidden="true">&rarr;</span></button>
+              </div>
+              <div class="cover-flow-navigation-meta">
+                <span id="cover-flow-position">0 of 0</span>
+                <span>Use arrows, swipe, or select a cover</span>
+              </div>
+            </div>
+            <article class="cover-flow-details" id="cover-flow-details" aria-live="polite"></article>
+          </section>
           <button
             class="catalogue-expand-button"
             id="catalogue-expand-button"

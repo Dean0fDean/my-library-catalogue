@@ -11,6 +11,7 @@ const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
 const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
 const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
 const NILLION_VOICE_KEY = "my-library-nillion-voice-v1";
+const COLLECTION_VIEW_KEY = "my-library-collection-view-v1";
 const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 
@@ -152,6 +153,13 @@ const elements = {
   nillionResponse: document.querySelector("#nillion-response"),
   nillionVoiceToggle: document.querySelector("#nillion-voice-toggle"),
   nillionVoiceLabel: document.querySelector("#nillion-voice-label"),
+  collectionViewDescription: document.querySelector("#collection-view-description"),
+  coverFlow: document.querySelector("#cover-flow"),
+  coverFlowTrack: document.querySelector("#cover-flow-track"),
+  coverFlowDetails: document.querySelector("#cover-flow-details"),
+  coverFlowPrevious: document.querySelector("#cover-flow-previous"),
+  coverFlowNext: document.querySelector("#cover-flow-next"),
+  coverFlowPosition: document.querySelector("#cover-flow-position"),
   catalogueExpandButton: document.querySelector("#catalogue-expand-button"),
   emptyState: document.querySelector("#empty-state"),
   emptyTitle: document.querySelector("#empty-title"),
@@ -709,6 +717,12 @@ let activeReaderId = "";
 let profileNotifications = [];
 let profileAchievements = [];
 let catalogueExpanded = false;
+let collectionView = localStorage.getItem(COLLECTION_VIEW_KEY) === "coverflow"
+  ? "coverflow"
+  : "catalogue";
+let activeCoverFlowBookId = "";
+let coverFlowPointerStart = null;
+let coverFlowSuppressClick = false;
 let readerCatalogueExpanded = false;
 let highlightedCollectionBookId = "";
 let highlightedCollectionBookTimer;
@@ -2799,6 +2813,171 @@ function renderBook(book) {
   `;
 }
 
+function renderCoverFlowCover(book, index, activeIndex) {
+  const offset = index - activeIndex;
+  const distance = Math.abs(offset);
+  const hidden = distance > 3;
+  const cover = book.coverImage
+    ? `<img src="${book.coverImage}" alt="Cover of ${escapeHtml(book.title)}" />`
+    : `
+        <span class="cover-flow-placeholder" style="--flow-accent:${colorForGenre(book.genre)}">
+          <small>${escapeHtml(book.genre || "My Library")}</small>
+          <strong>${escapeHtml(book.title)}</strong>
+          <em>${escapeHtml(book.author)}</em>
+        </span>
+      `;
+  return `
+    <button
+      class="cover-flow-item ${offset === 0 ? "active" : ""}"
+      type="button"
+      role="option"
+      data-cover-flow-id="${book.id}"
+      aria-label="Select ${escapeHtml(book.title)} by ${escapeHtml(book.author)}"
+      aria-selected="${offset === 0}"
+      ${hidden ? 'aria-hidden="true" tabindex="-1"' : ""}
+      style="
+        --flow-offset:${offset};
+        --flow-x:${offset * 160}px;
+        --flow-depth:${distance * -90}px;
+        --flow-rotation:${offset * -34}deg;
+        --flow-scale:${Math.max(0.68, 1 - distance * 0.11)};
+        --flow-opacity:${hidden ? 0 : Math.max(0.28, 1 - distance * 0.2)};
+        --flow-layer:${20 - distance};
+      "
+    >
+      <span class="cover-flow-art">${cover}</span>
+      <span class="cover-flow-item-label">
+        <strong>${escapeHtml(book.title)}</strong>
+        <small>${escapeHtml(book.author)}</small>
+      </span>
+    </button>
+  `;
+}
+
+function renderCoverFlowDetails(book) {
+  if (!book) {
+    return '<p class="cover-flow-empty">No books match the current filters.</p>';
+  }
+  const rating = Number(book.rating) || 0;
+  return `
+    <div class="cover-flow-details-heading">
+      <div class="book-card-labels">
+        <p class="genre-label">${escapeHtml(book.genre || "Uncategorized")}</p>
+        <span class="book-format-badge ${escapeHtml(book.format || "print")}">${escapeHtml(bookFormatLabel(book.format))}</span>
+      </div>
+      <span class="cover-flow-status ${escapeHtml(book.status || "unread")}">${escapeHtml(bookStatusLabel(book.status))}</span>
+    </div>
+    <h3>${escapeHtml(book.title)}</h3>
+    <p class="cover-flow-author">by ${escapeHtml(book.author)}</p>
+    ${renderBookProgress(book)}
+    <div class="rating-control" role="group" aria-label="Rate ${escapeHtml(book.title)}">
+      <span>Rating</span>
+      ${[1, 2, 3, 4, 5]
+        .map(
+          (star) => `
+            <button
+              class="star-button ${star <= rating ? "filled" : ""}"
+              type="button"
+              data-action="rate"
+              data-id="${book.id}"
+              data-rating="${star}"
+              aria-label="${star} ${star === 1 ? "star" : "stars"} for ${escapeHtml(book.title)}"
+              aria-pressed="${star === rating}"
+            >&#9733;</button>
+          `,
+        )
+        .join("")}
+    </div>
+    <div class="cover-flow-primary-actions">
+      <button type="button" data-action="view" data-id="${book.id}" ${book.coverImage ? "" : "disabled"}>
+        View full cover
+      </button>
+      <button type="button" data-action="edit" data-id="${book.id}">Edit details</button>
+      <button type="button" data-action="share" data-id="${book.id}">Recommend</button>
+    </div>
+    <div class="book-status-options" role="group" aria-label="Reading status for ${escapeHtml(book.title)}">
+      ${[
+        ["unread", "To be read"],
+        ["reading", "Busy reading"],
+        ["read", "Read"],
+      ]
+        .map(
+          ([status, label]) => `
+            <button
+              class="status-button ${status} ${book.status === status ? "active" : ""}"
+              type="button"
+              data-action="status"
+              data-status="${status}"
+              data-id="${book.id}"
+              aria-pressed="${book.status === status}"
+            >${label}</button>
+          `,
+        )
+        .join("")}
+    </div>
+    <details class="cover-flow-more-actions">
+      <summary>More book actions</summary>
+      <div>
+        <button type="button" data-action="cover" data-id="${book.id}">${book.coverImage ? "Change photo" : "Add photo"}</button>
+        <button type="button" data-action="sell" data-id="${book.id}">List for sale</button>
+        <button class="remove-action" type="button" data-action="delete" data-id="${book.id}">Remove from collection</button>
+      </div>
+    </details>
+  `;
+}
+
+function renderCoverFlow(matchingBooks) {
+  if (!elements.coverFlowTrack) return;
+  const activeIndexFromId = matchingBooks.findIndex(
+    (book) => book.id === activeCoverFlowBookId,
+  );
+  const activeIndex = activeIndexFromId >= 0 ? activeIndexFromId : 0;
+  const activeBook = matchingBooks[activeIndex] || null;
+  activeCoverFlowBookId = activeBook?.id || "";
+  elements.coverFlowTrack.innerHTML = matchingBooks
+    .map((book, index) => renderCoverFlowCover(book, index, activeIndex))
+    .join("");
+  elements.coverFlowDetails.innerHTML = renderCoverFlowDetails(activeBook);
+  elements.coverFlowPosition.textContent = matchingBooks.length
+    ? `${activeIndex + 1} of ${matchingBooks.length}`
+    : "0 of 0";
+  elements.coverFlowPrevious.disabled = activeIndex <= 0;
+  elements.coverFlowNext.disabled = activeIndex >= matchingBooks.length - 1;
+}
+
+function setActiveCoverFlowBook(bookId, { focus = false } = {}) {
+  const matchingBooks = filteredBooks();
+  if (!matchingBooks.some((book) => book.id === bookId)) return;
+  activeCoverFlowBookId = bookId;
+  renderCoverFlow(matchingBooks);
+  if (focus) {
+    window.requestAnimationFrame(() => {
+      const activeCover = elements.coverFlowTrack.querySelector(".cover-flow-item.active");
+      activeCover?.focus({ preventScroll: true });
+    });
+  }
+}
+
+function moveCoverFlow(direction) {
+  const matchingBooks = filteredBooks();
+  if (!matchingBooks.length) return;
+  const currentIndex = Math.max(
+    0,
+    matchingBooks.findIndex((book) => book.id === activeCoverFlowBookId),
+  );
+  const nextIndex = Math.min(
+    matchingBooks.length - 1,
+    Math.max(0, currentIndex + direction),
+  );
+  setActiveCoverFlowBook(matchingBooks[nextIndex].id, { focus: true });
+}
+
+function setCollectionView(view) {
+  collectionView = view === "coverflow" ? "coverflow" : "catalogue";
+  localStorage.setItem(COLLECTION_VIEW_KEY, collectionView);
+  renderBooks();
+}
+
 function renderBooks() {
   updateGenreOptions();
   updateAuthorSuggestions();
@@ -2810,14 +2989,25 @@ function renderBooks() {
     ? matchingBooks
     : matchingBooks.slice(0, CATALOGUE_PREVIEW_LIMIT);
   elements.bookGrid.innerHTML = visibleBooks.map(renderBook).join("");
+  const coverFlowActive = collectionView === "coverflow";
+  document.querySelectorAll("[data-collection-view]").forEach((button) => {
+    const active = button.dataset.collectionView === collectionView;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  elements.collectionViewDescription.textContent = coverFlowActive
+    ? "Cover flow"
+    : "Catalogue cards";
+  renderCoverFlow(matchingBooks);
+  elements.coverFlow.hidden = !coverFlowActive || matchingBooks.length === 0;
   elements.catalogueExpandButton.hidden =
-    matchingBooks.length <= CATALOGUE_PREVIEW_LIMIT;
+    coverFlowActive || matchingBooks.length <= CATALOGUE_PREVIEW_LIMIT;
   elements.catalogueExpandButton.textContent = catalogueExpanded
     ? "Show fewer books"
     : `Show all ${matchingBooks.length} books`;
   const hasBooks = ownedByCurrent(books).length > 0;
   const hasResults = matchingBooks.length > 0;
-  elements.bookGrid.hidden = !hasResults;
+  elements.bookGrid.hidden = !hasResults || coverFlowActive;
   elements.emptyState.hidden = hasResults;
 
   if (!hasResults) {
@@ -2828,6 +3018,26 @@ function renderBooks() {
       ? "Try a different search or adjust your filters."
       : "Add your first book and begin building your personal catalogue.";
     document.querySelector("#empty-add-button").hidden = hasBooks;
+  }
+}
+
+function handleCollectionBookAction(button) {
+  if (!button) return;
+  const { action, id } = button.dataset;
+  const book = books.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (action === "view") openFullCover(book);
+  if (action === "status") setBookStatus(id, button.dataset.status);
+  if (action === "rate") rateBook(id, button.dataset.rating);
+  if (action === "share") openShareDialog("book", id);
+  if (action === "delete") removeBook(id);
+  if (action === "cover") openCoverForm(id);
+  if (action === "edit") openBookEditForm(id);
+  if (action === "sell") openMarketListingForm(id);
+  if (action === "menu") {
+    openMenuId = openMenuId === id ? null : id;
+    renderBooks();
   }
 }
 
@@ -10948,18 +11158,67 @@ elements.bookGrid.addEventListener("click", (event) => {
     if (book) openFullCover(book);
     return;
   }
-  const { action, id } = button.dataset;
-  if (action === "status") setBookStatus(id, button.dataset.status);
-  if (action === "rate") rateBook(id, button.dataset.rating);
-  if (action === "share") openShareDialog("book", id);
-  if (action === "delete") removeBook(id);
-  if (action === "cover") openCoverForm(id);
-  if (action === "edit") openBookEditForm(id);
-  if (action === "sell") openMarketListingForm(id);
-  if (action === "menu") {
-    openMenuId = openMenuId === id ? null : id;
-    renderBooks();
+  handleCollectionBookAction(button);
+});
+
+elements.coverFlowTrack.addEventListener("click", (event) => {
+  const cover = event.target.closest("[data-cover-flow-id]");
+  if (!cover) return;
+  if (coverFlowSuppressClick) {
+    coverFlowSuppressClick = false;
+    return;
   }
+  setActiveCoverFlowBook(cover.dataset.coverFlowId);
+});
+
+elements.coverFlowDetails.addEventListener("click", (event) => {
+  handleCollectionBookAction(event.target.closest("button[data-action]"));
+});
+
+elements.coverFlowPrevious.addEventListener("click", () => moveCoverFlow(-1));
+elements.coverFlowNext.addEventListener("click", () => moveCoverFlow(1));
+
+elements.coverFlowTrack.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    moveCoverFlow(-1);
+  }
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    moveCoverFlow(1);
+  }
+  if (event.key === "Home") {
+    event.preventDefault();
+    const firstBook = filteredBooks()[0];
+    if (firstBook) setActiveCoverFlowBook(firstBook.id, { focus: true });
+  }
+  if (event.key === "End") {
+    event.preventDefault();
+    const matchingBooks = filteredBooks();
+    const lastBook = matchingBooks[matchingBooks.length - 1];
+    if (lastBook) setActiveCoverFlowBook(lastBook.id, { focus: true });
+  }
+});
+
+elements.coverFlowTrack.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  coverFlowPointerStart = event.clientX;
+});
+
+elements.coverFlowTrack.addEventListener("pointerup", (event) => {
+  if (coverFlowPointerStart === null) return;
+  const distance = event.clientX - coverFlowPointerStart;
+  coverFlowPointerStart = null;
+  if (Math.abs(distance) < 45) return;
+  coverFlowSuppressClick = true;
+  moveCoverFlow(distance < 0 ? 1 : -1);
+  window.setTimeout(() => {
+    coverFlowSuppressClick = false;
+  }, 0);
+});
+
+elements.coverFlowTrack.addEventListener("pointercancel", () => {
+  coverFlowPointerStart = null;
 });
 
 elements.nillionForm.addEventListener("submit", (event) => {
@@ -11241,16 +11500,25 @@ document.querySelectorAll("[data-store-reset]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-collection-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    setCollectionView(button.dataset.collectionView);
+  });
+});
+
 elements.searchInput.addEventListener("input", () => {
   catalogueExpanded = false;
+  activeCoverFlowBookId = "";
   renderBooks();
 });
 elements.genreFilter.addEventListener("change", () => {
   catalogueExpanded = false;
+  activeCoverFlowBookId = "";
   renderBooks();
 });
 elements.statusFilter.addEventListener("change", () => {
   catalogueExpanded = false;
+  activeCoverFlowBookId = "";
   renderBooks();
 });
 elements.catalogueExpandButton.addEventListener("click", () => {
