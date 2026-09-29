@@ -374,6 +374,9 @@
                 <button type="button" data-nillion-prompt="What can you tell me about my library?">
                   Library overview
                 </button>
+                <button type="button" data-nillion-prompt="What is in my Research Library?">
+                  Research Library
+                </button>
               </div>
             </div>
 
@@ -925,7 +928,7 @@
             <summary>
               <span>
                 <strong>Research Library</strong>
-                <small>Search your books, passages, archived journals, reading history, dreams, and vocabulary.</small>
+                <small>Search your books, passages, documents, project research, reading history, dreams, and vocabulary.</small>
               </span>
               <span aria-hidden="true">Open library</span>
             </summary>
@@ -938,9 +941,10 @@
                 <span id="research-result-count">0 results</span>
               </div>
               <p class="research-explorer-intro">
-                Search across your collection, saved passages, journal archive,
-                reading sessions, dreams, wishlist, and WordHub. Archived journal
-                entries can be opened as editable Writing Studio documents.
+                Search across your collection, saved passages, Writing Studio
+                documents, project research, journal archive, reading sessions,
+                dreams, wishlist, and WordHub. Nillion can read and summarize the
+                saved text in these research files.
               </p>
               <div class="research-explorer-toolbar">
                 <label class="search-box">
@@ -959,6 +963,9 @@
                     <option value="dream">Dream journal</option>
                     <option value="word">WordHub</option>
                     <option value="wishlist">Wishlist</option>
+                    <option value="document">Writing documents</option>
+                    <option value="research">Project research files</option>
+                    <option value="reference">Quotes &amp; references</option>
                   </select>
                 </label>
               </div>
@@ -1206,6 +1213,15 @@
               </div>
 
               <div id="story-manuscript-view" class="story-draft-view" hidden>
+                <div class="word-processor-window">
+                <div class="word-title-bar">
+                  <span class="word-app-mark" aria-hidden="true">W</span>
+                  <div>
+                    <strong>Writing Studio</strong>
+                    <span>Manuscript editor</span>
+                  </div>
+                  <span class="word-cloud-status">Saved to your private library</span>
+                </div>
                 <div class="manuscript-toolbar">
                   <div class="manuscript-stats">
                     <span><strong id="story-word-count">0</strong> words</span>
@@ -1240,12 +1256,19 @@
                   </div>
                 </div>
 
+                <div class="writing-ribbon-tabs" role="tablist" aria-label="Writing ribbon">
+                  <button class="active" type="button" role="tab" data-writing-ribbon="home" aria-selected="true">Home</button>
+                  <button type="button" role="tab" data-writing-ribbon="insert" aria-selected="false">Insert</button>
+                  <button type="button" role="tab" data-writing-ribbon="references" aria-selected="false">References</button>
+                  <button type="button" role="tab" data-writing-ribbon="review" aria-selected="false">Review</button>
+                  <button type="button" role="tab" data-writing-ribbon="view" aria-selected="false">View</button>
+                </div>
                 <div class="writing-format-toolbar" role="toolbar" aria-label="Document formatting tools">
-                  <div class="writing-ribbon-group" aria-label="History">
+                  <div class="writing-ribbon-group" data-writing-ribbon-panel="home" aria-label="History">
                     <button type="button" data-format-action="undo" title="Undo (Ctrl+Z)">Undo</button>
                     <button type="button" data-format-action="redo" title="Redo (Ctrl+Y)">Redo</button>
                   </div>
-                  <div class="writing-ribbon-group writing-ribbon-selects" aria-label="Text style">
+                  <div class="writing-ribbon-group writing-ribbon-selects" data-writing-ribbon-panel="home" aria-label="Text style">
                     <select id="writing-style-select" aria-label="Paragraph style">
                       <option value="p">Normal</option>
                       <option value="h1">Title</option>
@@ -1269,7 +1292,7 @@
                       <option value="7">36 pt</option>
                     </select>
                   </div>
-                  <div class="writing-ribbon-group" aria-label="Character formatting">
+                  <div class="writing-ribbon-group" data-writing-ribbon-panel="home" aria-label="Character formatting">
                     <button type="button" data-format-action="bold"><strong>B</strong></button>
                     <button type="button" data-format-action="italic"><em>I</em></button>
                     <button type="button" data-format-action="underline"><u>U</u></button>
@@ -1277,7 +1300,7 @@
                     <label class="writing-colour-control" title="Text colour">A<input id="writing-text-colour" type="color" value="#172a22" aria-label="Text colour" /></label>
                     <label class="writing-colour-control" title="Highlight colour">H<input id="writing-highlight-colour" type="color" value="#f5df8f" aria-label="Highlight colour" /></label>
                   </div>
-                  <div class="writing-ribbon-group" aria-label="Paragraph formatting">
+                  <div class="writing-ribbon-group" data-writing-ribbon-panel="home" aria-label="Paragraph formatting">
                     <button type="button" data-format-action="justifyLeft">Left</button>
                     <button type="button" data-format-action="justifyCenter">Centre</button>
                     <button type="button" data-format-action="justifyRight">Right</button>
@@ -1287,15 +1310,28 @@
                     <button type="button" data-format-action="outdent">Outdent</button>
                     <button type="button" data-format-action="indent">Indent</button>
                   </div>
-                  <div class="writing-ribbon-group" aria-label="Insert and clear">
-                    <button type="button" id="writing-link-button">Link</button>
+                  <div class="writing-ribbon-group" data-writing-ribbon-panel="insert" aria-label="Insert" hidden>
+                    <button type="button" id="writing-link-button">Web link</button>
                     <button type="button" id="writing-rule-button">Rule</button>
                     <button type="button" id="writing-page-break-button">Page break</button>
+                  </div>
+                  <div class="writing-ribbon-group writing-reference-ribbon" data-writing-ribbon-panel="references" aria-label="References" hidden>
+                    <button type="button" id="writing-research-link-button">Link research files</button>
+                    <button type="button" id="writing-open-research-button">Open Research Library</button>
+                    <span>Select words, then connect books, passages, notes, or documents.</span>
+                  </div>
+                  <div class="writing-ribbon-group" data-writing-ribbon-panel="review" aria-label="Review" hidden>
                     <button type="button" data-format-action="removeFormat">Clear format</button>
+                  </div>
+                  <div class="writing-ribbon-group writing-view-ribbon" data-writing-ribbon-panel="view" aria-label="View" hidden>
+                    <button type="button" data-word-window-action="focus">Focus view</button>
+                    <button type="button" data-word-window-action="zoom-out">Zoom out</button>
+                    <button type="button" data-word-window-action="zoom-in">Zoom in</button>
+                    <span>Use the status bar for the current zoom level.</span>
                   </div>
                 </div>
 
-                <div class="writing-find-replace" aria-label="Find and replace">
+                <div class="writing-find-replace" data-writing-ribbon-content="review" aria-label="Find and replace" hidden>
                   <label><span>Find</span><input id="writing-find-input" type="search" placeholder="Find in document" /></label>
                   <label><span>Replace with</span><input id="writing-replace-input" type="text" placeholder="Replacement text" /></label>
                   <button class="secondary-writing-button" id="writing-find-next-button" type="button">Find next</button>
@@ -1303,15 +1339,18 @@
                   <button class="secondary-writing-button" id="writing-replace-all-button" type="button">Replace all</button>
                 </div>
 
-                <div
-                  id="story-draft-input"
-                  class="writing-rich-editor"
-                  contenteditable="true"
-                  role="textbox"
-                  aria-multiline="true"
-                  spellcheck="true"
-                  data-placeholder="Begin your manuscript..."
-                ></div>
+                <div class="writing-page-stage">
+                  <div
+                    id="story-draft-input"
+                    class="writing-rich-editor"
+                    contenteditable="true"
+                    role="textbox"
+                    aria-multiline="true"
+                    spellcheck="true"
+                    data-placeholder="Begin your manuscript..."
+                  ></div>
+                  <aside id="writing-link-popover" class="writing-link-popover" aria-live="polite" hidden></aside>
+                </div>
 
                 <div class="writing-status-bar" aria-label="Document statistics">
                   <span><strong id="writing-paragraph-count">0</strong> paragraphs</span>
@@ -1322,6 +1361,7 @@
                     <output id="writing-zoom-label">100%</output>
                     <button id="writing-zoom-in" type="button" aria-label="Zoom in">+</button>
                   </span>
+                </div>
                 </div>
 
                 <div class="form-row two-columns manuscript-lower-grid">
@@ -3587,6 +3627,74 @@
         <button class="primary-button submit-button" id="passage-submit-button" type="submit">
           Save passage
         </button>
+      </form>
+    </dialog>
+
+    <dialog id="writing-link-dialog" class="wide-dialog writing-link-dialog">
+      <form id="writing-link-form" method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">LINK YOUR RESEARCH</p>
+            <h2>Connect words to research files</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-writing-link-button"
+            type="button"
+            aria-label="Close research link editor"
+          >
+            X
+          </button>
+        </div>
+        <div class="writing-link-selection">
+          <span>Selected words</span>
+          <strong id="writing-link-selection-text">Nothing selected</strong>
+        </div>
+        <p class="writing-link-help">
+          Choose one or more files from your Research Library. Readers can hover
+          over or select the linked words to inspect the sources and ask Nillion
+          for a summary.
+        </p>
+        <label>
+          <span>Optional web address</span>
+          <input
+            id="writing-link-url"
+            type="url"
+            inputmode="url"
+            placeholder="https://example.com/source"
+          />
+        </label>
+        <div class="writing-link-library-toolbar">
+          <label class="search-box">
+            <span class="search-icon" aria-hidden="true"></span>
+            <span class="sr-only">Search research files to link</span>
+            <input id="writing-link-search" type="search" placeholder="Search your Research Library..." />
+          </label>
+          <label class="select-wrap">
+            <span class="sr-only">Filter linkable research files</span>
+            <select id="writing-link-filter">
+              <option value="all">All research files</option>
+              <option value="book">Collection</option>
+              <option value="passage">Saved passages</option>
+              <option value="journal">Journal archive</option>
+              <option value="reading">Reading log</option>
+              <option value="dream">Dream journal</option>
+              <option value="word">WordHub</option>
+              <option value="wishlist">Wishlist</option>
+              <option value="document">Writing documents</option>
+              <option value="research">Project research files</option>
+              <option value="reference">Quotes &amp; references</option>
+            </select>
+          </label>
+        </div>
+        <div id="writing-link-results" class="writing-link-results" aria-live="polite"></div>
+        <p id="writing-link-error" class="form-error" role="alert"></p>
+        <div class="writing-link-dialog-actions">
+          <button class="story-delete-button" id="remove-writing-link-button" type="button" hidden>
+            Remove link
+          </button>
+          <button class="primary-button" type="submit">Apply research link</button>
+        </div>
       </form>
     </dialog>
 

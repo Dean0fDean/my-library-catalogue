@@ -369,6 +369,8 @@ const elements = {
   writingTextColour: document.querySelector("#writing-text-colour"),
   writingHighlightColour: document.querySelector("#writing-highlight-colour"),
   writingLinkButton: document.querySelector("#writing-link-button"),
+  writingResearchLinkButton: document.querySelector("#writing-research-link-button"),
+  writingOpenResearchButton: document.querySelector("#writing-open-research-button"),
   writingRuleButton: document.querySelector("#writing-rule-button"),
   writingPageBreakButton: document.querySelector("#writing-page-break-button"),
   writingFindInput: document.querySelector("#writing-find-input"),
@@ -476,6 +478,16 @@ const elements = {
   researchLibraryFilter: document.querySelector("#research-library-filter"),
   researchLibraryResults: document.querySelector("#research-library-results"),
   researchResultCount: document.querySelector("#research-result-count"),
+  writingLinkDialog: document.querySelector("#writing-link-dialog"),
+  writingLinkForm: document.querySelector("#writing-link-form"),
+  writingLinkSelectionText: document.querySelector("#writing-link-selection-text"),
+  writingLinkUrl: document.querySelector("#writing-link-url"),
+  writingLinkSearch: document.querySelector("#writing-link-search"),
+  writingLinkFilter: document.querySelector("#writing-link-filter"),
+  writingLinkResults: document.querySelector("#writing-link-results"),
+  writingLinkError: document.querySelector("#writing-link-error"),
+  removeWritingLinkButton: document.querySelector("#remove-writing-link-button"),
+  writingLinkPopover: document.querySelector("#writing-link-popover"),
   quoteForm: document.querySelector("#quote-form"),
   quoteIdInput: document.querySelector("#quote-id-input"),
   quoteFormTitle: document.querySelector("#quote-form-title"),
@@ -710,6 +722,11 @@ let writingFocusMode = false;
 let writingZoom = 100;
 let lastWritingSelectionRange = null;
 let writingFindCursor = 0;
+let activeWritingRibbon = "home";
+let writingLinkRange = null;
+let writingLinkAnchor = null;
+let writingLinkPopoverTimer = null;
+let writingLinkSelectedKeys = new Set();
 let isApplyingCloudData = false;
 let apiToken = localStorage.getItem(API_TOKEN_KEY) || "";
 let activeReaderCatalogue = [];
@@ -2024,6 +2041,90 @@ function nillionBookAnswer(book) {
   return `${details.join("; ")}.`;
 }
 
+function nillionSummarizeResearchSource(source) {
+  const rawText = [source.excerpt, source.meta]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!rawText || /^(book in your collection|reading session|empty writing studio document)\.?$/i.test(rawText)) {
+    return `Nillion found ${source.title}${source.author ? ` by ${source.author}` : ""}, but there is not enough saved text to produce a useful summary yet.`;
+  }
+  const sentences = rawText
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+  const selected = [];
+  for (const sentence of sentences) {
+    const normalizedSentence = normalize(sentence);
+    if (selected.some((item) => normalize(item) === normalizedSentence)) continue;
+    selected.push(sentence);
+    if (selected.join(" ").length >= 420 || selected.length === 3) break;
+  }
+  const summary = researchPreview(selected.join(" ") || rawText, 520);
+  return `Nillion summary of ${source.title}${source.author ? ` by ${source.author}` : ""}: ${summary} This summary is based only on the material saved in your Research Library.`;
+}
+
+function nillionResearchAnswer(query) {
+  const sources = allWritingResearchSources();
+  const namesResearch =
+    query.includes("research library") ||
+    query.includes("research file") ||
+    query.includes("saved source") ||
+    query.includes("source file") ||
+    query.includes("read file");
+  const exactSource = sources
+    .slice()
+    .sort((first, second) => String(second.title).length - String(first.title).length)
+    .find((source) => {
+      const title = normalize(source.title);
+      return title.length > 2 && query.includes(title);
+    });
+  const asksForSummary = query.includes("summarize") || query.includes("summary of");
+  if (!namesResearch && !(asksForSummary && exactSource)) return "";
+  if (!sources.length) return "Your Research Library is empty.";
+  if (exactSource) return nillionSummarizeResearchSource(exactSource);
+
+  const overviewRequest =
+    query.includes("what is in") ||
+    query.includes("what's in") ||
+    query.includes("overview") ||
+    query.includes("list") ||
+    query === "research library" ||
+    query.includes("summarize my research library");
+  if (overviewRequest) {
+    const counts = sources.reduce((result, source) => {
+      result[source.kind] = (result[source.kind] || 0) + 1;
+      return result;
+    }, {});
+    const breakdown = Object.entries(counts)
+      .sort((first, second) => second[1] - first[1])
+      .map(([kind, count]) => `${count} ${kind}${count === 1 ? "" : "s"}`);
+    return `Your Research Library contains ${sources.length} searchable ${sources.length === 1 ? "file" : "files"}: ${nillionList(breakdown, 9)}. Ask me to summarize a file by naming its title.`;
+  }
+
+  const stopWords = new Set([
+    "about", "file", "from", "give", "library", "nillion", "please", "read", "research", "source", "summarize", "summary", "that", "the", "this",
+  ]);
+  const tokens = query
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length > 2 && !stopWords.has(token));
+  const match = sources
+    .map((source) => ({
+      source,
+      score: tokens.reduce((score, token) => {
+        if (normalize(source.title).includes(token)) return score + 4;
+        if (normalize(source.author).includes(token)) return score + 2;
+        if (normalize(`${source.meta} ${source.excerpt}`).includes(token)) return score + 1;
+        return score;
+      }, 0),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((first, second) => second.score - first.score)[0];
+  if (match) return nillionSummarizeResearchSource(match.source);
+  return `I could not identify a particular research file. Try including its title. Recent searchable files include ${nillionList(sources.slice(0, 6).map((source) => source.title), 6)}.`;
+}
+
 function nillionSearchAnswer(query) {
   const accountBooks = ownedByCurrent(books);
   const exactBook = [...accountBooks]
@@ -2051,14 +2152,12 @@ function nillionSearchAnswer(query) {
   ]);
   const tokens = query.split(/[^a-z0-9]+/).filter((word) => word.length > 2 && !stopWords.has(word));
   if (!tokens.length) return "";
-  const sources = [
-    ...accountBooks.map((book) => ({ category: "Collection", title: book.title, text: `${book.title} ${book.author} ${book.genre}` })),
-    ...ownedByCurrent(passages).map((item) => ({ category: "Passage", title: item.title, text: `${item.title} ${item.author} ${item.text || ""} ${item.reflection || ""}` })),
-    ...journals.map((item) => ({ category: "Writing", title: journalDateLabel(item.entryDate), text: `${item.reflection || ""} ${(item.books || []).map((book) => book.title).join(" ")}` })),
-    ...ownedByCurrent(dreams).map((item) => ({ category: "Dream", title: item.title, text: `${item.title} ${item.dream} ${item.archetypes} ${item.motifs} ${item.symbols}` })),
-    ...allStoryProjects().map((item) => ({ category: "Writing project", title: item.title, text: `${item.title} ${item.genre} ${item.description} ${item.notes}` })),
-    ...accountWords.map((item) => ({ category: "WordHub", title: item.word, text: `${item.word} ${item.meaning} ${item.book} ${item.sentence}` })),
-  ]
+  const sources = allWritingResearchSources()
+    .map((item) => ({
+      category: item.kind,
+      title: item.title,
+      text: `${item.title} ${item.author} ${item.meta} ${item.excerpt} ${item.citation}`,
+    }))
     .map((item) => ({
       ...item,
       score: tokens.filter((token) => normalize(item.text).includes(token)).length,
@@ -2092,8 +2191,10 @@ function answerNillionQuestion(rawQuestion) {
     return `Hello${currentAccount.username ? `, ${currentAccount.username}` : ""}. I am Nillion. What would you like to know about your library?`;
   }
   if (query.includes("what can you do") || query.includes("how can you help") || query === "help") {
-    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, dreams, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can also look up a specific saved title, author, or word.";
+    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, dreams, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can also read and summarize saved Research Library files when you name the source.";
   }
+  const researchAnswer = nillionResearchAnswer(query);
+  if (researchAnswer) return researchAnswer;
   if (query.includes("currently reading") || query.includes("busy reading") || query.includes("reading now")) {
     const current = accountBooks.filter((book) => book.status === "reading");
     return current.length
@@ -6244,6 +6345,53 @@ function allWritingResearchSources() {
       citation: `${item.title} by ${item.author || "Unknown author"}`,
     });
   });
+  allStoryProjects().forEach((project) => {
+    sources.push({
+      key: `document:${project.id}`,
+      kind: "document",
+      id: project.id,
+      projectId: project.id,
+      routeView: "manuscript",
+      title: project.title,
+      author: currentAccount.username,
+      meta: `${project.type} / ${project.status} / ${currentStoryWordCount(project)} words`,
+      excerpt:
+        project.manuscriptText ||
+        richTextToPlain(project.manuscriptHtml) ||
+        project.description ||
+        project.notes ||
+        "Empty Writing Studio document.",
+      citation: `${project.title}, Writing Studio document`,
+    });
+    project.researchShelf.forEach((entry) => {
+      sources.push({
+        key: `research:${project.id}:${entry.id}`,
+        kind: "research",
+        id: entry.id,
+        projectId: project.id,
+        routeView: "research",
+        title: entry.title || "Untitled research file",
+        author: entry.author || "Personal research",
+        meta: `Research Shelf / ${project.title}`,
+        excerpt: [entry.excerpt, entry.notes, entry.citation].filter(Boolean).join(" "),
+        citation: entry.citation || `${entry.title || "Research file"}, ${project.title}`,
+      });
+    });
+    project.quoteReferences.forEach((entry) => {
+      sources.push({
+        key: `reference:${project.id}:${entry.id}`,
+        kind: "reference",
+        id: entry.id,
+        projectId: project.id,
+        routeView: "quotes",
+        title: entry.sourceTitle || "Untitled reference",
+        author: entry.author || "Unknown author",
+        meta: `Quotes & references / ${project.title}${entry.page ? ` / ${entry.page}` : ""}`,
+        excerpt: [entry.text, entry.personalNote].filter(Boolean).join(" "),
+        citation: `${entry.sourceTitle || "Reference"}${entry.author ? ` by ${entry.author}` : ""}${entry.page ? `, ${entry.page}` : ""}`,
+      });
+    });
+  });
   return sources;
 }
 
@@ -6289,6 +6437,16 @@ function renderResearchLibrary(project = currentStory()) {
           </article>`;
       }).join("")
     : '<p class="writing-card-meta">No saved information matches this search.</p>';
+}
+
+function revealWritingResearchLibrary() {
+  elements.writingResearchLibrary.open = true;
+  renderResearchLibrary();
+  elements.writingResearchLibrary.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+  window.setTimeout(() => elements.researchLibrarySearch.focus(), 350);
 }
 
 function sourceCitationHtml(source) {
@@ -6404,6 +6562,13 @@ function importJournalAsDocument(key) {
 function openWritingResearchSource(key) {
   const source = writingResearchSource(key);
   if (!source) return;
+  if (source.projectId) {
+    window.location.hash = "creative-writing";
+    openStory(source.projectId);
+    setWritingView(source.routeView || "overview");
+    elements.storyEditor.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
   const routes = {
     book: "collection",
     passage: "passages",
@@ -6946,6 +7111,23 @@ function applyWritingFormat(action, value = null) {
   scheduleStorySave();
 }
 
+function setWritingRibbon(tab) {
+  activeWritingRibbon = ["home", "insert", "references", "review", "view"].includes(tab)
+    ? tab
+    : "home";
+  document.querySelectorAll("[data-writing-ribbon]").forEach((button) => {
+    const active = button.dataset.writingRibbon === activeWritingRibbon;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll("[data-writing-ribbon-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.writingRibbonPanel !== activeWritingRibbon;
+  });
+  document.querySelectorAll("[data-writing-ribbon-content]").forEach((panel) => {
+    panel.hidden = panel.dataset.writingRibbonContent !== activeWritingRibbon;
+  });
+}
+
 function rememberWritingSelection() {
   const selection = window.getSelection();
   if (!selection?.rangeCount) return;
@@ -7043,6 +7225,237 @@ function replaceAllWritingMatches() {
   showToast(count ? `Replaced ${count} occurrence${count === 1 ? "" : "s"}.` : `No match for "${query}".`);
 }
 
+function writingLinkKeys(anchor) {
+  return String(anchor?.dataset.researchKeys || "")
+    .split("|")
+    .map((key) => key.trim())
+    .filter(Boolean);
+}
+
+function writingAnchorForRange(range) {
+  if (!range) return null;
+  const node = range.commonAncestorContainer;
+  const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  return element?.closest("a") || null;
+}
+
+function renderWritingLinkResults() {
+  const query = normalize(elements.writingLinkSearch.value);
+  const kind = elements.writingLinkFilter.value;
+  const sources = allWritingResearchSources()
+    .filter((source) => kind === "all" || source.kind === kind)
+    .filter((source) => {
+      if (!query) return true;
+      return normalize([
+        source.title,
+        source.author,
+        source.meta,
+        source.excerpt,
+        source.citation,
+      ].join(" ")).includes(query);
+    })
+    .sort((first, second) => first.title.localeCompare(second.title, undefined, {
+      sensitivity: "base",
+    }));
+  elements.writingLinkResults.innerHTML = sources.length
+    ? sources
+        .slice(0, 100)
+        .map(
+          (source) => `
+            <label class="writing-link-source-option">
+              <input
+                type="checkbox"
+                value="${escapeHtml(source.key)}"
+                ${writingLinkSelectedKeys.has(source.key) ? "checked" : ""}
+              />
+              <span class="writing-link-source-icon" aria-hidden="true">${escapeHtml(source.kind.slice(0, 1).toUpperCase())}</span>
+              <span>
+                <strong>${escapeHtml(source.title || "Untitled source")}</strong>
+                <small>${escapeHtml(source.kind)} / ${escapeHtml(source.author || "Personal note")}</small>
+                <em>${escapeHtml(researchPreview(source.excerpt, 130) || "No preview available.")}</em>
+              </span>
+            </label>
+          `,
+        )
+        .join("")
+    : '<p class="writing-card-meta">No research files match this search.</p>';
+}
+
+function openWritingResearchLinkDialog() {
+  restoreWritingSelection();
+  const selection = window.getSelection();
+  const range = selection?.rangeCount ? selection.getRangeAt(0) : lastWritingSelectionRange;
+  const anchor = writingAnchorForRange(range);
+  if ((!range || range.collapsed || !range.toString().trim()) && !anchor) {
+    showToast("Select words in the manuscript before linking research files.");
+    return;
+  }
+  writingLinkAnchor = anchor;
+  if (anchor) {
+    const anchorRange = document.createRange();
+    anchorRange.selectNodeContents(anchor);
+    writingLinkRange = anchorRange;
+  } else {
+    writingLinkRange = range.cloneRange();
+  }
+  writingLinkSelectedKeys = new Set(writingLinkKeys(anchor));
+  elements.writingLinkSelectionText.textContent =
+    researchPreview(anchor?.textContent || writingLinkRange.toString(), 160) || "Selected text";
+  elements.writingLinkUrl.value = anchor?.dataset.webUrl ||
+    (anchor?.href && !anchor.getAttribute("href")?.startsWith("#") ? anchor.href : "");
+  elements.writingLinkSearch.value = "";
+  elements.writingLinkFilter.value = "all";
+  elements.writingLinkError.textContent = "";
+  elements.removeWritingLinkButton.hidden = !anchor;
+  renderWritingLinkResults();
+  elements.writingLinkDialog.showModal();
+}
+
+function normalizedWritingLinkUrl(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+  try {
+    const url = new URL(trimmed);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function applyWritingResearchLink() {
+  const webUrlInput = elements.writingLinkUrl.value.trim();
+  const webUrl = normalizedWritingLinkUrl(webUrlInput);
+  if (webUrlInput && !webUrl) {
+    elements.writingLinkError.textContent = "Enter a complete http:// or https:// web address.";
+    return;
+  }
+  const keys = [...writingLinkSelectedKeys];
+  if (!keys.length && !webUrl) {
+    elements.writingLinkError.textContent = "Choose at least one research file or add a web address.";
+    return;
+  }
+  let anchor = writingLinkAnchor;
+  if (!anchor) {
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(writingLinkRange);
+    const temporaryHref = `#research-link-${crypto.randomUUID()}`;
+    document.execCommand("createLink", false, temporaryHref);
+    anchor = Array.from(elements.storyDraftInput.querySelectorAll("a")).find(
+      (link) => link.getAttribute("href") === temporaryHref,
+    );
+  }
+  if (!anchor) {
+    elements.writingLinkError.textContent = "The selected words could not be linked. Select a single phrase and try again.";
+    return;
+  }
+  anchor.classList.toggle("writing-research-link", keys.length > 0);
+  if (keys.length) anchor.dataset.researchKeys = keys.join("|");
+  else delete anchor.dataset.researchKeys;
+  if (webUrl) anchor.dataset.webUrl = webUrl;
+  else delete anchor.dataset.webUrl;
+  anchor.href = webUrl || "#writing-research-link";
+  if (webUrl) {
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+  } else {
+    anchor.removeAttribute("target");
+    anchor.removeAttribute("rel");
+  }
+  anchor.setAttribute("aria-haspopup", keys.length ? "dialog" : "false");
+  anchor.title = keys.length
+    ? `${keys.length} linked research ${keys.length === 1 ? "file" : "files"}`
+    : webUrl;
+  lastWritingSelectionRange = null;
+  elements.writingLinkDialog.close();
+  scheduleStorySave();
+  showToast(keys.length
+    ? `Linked the selected words to ${keys.length} research ${keys.length === 1 ? "file" : "files"}.`
+    : "Web link added.");
+}
+
+function removeWritingResearchLink() {
+  if (!writingLinkAnchor) return;
+  const parent = writingLinkAnchor.parentNode;
+  while (writingLinkAnchor.firstChild) {
+    parent.insertBefore(writingLinkAnchor.firstChild, writingLinkAnchor);
+  }
+  writingLinkAnchor.remove();
+  elements.writingLinkDialog.close();
+  scheduleStorySave();
+  showToast("Link removed. The words remain in your manuscript.");
+}
+
+function closeWritingLinkPopover() {
+  window.clearTimeout(writingLinkPopoverTimer);
+  elements.writingLinkPopover.hidden = true;
+  elements.writingLinkPopover.innerHTML = "";
+}
+
+function positionWritingLinkPopover(anchor) {
+  const anchorRect = anchor.getBoundingClientRect();
+  const popoverRect = elements.writingLinkPopover.getBoundingClientRect();
+  const edge = 12;
+  const left = Math.max(
+    edge,
+    Math.min(window.innerWidth - popoverRect.width - edge, anchorRect.left),
+  );
+  const preferredTop = anchorRect.bottom + 10;
+  const top = preferredTop + popoverRect.height <= window.innerHeight - edge
+    ? preferredTop
+    : Math.max(edge, anchorRect.top - popoverRect.height - 10);
+  elements.writingLinkPopover.style.left = `${left}px`;
+  elements.writingLinkPopover.style.top = `${top}px`;
+}
+
+function showWritingLinkPopover(anchor) {
+  const keys = writingLinkKeys(anchor);
+  if (!keys.length) return;
+  const sources = keys.map(writingResearchSource).filter(Boolean);
+  elements.writingLinkPopover.innerHTML = `
+    <div class="writing-link-popover-heading">
+      <div>
+        <span>Linked research</span>
+        <strong>${sources.length} ${sources.length === 1 ? "file" : "files"}</strong>
+      </div>
+      <button type="button" data-writing-link-action="close" aria-label="Close linked research card">X</button>
+    </div>
+    <div class="writing-link-popover-files">
+      ${sources.length
+        ? sources.map((source) => `
+          <article>
+            <span>${escapeHtml(source.kind)}</span>
+            <strong>${escapeHtml(source.title || "Untitled source")}</strong>
+            <small>${escapeHtml(source.author || "Personal note")}</small>
+            <p>${escapeHtml(researchPreview(source.excerpt, 170) || "No preview available.")}</p>
+            <div>
+              <button type="button" data-writing-link-action="open" data-key="${escapeHtml(source.key)}">Open file</button>
+              <button type="button" data-writing-link-action="summarize" data-key="${escapeHtml(source.key)}">Ask Nillion</button>
+            </div>
+          </article>
+        `).join("")
+        : '<p class="writing-link-missing">The linked files are no longer available in this account.</p>'}
+    </div>
+    ${anchor.dataset.webUrl ? `<a class="writing-link-web-button" href="${escapeHtml(anchor.dataset.webUrl)}" target="_blank" rel="noopener noreferrer">Open linked website</a>` : ""}
+    <p class="writing-link-summary" data-writing-link-summary hidden></p>
+  `;
+  elements.writingLinkPopover.hidden = false;
+  window.requestAnimationFrame(() => positionWritingLinkPopover(anchor));
+}
+
+function summarizeWritingLinkSource(key) {
+  const source = writingResearchSource(key);
+  if (!source) return;
+  const answer = nillionSummarizeResearchSource(source);
+  const summary = elements.writingLinkPopover.querySelector("[data-writing-link-summary]");
+  if (summary) {
+    summary.textContent = answer;
+    summary.hidden = false;
+  }
+  if (elements.nillionResponse) elements.nillionResponse.textContent = answer;
+  speakNillionAnswer(answer);
+}
+
 function addWritingLink() {
   restoreWritingSelection();
   const selection = window.getSelection();
@@ -7063,6 +7476,14 @@ function updateWritingZoom(nextZoom) {
   writingZoom = Math.max(70, Math.min(150, nextZoom));
   elements.storyDraftInput.style.zoom = `${writingZoom}%`;
   elements.writingZoomLabel.textContent = `${writingZoom}%`;
+}
+
+function toggleWritingFocusMode() {
+  writingFocusMode = !writingFocusMode;
+  elements.appShell.classList.toggle("writing-focus-mode", writingFocusMode);
+  elements.storyFocusButton.textContent = writingFocusMode
+    ? "Exit focus mode"
+    : "Distraction-free";
 }
 
 function saveChapter() {
@@ -10471,15 +10892,7 @@ document
   .querySelector("#empty-new-story-button")
   .addEventListener("click", () => createStory());
 elements.newJournalDocumentButton.addEventListener("click", createJournalDocument);
-elements.openResearchLibraryButton.addEventListener("click", () => {
-  elements.writingResearchLibrary.open = true;
-  renderResearchLibrary();
-  elements.writingResearchLibrary.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
-  window.setTimeout(() => elements.researchLibrarySearch.focus(), 350);
-});
+elements.openResearchLibraryButton.addEventListener("click", revealWritingResearchLibrary);
 document
   .querySelector("#delete-story-button")
   .addEventListener("click", deleteOpenStory);
@@ -10761,6 +11174,16 @@ document.querySelectorAll("[data-format-action]").forEach((button) => {
     );
   });
 });
+document.querySelectorAll("[data-writing-ribbon]").forEach((button) => {
+  button.addEventListener("click", () => setWritingRibbon(button.dataset.writingRibbon));
+});
+document.querySelectorAll("[data-word-window-action]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.dataset.wordWindowAction === "focus") toggleWritingFocusMode();
+    if (button.dataset.wordWindowAction === "zoom-out") updateWritingZoom(writingZoom - 10);
+    if (button.dataset.wordWindowAction === "zoom-in") updateWritingZoom(writingZoom + 10);
+  });
+});
 elements.writingStyleSelect.addEventListener("change", () => {
   applyWritingFormat("formatBlock", elements.writingStyleSelect.value);
 });
@@ -10777,6 +11200,30 @@ elements.writingHighlightColour.addEventListener("input", () => {
   applyWritingFormat("hiliteColor", elements.writingHighlightColour.value);
 });
 elements.writingLinkButton.addEventListener("click", addWritingLink);
+elements.writingResearchLinkButton.addEventListener("click", openWritingResearchLinkDialog);
+elements.writingOpenResearchButton.addEventListener("click", revealWritingResearchLibrary);
+document
+  .querySelector("#close-writing-link-button")
+  .addEventListener("click", () => elements.writingLinkDialog.close());
+elements.writingLinkForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  applyWritingResearchLink();
+});
+elements.writingLinkSearch.addEventListener("input", renderWritingLinkResults);
+elements.writingLinkFilter.addEventListener("change", renderWritingLinkResults);
+elements.writingLinkResults.addEventListener("change", (event) => {
+  const checkbox = event.target.closest('input[type="checkbox"]');
+  if (!checkbox) return;
+  if (checkbox.checked) writingLinkSelectedKeys.add(checkbox.value);
+  else writingLinkSelectedKeys.delete(checkbox.value);
+  elements.writingLinkError.textContent = "";
+});
+elements.removeWritingLinkButton.addEventListener("click", removeWritingResearchLink);
+elements.writingLinkDialog.addEventListener("close", () => {
+  writingLinkRange = null;
+  writingLinkAnchor = null;
+  writingLinkSelectedKeys = new Set();
+});
 elements.writingRuleButton.addEventListener("click", () =>
   applyWritingFormat("insertHorizontalRule"),
 );
@@ -10810,19 +11257,47 @@ elements.storyStatusFilter.addEventListener("change", renderStories);
 elements.storyManualSaveButton.addEventListener("click", () =>
   saveOpenStory({ manual: true }),
 );
-elements.storyFocusButton.addEventListener("click", () => {
-  writingFocusMode = !writingFocusMode;
-  elements.appShell.classList.toggle("writing-focus-mode", writingFocusMode);
-  elements.storyFocusButton.textContent = writingFocusMode
-    ? "Exit focus mode"
-    : "Distraction-free";
-});
+elements.storyFocusButton.addEventListener("click", toggleWritingFocusMode);
 elements.storyManuscriptSearchInput.addEventListener("input", () =>
   renderManuscriptInsights(),
 );
 elements.storyDraftInput.addEventListener("input", () => renderManuscriptInsights());
 elements.storyDraftInput.addEventListener("keydown", () => {
   window.clearTimeout(storySaveTimer);
+});
+elements.storyDraftInput.addEventListener("click", (event) => {
+  const link = event.target.closest("a.writing-research-link");
+  if (!link) return;
+  event.preventDefault();
+  showWritingLinkPopover(link);
+});
+elements.storyDraftInput.addEventListener("mouseover", (event) => {
+  const link = event.target.closest("a.writing-research-link");
+  if (!link) return;
+  window.clearTimeout(writingLinkPopoverTimer);
+  writingLinkPopoverTimer = window.setTimeout(() => showWritingLinkPopover(link), 280);
+});
+elements.storyDraftInput.addEventListener("mouseout", (event) => {
+  const link = event.target.closest("a.writing-research-link");
+  if (!link || link.contains(event.relatedTarget)) return;
+  writingLinkPopoverTimer = window.setTimeout(closeWritingLinkPopover, 320);
+});
+elements.writingLinkPopover.addEventListener("mouseenter", () => {
+  window.clearTimeout(writingLinkPopoverTimer);
+});
+elements.writingLinkPopover.addEventListener("mouseleave", () => {
+  writingLinkPopoverTimer = window.setTimeout(closeWritingLinkPopover, 320);
+});
+elements.writingLinkPopover.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-writing-link-action]");
+  if (!button) return;
+  const action = button.dataset.writingLinkAction;
+  if (action === "close") closeWritingLinkPopover();
+  if (action === "open") {
+    closeWritingLinkPopover();
+    openWritingResearchSource(button.dataset.key);
+  }
+  if (action === "summarize") summarizeWritingLinkSource(button.dataset.key);
 });
 elements.duplicateStoryButton.addEventListener("click", duplicateOpenStory);
 
@@ -11563,6 +12038,13 @@ elements.highlightCanvas.addEventListener("pointercancel", endHighlight);
 document.addEventListener("click", (event) => {
   ensureAudioContext();
   if (
+    !elements.writingLinkPopover.hidden &&
+    !event.target.closest("#writing-link-popover") &&
+    !event.target.closest("a.writing-research-link")
+  ) {
+    closeWritingLinkPopover();
+  }
+  if (
     !elements.featureMenu.hidden &&
     !event.target.closest(".site-nav")
   ) {
@@ -11578,6 +12060,12 @@ document.addEventListener("click", (event) => {
   }
 });
 
+window.addEventListener("resize", closeWritingLinkPopover);
+window.addEventListener("scroll", (event) => {
+  if (elements.writingLinkPopover.contains(event.target)) return;
+  closeWritingLinkPopover();
+}, true);
+
 document.addEventListener("keydown", (event) => {
   ensureAudioContext();
   if (event.key === "Escape" && !elements.featureMenu.hidden) {
@@ -11589,6 +12077,7 @@ window.addEventListener("hashchange", closeFeatureMenu);
 
 renderArchetypeReference();
 renderJungConceptReference();
+setWritingRibbon(activeWritingRibbon);
 migrateAccountData();
 migrateCreativeWritingProjects();
 initializeAuthentication();
