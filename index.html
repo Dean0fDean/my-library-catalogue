@@ -208,7 +208,6 @@
             <div class="home-primary-actions">
               <a class="primary-button" href="#collection">Open my collection</a>
               <a class="home-menu-link" href="#reading-log">Log today's reading</a>
-              <a class="home-menu-link dream-home-link" href="#dream-journal">Open dream journal</a>
               <button class="home-quandary-button" id="open-quandary-button" type="button">
                 Flag a quandary
               </button>
@@ -357,7 +356,7 @@
                 <span class="nillion-answer-label">NILLION</span>
                 <p id="nillion-response" role="status" aria-live="polite">
                   I am online. Ask me about your books, reading habits, passages,
-                  writing, dreams, vocabulary, or community activity.
+                  writing, vocabulary, or community activity.
                 </p>
               </div>
 
@@ -928,7 +927,7 @@
             <summary>
               <span>
                 <strong>Research Library</strong>
-                <small>Search your books, passages, documents, project research, reading history, dreams, and vocabulary.</small>
+                <small>Search your books, passages, documents, project research, reading history, and vocabulary.</small>
               </span>
               <span aria-hidden="true">Open library</span>
             </summary>
@@ -943,7 +942,7 @@
               <p class="research-explorer-intro">
                 Search across your collection, saved passages, Writing Studio
                 documents, project research, journal archive, reading sessions,
-                dreams, wishlist, and WordHub. Nillion can read and summarize the
+                wishlist, and WordHub. Nillion can read and summarize the
                 saved text in these research files.
               </p>
               <div class="research-explorer-toolbar">
@@ -960,7 +959,6 @@
                     <option value="passage">Saved passages</option>
                     <option value="journal">Journal archive</option>
                     <option value="reading">Reading log</option>
-                    <option value="dream">Dream journal</option>
                     <option value="word">WordHub</option>
                     <option value="wishlist">Wishlist</option>
                     <option value="document">Writing documents</option>
@@ -2124,150 +2122,6 @@
               <div id="profile-achievement-grid" class="profile-achievement-grid"></div>
             </section>
 
-            <section class="profile-panel dream-journal-panel" id="dream-journal" aria-labelledby="dream-journal-title">
-              <div class="profile-panel-heading">
-                <div>
-                  <p class="eyebrow">PRIVATE DREAM JOURNAL</p>
-                  <h3 id="dream-journal-title">Dreams and recurring symbols</h3>
-                </div>
-                <button id="open-dream-button" type="button">Record a dream</button>
-              </div>
-              <p class="dream-journal-intro">
-                Capture remembered dreams, notice recurring imagery, and connect entries that belong together.
-              </p>
-              <div class="dream-journal-stats" aria-label="Dream journal statistics">
-                <div><strong id="dream-profile-symbol-count">0</strong><span>Est. number of symbols</span></div>
-                <div><strong id="dream-profile-entry-count">0</strong><span>Dreams recorded</span></div>
-              </div>
-              <details class="archetype-guide">
-                <summary>
-                  <span>
-                    <strong>Consult the archetype guide</strong>
-                    <small>A searchable companion for your own reflections</small>
-                  </span>
-                </summary>
-                <div class="archetype-guide-body">
-                  <p>
-                    Archetypes are recurring patterns, not fixed definitions. Personal associations,
-                    culture, and the dream's context should guide your interpretation.
-                  </p>
-                  <label class="archetype-search">
-                    <span>Search archetypes</span>
-                    <input
-                      id="archetype-search-input"
-                      type="search"
-                      placeholder="Try shadow, guide, transformation..."
-                      autocomplete="off"
-                    />
-                  </label>
-                  <div id="archetype-reference-list" class="archetype-reference-list"></div>
-                  <p id="archetype-reference-empty" class="archetype-reference-empty" hidden>
-                    No archetypes match that search.
-                  </p>
-                </div>
-              </details>
-              <details class="archetype-guide jung-concept-guide">
-                <summary>
-                  <span>
-                    <strong>Search Jung's concepts</strong>
-                    <small>Key ideas from analytical psychology</small>
-                  </span>
-                </summary>
-                <div class="archetype-guide-body">
-                  <p>
-                    These concise descriptions are for study and reflection, not diagnosis.
-                    Jung's concepts remain historically influential and are also debated.
-                  </p>
-                  <label class="archetype-search">
-                    <span>Search concepts</span>
-                    <input
-                      id="jung-concept-search-input"
-                      type="search"
-                      placeholder="Try individuation, complex, synchronicity..."
-                      autocomplete="off"
-                    />
-                  </label>
-                  <div id="jung-concept-reference-list" class="archetype-reference-list"></div>
-                  <p id="jung-concept-reference-empty" class="archetype-reference-empty" hidden>
-                    No concepts match that search.
-                  </p>
-                </div>
-              </details>
-              <details class="archetype-guide depth-history-guide">
-                <summary>
-                  <span>
-                    <strong>Jung, Freud, and their split</strong>
-                    <small>Biographical context for two influential thinkers</small>
-                  </span>
-                </summary>
-                <div class="depth-history-body">
-                  <article>
-                    <h4>Carl Gustav Jung (1875-1961)</h4>
-                    <p>
-                      A Swiss psychiatrist who worked at the Burgholzli hospital and founded
-                      analytical psychology. His work explored complexes, psychological types,
-                      archetypes, the collective unconscious, individuation, dreams, religion,
-                      myth, and synchronicity.
-                    </p>
-                  </article>
-                  <article>
-                    <h4>Sigmund Freud (1856-1939)</h4>
-                    <p>
-                      An Austrian neurologist and the founder of psychoanalysis. Freud emphasized
-                      unconscious conflict, repression, childhood experience, sexuality, dreams,
-                      and the clinical use of free association.
-                    </p>
-                  </article>
-                  <article class="split-history">
-                    <h4>Why they separated</h4>
-                    <p>
-                      Jung became Freud's close collaborator after they met in 1907, but their
-                      theories and temperaments diverged. Jung resisted Freud's insistence that
-                      libido and neurosis should be understood chiefly through sexuality, broadened
-                      libido into a more general psychic energy, and gave religion, mythology, and
-                      symbolic material a larger constructive role. Jung's 1912 work
-                      <em>Symbols of Transformation</em> made the break unmistakable; their
-                      professional relationship ended soon afterward.
-                    </p>
-                  </article>
-                  <p class="history-source-note">
-                    Historical overview based on Encyclopaedia Britannica and the Freud Museum.
-                  </p>
-                </div>
-              </details>
-              <aside class="jung-popover" aria-label="Animated Carl Jung">
-                <div class="jung-character" aria-hidden="true">
-                  <span class="jung-hair"></span>
-                  <span class="jung-face">
-                    <i></i><i></i>
-                    <span class="jung-glasses" aria-hidden="true"></span>
-                    <span class="jung-moustache" aria-hidden="true"></span>
-                  </span>
-                  <span class="jung-suit"></span>
-                </div>
-                <p><strong>A small Jungian interruption:</strong> What does the image mean to you?</p>
-              </aside>
-              <aside
-                id="dream-fact-banner"
-                class="dream-fact-banner"
-                role="button"
-                tabindex="0"
-                aria-label="Dream fact. Click to dismiss."
-                hidden
-              >
-                <span class="dream-fact-orb" aria-hidden="true">&#9790;</span>
-                <div>
-                  <strong>DREAM NOTE</strong>
-                  <p id="dream-fact-text"></p>
-                </div>
-                <button id="dismiss-dream-fact" type="button" aria-label="Dismiss dream fact">X</button>
-              </aside>
-              <div id="dream-list" class="dream-list" aria-live="polite"></div>
-              <div id="dream-empty" class="dream-empty">
-                <strong>No dreams recorded yet.</strong>
-                <p>Your entries are private and synchronize with your account.</p>
-              </div>
-            </section>
           </div>
         </section>
 
@@ -2529,29 +2383,6 @@
               </form>
               <div id="admin-fact-list" class="admin-fact-list"></div>
             </section>
-            <section class="admin-fact-panel admin-dream-fact-panel" aria-labelledby="admin-dream-fact-title">
-              <div>
-                <p class="eyebrow">DREAM JOURNAL NOTES</p>
-                <h3 id="admin-dream-fact-title">Dream facts</h3>
-                <p>Add careful, concise facts that rotate within every reader's Dream Journal.</p>
-              </div>
-              <form id="admin-dream-fact-form">
-                <label>
-                  <span>New dream fact</span>
-                  <textarea
-                    id="admin-dream-fact-input"
-                    name="fact"
-                    rows="3"
-                    maxlength="320"
-                    placeholder="For example: Dream recall is often strongest immediately after waking."
-                    required
-                  ></textarea>
-                </label>
-                <p class="form-error" id="admin-dream-fact-error" role="alert"></p>
-                <button class="primary-button" type="submit">Add dream fact</button>
-              </form>
-              <div id="admin-dream-fact-list" class="admin-fact-list"></div>
-            </section>
             <section class="admin-quandary-panel" aria-labelledby="admin-quandary-title">
               <div>
                 <p class="eyebrow">READER REPORTS</p>
@@ -2668,109 +2499,6 @@
         <button class="primary-button submit-button" type="submit">
           Save profile
         </button>
-      </form>
-    </dialog>
-
-    <dialog id="dream-dialog" class="wide-dialog">
-      <form id="dream-form" method="dialog">
-        <div class="dialog-heading">
-          <div>
-            <p class="eyebrow">DREAM JOURNAL</p>
-            <h2 id="dream-dialog-title">Record a dream</h2>
-          </div>
-          <button
-            class="icon-button"
-            id="close-dream-button"
-            type="button"
-            aria-label="Close dream form"
-          >
-            X
-          </button>
-        </div>
-        <input id="dream-id-input" name="id" type="hidden" />
-        <label>
-          <span>Dream heading or title</span>
-          <input id="dream-title-input" name="title" type="text" maxlength="160" required />
-        </label>
-        <div class="form-row two-columns">
-          <label>
-            <span>Date of dream</span>
-            <input id="dream-date-input" name="dreamDate" type="date" required />
-          </label>
-          <label>
-            <span>Approximate time remembered (optional)</span>
-            <input id="dream-time-input" name="rememberedTime" type="time" />
-          </label>
-        </div>
-        <fieldset class="dream-icon-fieldset">
-          <legend>Display symbol</legend>
-          <div class="dream-icon-options">
-            <label><input type="radio" name="symbolIcon" value="moon" checked /><span aria-hidden="true">&#9790;</span><small>Moon</small></label>
-            <label><input type="radio" name="symbolIcon" value="heart" /><span aria-hidden="true">&#9829;</span><small>Heart</small></label>
-            <label><input type="radio" name="symbolIcon" value="chain" /><span aria-hidden="true">&#128279;</span><small>Chain</small></label>
-            <label><input type="radio" name="symbolIcon" value="wizard" /><span aria-hidden="true">&#129497;</span><small>Wizard</small></label>
-            <label><input type="radio" name="symbolIcon" value="key" /><span aria-hidden="true">&#128273;</span><small>Key</small></label>
-            <label><input type="radio" name="symbolIcon" value="eye" /><span aria-hidden="true">&#128065;</span><small>Eye</small></label>
-            <label><input type="radio" name="symbolIcon" value="star" /><span aria-hidden="true">&#9733;</span><small>Star</small></label>
-            <label><input type="radio" name="symbolIcon" value="tree" /><span aria-hidden="true">&#127795;</span><small>Tree</small></label>
-            <label><input type="radio" name="symbolIcon" value="water" /><span aria-hidden="true">&#8776;</span><small>Water</small></label>
-            <label><input type="radio" name="symbolIcon" value="door" /><span aria-hidden="true">&#128682;</span><small>Door</small></label>
-          </div>
-        </fieldset>
-        <label>
-          <span>What do you remember?</span>
-          <textarea id="dream-text-input" name="dream" rows="9" maxlength="15000" spellcheck="true" required></textarea>
-        </label>
-        <div class="dream-symbol-grid">
-          <label>
-            <span>Archetypes</span>
-            <textarea name="archetypes" rows="4" maxlength="3000" placeholder="The guide, shadow, child, trickster..." spellcheck="true"></textarea>
-          </label>
-          <label>
-            <span>Motifs</span>
-            <textarea name="motifs" rows="4" maxlength="3000" placeholder="Recurring journeys, thresholds, transformations..." spellcheck="true"></textarea>
-          </label>
-          <label>
-            <span>Symbols</span>
-            <textarea name="symbols" rows="4" maxlength="3000" placeholder="Places, colours, objects, people, animals..." spellcheck="true"></textarea>
-          </label>
-        </div>
-        <fieldset class="dream-related-fieldset">
-          <legend>Connected dreams (optional)</legend>
-          <div id="dream-related-options" class="dream-related-options"></div>
-        </fieldset>
-        <button class="primary-button submit-button" type="submit">Save dream</button>
-      </form>
-    </dialog>
-
-    <dialog id="dream-analysis-dialog" class="wide-dialog">
-      <form id="dream-analysis-form" method="dialog">
-        <div class="dialog-heading">
-          <div>
-            <p class="eyebrow">JUNGIAN REFLECTION</p>
-            <h2>Explore this dream</h2>
-          </div>
-          <button class="icon-button" id="close-dream-analysis" type="button" aria-label="Close dream analysis">X</button>
-        </div>
-        <input id="dream-analysis-id" name="dreamId" type="hidden" />
-        <p class="dialog-copy" id="dream-analysis-summary"></p>
-        <aside class="dream-analysis-caution">
-          <strong>Reflective, not definitive</strong>
-          <p>
-            This tool offers possible Jungian lenses, not facts, predictions,
-            medical advice, or mental-health diagnoses. Your own associations
-            and waking circumstances matter more than a symbol dictionary.
-          </p>
-        </aside>
-        <label>
-          <span>Relevant waking-life situation (optional)</span>
-          <textarea name="wakingContext" rows="5" maxlength="5000" placeholder="What was happening, changing, or troubling you around the time of this dream?" spellcheck="true"></textarea>
-        </label>
-        <label>
-          <span>Question you want to explore (optional)</span>
-          <textarea name="focusQuestion" rows="3" maxlength="1500" placeholder="What might this dream be balancing, preparing, or asking me to notice?" spellcheck="true"></textarea>
-        </label>
-        <button class="primary-button submit-button" type="submit">Create and save analysis</button>
       </form>
     </dialog>
 
@@ -3678,7 +3406,6 @@
               <option value="passage">Saved passages</option>
               <option value="journal">Journal archive</option>
               <option value="reading">Reading log</option>
-              <option value="dream">Dream journal</option>
               <option value="word">WordHub</option>
               <option value="wishlist">Wishlist</option>
               <option value="document">Writing documents</option>

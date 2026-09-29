@@ -282,16 +282,6 @@ const elements = {
   profilePreviewImage: document.querySelector("#profile-preview-image"),
   profileError: document.querySelector("#profile-error"),
   profileInsightGrid: document.querySelector("#profile-insight-grid"),
-  dreamProfileSymbolCount: document.querySelector("#dream-profile-symbol-count"),
-  dreamProfileEntryCount: document.querySelector("#dream-profile-entry-count"),
-  archetypeSearchInput: document.querySelector("#archetype-search-input"),
-  archetypeReferenceList: document.querySelector("#archetype-reference-list"),
-  archetypeReferenceEmpty: document.querySelector("#archetype-reference-empty"),
-  jungConceptSearchInput: document.querySelector("#jung-concept-search-input"),
-  jungConceptReferenceList: document.querySelector("#jung-concept-reference-list"),
-  jungConceptReferenceEmpty: document.querySelector("#jung-concept-reference-empty"),
-  dreamFactBanner: document.querySelector("#dream-fact-banner"),
-  dreamFactText: document.querySelector("#dream-fact-text"),
   profileNotificationCount: document.querySelector("#profile-notification-count"),
   headerNotificationCount: document.querySelector("#header-notification-count"),
   notificationChimeButton: document.querySelector("#notification-chime-button"),
@@ -299,21 +289,6 @@ const elements = {
   profileNotificationList: document.querySelector("#profile-notification-list"),
   markNotificationsRead: document.querySelector("#mark-notifications-read"),
   profileAchievementGrid: document.querySelector("#profile-achievement-grid"),
-  dreamList: document.querySelector("#dream-list"),
-  dreamEmpty: document.querySelector("#dream-empty"),
-  dreamDialog: document.querySelector("#dream-dialog"),
-  dreamForm: document.querySelector("#dream-form"),
-  dreamDialogTitle: document.querySelector("#dream-dialog-title"),
-  dreamIdInput: document.querySelector("#dream-id-input"),
-  dreamTitleInput: document.querySelector("#dream-title-input"),
-  dreamDateInput: document.querySelector("#dream-date-input"),
-  dreamTimeInput: document.querySelector("#dream-time-input"),
-  dreamTextInput: document.querySelector("#dream-text-input"),
-  dreamRelatedOptions: document.querySelector("#dream-related-options"),
-  dreamAnalysisDialog: document.querySelector("#dream-analysis-dialog"),
-  dreamAnalysisForm: document.querySelector("#dream-analysis-form"),
-  dreamAnalysisId: document.querySelector("#dream-analysis-id"),
-  dreamAnalysisSummary: document.querySelector("#dream-analysis-summary"),
   printSheet: document.querySelector("#print-sheet"),
   storyList: document.querySelector("#story-list"),
   storyCount: document.querySelector("#story-count"),
@@ -569,10 +544,6 @@ const elements = {
   adminFactInput: document.querySelector("#admin-fact-input"),
   adminFactError: document.querySelector("#admin-fact-error"),
   adminFactList: document.querySelector("#admin-fact-list"),
-  adminDreamFactForm: document.querySelector("#admin-dream-fact-form"),
-  adminDreamFactInput: document.querySelector("#admin-dream-fact-input"),
-  adminDreamFactError: document.querySelector("#admin-dream-fact-error"),
-  adminDreamFactList: document.querySelector("#admin-dream-fact-list"),
   adminQuandaryList: document.querySelector("#admin-quandary-list"),
   adminQuandaryEmpty: document.querySelector("#admin-quandary-empty"),
   readingFactBanner: document.querySelector("#reading-fact-banner"),
@@ -680,7 +651,9 @@ let announcements = [];
 let quandaries = [];
 let creativeWriting = loadArray(CREATIVE_WRITING_STORAGE_KEY);
 let wordhub = loadArray(WORDHUB_STORAGE_KEY);
-let dreams = loadArray(DREAMS_STORAGE_KEY);
+// Historical dream records remain in storage for compatibility, but the
+// retired Dream Journal is not loaded into the application.
+let dreams = [];
 let storeItems = [];
 let equippedTheme = "";
 let equippedFrame = "";
@@ -793,7 +766,7 @@ function storeApiSession(token) {
 
 function adoptLocalAccount(localAccount, onlineAccount) {
   if (!localAccount || localAccount.id === onlineAccount.id) return;
-  [books, readingLog, passages, wishlist, creativeWriting, wordhub, dreams].forEach((items) => {
+  [books, readingLog, passages, wishlist, creativeWriting, wordhub].forEach((items) => {
     items.forEach((item) => {
       if (item.ownerId === localAccount.id) item.ownerId = onlineAccount.id;
     });
@@ -804,7 +777,6 @@ function adoptLocalAccount(localAccount, onlineAccount) {
   saveWishlist();
   saveCreativeWriting();
   saveWordhub();
-  saveDreams();
 }
 
 function loadArray(key) {
@@ -920,7 +892,7 @@ function migrateAccountData() {
   );
   if (realAccount && testAccounts.length) {
     const testIds = new Set(testAccounts.map((account) => account.id));
-    [books, readingLog, passages, wishlist, creativeWriting, wordhub, dreams].forEach((items) => {
+    [books, readingLog, passages, wishlist, creativeWriting, wordhub].forEach((items) => {
       items.forEach((item) => {
         if (testIds.has(item.ownerId)) item.ownerId = realAccount.id;
       });
@@ -958,7 +930,6 @@ function migrateAccountData() {
   let wishlistChanged = false;
   let creativeWritingChanged = false;
   let wordhubChanged = false;
-  let dreamsChanged = false;
   books.forEach((item) => {
     if (!item.ownerId) {
       item.ownerId = admin.id;
@@ -995,12 +966,6 @@ function migrateAccountData() {
       wordhubChanged = true;
     }
   });
-  dreams.forEach((item) => {
-    if (!item.ownerId) {
-      item.ownerId = admin.id;
-      dreamsChanged = true;
-    }
-  });
   if (changedAccounts) saveAccounts();
   if (booksChanged) saveBooks();
   if (logsChanged) saveReadingLog();
@@ -1008,7 +973,6 @@ function migrateAccountData() {
   if (wishlistChanged) saveWishlist();
   if (creativeWritingChanged) saveCreativeWriting();
   if (wordhubChanged) saveWordhub();
-  if (dreamsChanged) saveDreams();
 }
 
 function normalize(value) {
@@ -1145,24 +1109,8 @@ function readingSnapshot() {
     pages: accountLog.reduce((total, entry) => total + (Number(entry.pagesRead) || 0), 0),
     minutes: accountLog.reduce((total, entry) => total + (Number(entry.durationMinutes) || 0), 0),
     journals: journals.length,
-    dreams: ownedByCurrent(dreams).length,
     words: ownedByCurrent(wordhub).length,
   };
-}
-
-function listedDreamSymbols(value) {
-  return String(value || "")
-    .replace(/[•·]/g, ",")
-    .split(/[,;\n|]+/)
-    .map((symbol) => symbol.trim())
-    .filter(Boolean);
-}
-
-function estimatedDreamSymbolCount() {
-  return ownedByCurrent(dreams).reduce(
-    (total, dream) => total + listedDreamSymbols(dream.symbols).length,
-    0,
-  );
 }
 
 function renderProfileInsights() {
@@ -1173,13 +1121,11 @@ function renderProfileInsights() {
     : 0;
   elements.profileInsightGrid.innerHTML = `
     <div><strong>${snapshot.readBooks}</strong><span>Books finished</span></div>
-    <div><strong>${snapshot.dreams}</strong><span>Dreams recorded</span></div>
+    <div><strong>${snapshot.ownedBooks}</strong><span>Books owned</span></div>
     <div><strong>${snapshot.pages}</strong><span>Pages logged</span></div>
     <div><strong>${formatDuration(snapshot.minutes)}</strong><span>Reading time</span></div>
     <div><strong>${averagePages}</strong><span>Pages per session</span></div>
   `;
-  elements.dreamProfileSymbolCount.textContent = estimatedDreamSymbolCount();
-  elements.dreamProfileEntryCount.textContent = snapshot.dreams;
 }
 
 function notificationIcon(type) {
@@ -1262,14 +1208,23 @@ async function refreshProfileActivity({ syncSnapshot = true } = {}) {
     });
   }
   const data = await apiRequest("profile-activity");
-  const nextNotifications = data.notifications || [];
+  const nextNotifications = (data.notifications || []).filter(
+    (item) => !/^Dream journal Runes$/i.test(item.title || ""),
+  );
   const newlyReceived = notificationBaselineReady
     ? nextNotifications.filter(
         (item) => !item.readAt && !knownNotificationIds.has(item.id),
       )
     : [];
   profileNotifications = nextNotifications;
-  profileAchievements = data.achievements || [];
+  const retiredDreamAchievements = new Set([
+    "first-dream",
+    "ten-dreams",
+    "twenty-five-dreams",
+  ]);
+  profileAchievements = (data.achievements || []).filter(
+    (item) => !retiredDreamAchievements.has(item.key),
+  );
   knownNotificationIds = new Set(nextNotifications.map((item) => item.id));
   if (notificationBaselineReady && newlyReceived.length) {
     playNotificationChime();
@@ -1374,9 +1329,6 @@ function cloudDataFor(accountId) {
     wordhub: wordhub
       .filter((item) => item.ownerId === accountId)
       .map(cloudSafeItem),
-    dreams: dreams
-      .filter((item) => item.ownerId === accountId)
-      .map(cloudSafeItem),
   };
 }
 
@@ -1388,7 +1340,6 @@ function hasCloudData(data) {
     "wishlist",
     "creativeWriting",
     "wordhub",
-    "dreams",
   ].some(
     (key) => Array.isArray(data[key]) && data[key].length > 0,
   );
@@ -1417,19 +1368,6 @@ function replaceAccountItems(items, accountId, incoming) {
     ...items.filter((item) => item.ownerId !== accountId),
     ...incoming.map((item) => ({ ...item, ownerId: accountId })),
   ];
-}
-
-function mergeVersionedItems(localItems, incomingItems) {
-  const merged = new Map();
-  [...localItems, ...incomingItems].forEach((item) => {
-    if (!item?.id) return;
-    const previous = merged.get(item.id);
-    const previousTime =
-      Date.parse(previous?.updatedAt || previous?.createdAt || 0) || 0;
-    const nextTime = Date.parse(item.updatedAt || item.createdAt || 0) || 0;
-    if (!previous || nextTime >= previousTime) merged.set(item.id, item);
-  });
-  return [...merged.values()];
 }
 
 async function loadAccountData() {
@@ -1485,24 +1423,12 @@ async function loadAccountData() {
     currentAccount.id,
     cloud.wordhub || [],
   );
-  dreams = replaceAccountItems(
-    dreams,
-    currentAccount.id,
-    mergeVersionedItems(
-      ownedByCurrent(dreams),
-      (cloud.dreams || []).map((dream) => ({
-        ...dream,
-        ownerId: currentAccount.id,
-      })),
-    ),
-  );
   saveCollection(STORAGE_KEY, localSafeBooks());
   saveCollection(LOG_STORAGE_KEY, readingLog);
   saveCollection(PASSAGE_STORAGE_KEY, passages);
   saveCollection(WISHLIST_STORAGE_KEY, wishlist);
   saveCollection(CREATIVE_WRITING_STORAGE_KEY, creativeWriting);
   saveCollection(WORDHUB_STORAGE_KEY, wordhub);
-  saveCollection(DREAMS_STORAGE_KEY, dreams);
   isApplyingCloudData = false;
   await syncAccountData();
   await Promise.all(
@@ -1735,7 +1661,6 @@ async function showAuthenticatedApp(account) {
     runStartupStep(loadCommunity),
     runStartupStep(loadJournals),
     runStartupStep(loadReadingFacts),
-    runStartupStep(loadDreamFacts),
     runStartupStep(loadMarketplace),
     runStartupStep(loadLearningNook),
     runStartupStep(loadChippings),
@@ -1751,7 +1676,6 @@ async function showAuthenticatedApp(account) {
   renderJournals();
   renderStories();
   renderWordhub();
-  renderDreams();
   renderCommunity();
   if (dailyStreakRewardEarned) {
     showDailyStreakReward();
@@ -1767,7 +1691,6 @@ async function showAuthenticatedApp(account) {
 
 function showLoginScreen() {
   window.clearInterval(notificationPollTimer);
-  window.clearInterval(dreamFactTimer);
   window.clearTimeout(breakReminderTimer);
   notificationBaselineReady = false;
   knownNotificationIds = new Set();
@@ -2179,7 +2102,6 @@ function answerNillionQuestion(rawQuestion) {
   const accountLog = ownedByCurrent(readingLog);
   const accountPassages = ownedByCurrent(passages);
   const accountWishlist = ownedByCurrent(wishlist);
-  const accountDreams = ownedByCurrent(dreams);
   const accountWords = ownedByCurrent(wordhub);
   const projects = allStoryProjects();
   const scope = nillionReadingScope(query, accountLog);
@@ -2191,7 +2113,7 @@ function answerNillionQuestion(rawQuestion) {
     return `Hello${currentAccount.username ? `, ${currentAccount.username}` : ""}. I am Nillion. What would you like to know about your library?`;
   }
   if (query.includes("what can you do") || query.includes("how can you help") || query === "help") {
-    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, dreams, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can also read and summarize saved Research Library files when you name the source.";
+    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can also read and summarize saved Research Library files when you name the source.";
   }
   const researchAnswer = nillionResearchAnswer(query);
   if (researchAnswer) return researchAnswer;
@@ -2253,12 +2175,6 @@ function answerNillionQuestion(rawQuestion) {
     return recent.length
       ? `You have ${recent.length} saved writing ${recent.length === 1 ? "entry" : "entries"}. The latest is dated ${journalDateLabel(recent[0].entryDate)}${recent[0].books?.length ? ` and references ${nillionList(recent[0].books.map((book) => book.title), 3)}` : ""}.`
       : "You have not saved a journal reflection yet.";
-  }
-  if (query.includes("dream")) {
-    const recent = [...accountDreams].sort((first, second) => String(second.dreamDate).localeCompare(String(first.dreamDate)));
-    return recent.length
-      ? `Your Dream Journal contains ${recent.length} ${recent.length === 1 ? "dream" : "dreams"} and about ${estimatedDreamSymbolCount()} listed symbols. The latest entry is ${recent[0].title}, dated ${dreamDateLabel(recent[0].dreamDate)}.`
-      : "Your Dream Journal is empty.";
   }
   if (query.includes("wordhub") || query.includes("vocabulary") || query.includes("saved words")) {
     return accountWords.length
@@ -2325,7 +2241,7 @@ function answerNillionQuestion(rawQuestion) {
   }
 
   const searchResult = nillionSearchAnswer(query);
-  return searchResult || "I could not find a confident answer in your saved data. Try asking about a title, author, reading period, passage, project, dream, word, wishlist, recommendation, or profile statistic.";
+  return searchResult || "I could not find a confident answer in your saved data. Try asking about a title, author, reading period, passage, project, word, wishlist, recommendation, or profile statistic.";
 }
 
 function updateNillionVoiceControl() {
@@ -6309,18 +6225,6 @@ function allWritingResearchSources() {
       citation: `Reading log: ${entry.title}, ${formatDate(entry.date)}`,
     });
   });
-  ownedByCurrent(dreams).forEach((dream) => {
-    sources.push({
-      key: `dream:${dream.id}`,
-      kind: "dream",
-      id: dream.id,
-      title: dream.title,
-      author: currentAccount.username,
-      meta: `Dream journal / ${dreamDateLabel(dream.dreamDate)}`,
-      excerpt: [dream.dream, dream.symbols, dream.archetypes, dream.motifs].filter(Boolean).join(" "),
-      citation: `Dream journal: ${dream.title}, ${dreamDateLabel(dream.dreamDate)}`,
-    });
-  });
   ownedByCurrent(wordhub).forEach((entry) => {
     sources.push({
       key: `word:${entry.id}`,
@@ -6451,7 +6355,7 @@ function revealWritingResearchLibrary() {
 
 function sourceCitationHtml(source) {
   const excerpt = researchPreview(source.excerpt, 700);
-  if (source.kind === "passage" || source.kind === "journal" || source.kind === "dream") {
+  if (source.kind === "passage" || source.kind === "journal") {
     return `<blockquote>${escapeHtml(excerpt)}</blockquote><p><cite>${escapeHtml(source.citation)}</cite></p><p><br></p>`;
   }
   return `<p><cite>${escapeHtml(source.citation)}</cite>${excerpt ? ` - ${escapeHtml(excerpt)}` : ""}</p><p><br></p>`;
@@ -6573,7 +6477,6 @@ function openWritingResearchSource(key) {
     book: "collection",
     passage: "passages",
     reading: "reading-log",
-    dream: "dream-journal",
     word: "wordhub",
     wishlist: "wishlist",
   };
@@ -10915,15 +10818,6 @@ document
   .querySelector("#close-profile-button")
   .addEventListener("click", () => elements.profileDialog.close());
 document
-  .querySelector("#open-dream-button")
-  .addEventListener("click", () => openDreamForm());
-document
-  .querySelector("#close-dream-button")
-  .addEventListener("click", () => elements.dreamDialog.close());
-document
-  .querySelector("#close-dream-analysis")
-  .addEventListener("click", () => elements.dreamAnalysisDialog.close());
-document
   .querySelector("#close-reader-profile-button")
   .addEventListener("click", () => elements.readerProfileDialog.close());
 elements.openReaderChallenge.addEventListener("click", () =>
@@ -10976,13 +10870,6 @@ elements.readingFactBanner.addEventListener("keydown", (event) => {
     dismissReadingFact();
   }
 });
-elements.dreamFactBanner.addEventListener("click", dismissDreamFact);
-elements.dreamFactBanner.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    dismissDreamFact();
-  }
-});
 document.querySelector("#logout-button").addEventListener("click", () => {
   saveOpenStory();
   elements.profileDialog.close();
@@ -11010,19 +10897,6 @@ elements.profileForm.addEventListener("submit", (event) => {
   }
 });
 
-elements.dreamForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (elements.dreamForm.reportValidity()) {
-    saveDreamEntry(new FormData(elements.dreamForm));
-  }
-});
-
-elements.dreamAnalysisForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (elements.dreamAnalysisForm.reportValidity()) {
-    saveDreamAnalysis(new FormData(elements.dreamAnalysisForm));
-  }
-});
 
 elements.shareForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -11073,12 +10947,6 @@ elements.adminFactForm.addEventListener("submit", (event) => {
   }
 });
 
-elements.adminDreamFactForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (elements.adminDreamFactForm.reportValidity()) {
-    addDreamFact(new FormData(elements.adminDreamFactForm));
-  }
-});
 
 elements.marketListingForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -11567,16 +11435,6 @@ elements.journalDialog.addEventListener("click", (event) => {
   if (event.target === elements.journalDialog) elements.journalDialog.close();
 });
 
-elements.dreamDialog.addEventListener("click", (event) => {
-  if (event.target === elements.dreamDialog) elements.dreamDialog.close();
-});
-
-elements.dreamAnalysisDialog.addEventListener("click", (event) => {
-  if (event.target === elements.dreamAnalysisDialog) {
-    elements.dreamAnalysisDialog.close();
-  }
-});
-
 elements.debateInviteDialog.addEventListener("click", (event) => {
   if (event.target === elements.debateInviteDialog) {
     elements.debateInviteDialog.close();
@@ -11775,16 +11633,6 @@ elements.journalGrid.addEventListener("click", (event) => {
   }
 });
 
-elements.dreamList.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-dream-action]");
-  if (!button) return;
-  if (button.dataset.dreamAction === "analyse") {
-    openDreamAnalysis(button.dataset.id);
-  }
-  if (button.dataset.dreamAction === "edit") openDreamForm(button.dataset.id);
-  if (button.dataset.dreamAction === "delete") deleteDream(button.dataset.id);
-});
-
 document.querySelectorAll("[data-print-list]").forEach((button) => {
   button.addEventListener("click", () => printList(button.dataset.printList));
 });
@@ -11871,13 +11719,6 @@ elements.adminFactList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-fact-action]");
   if (button?.dataset.factAction === "delete") {
     deleteReadingFact(button.dataset.id);
-  }
-});
-
-elements.adminDreamFactList.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-dream-fact-action]");
-  if (button?.dataset.dreamFactAction === "delete") {
-    deleteDreamFact(button.dataset.id);
   }
 });
 
@@ -12017,8 +11858,6 @@ elements.passageTitleInput.addEventListener("input", fillPassageAuthor);
 elements.passageSearchInput.addEventListener("input", renderPassages);
 elements.passageBookFilter.addEventListener("change", renderPassages);
 elements.profilePhotoInput.addEventListener("change", previewProfilePhoto);
-elements.archetypeSearchInput.addEventListener("input", renderArchetypeReference);
-elements.jungConceptSearchInput.addEventListener("input", renderJungConceptReference);
 elements.wordhubLookupButton.addEventListener("click", lookupWordDefinition);
 document.querySelectorAll("[data-passage-mode]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -12075,8 +11914,6 @@ document.addEventListener("keydown", (event) => {
 });
 window.addEventListener("hashchange", closeFeatureMenu);
 
-renderArchetypeReference();
-renderJungConceptReference();
 setWritingRibbon(activeWritingRibbon);
 migrateAccountData();
 migrateCreativeWritingProjects();

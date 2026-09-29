@@ -2,6 +2,14 @@ MY LIBRARY
 
 Open index.html in a modern web browser to use your personal book catalogue.
 
+For a full local preview inside Codex, use `localhost` rather than
+`127.0.0.1`. In this environment the loopback IP may be blocked even when
+`localhost` works normally.
+
+If you want the app and its online API to load together in a local preview,
+run `npm run preview-local` from this folder and open
+`http://localhost:4315/`.
+
 The app opens on a dedicated Home dashboard with live collection statistics
 and shortcuts to frequently used areas. A responsive Menu in the sticky header
 organizes Collection, Wishlist, Reading Log, Passages, Journal, Creative
@@ -129,41 +137,6 @@ not trigger a sound when an account first signs in.
 Collection, saved passage, journal, and creative-writing project lists can be
 formatted for printing from their respective sections.
 
-The Profile includes a private Dream Journal. Readers can record a titled,
-dated dream with an optional remembered time, add notes about archetypes,
-motifs, and symbols, and connect related dreams. Dream entries synchronize
-with the signed-in account across devices. Entries are displayed in a
-responsive card catalogue with compact previews and expandable full details.
-Each dream can use a chosen symbolic icon, including a moon, heart, chain,
-wizard, key, eye, star, tree, water, or door.
-
-The profile displays both the number of books finished and dreams recorded.
-The Dream Journal uses a distinctive night-sky theme and includes dismissible
-Dream Facts that rotate every 30 seconds. Administrators can add or remove
-community Dream Facts from the private Admin area.
-
-Dream entries can generate and save cautious Jungian reflections using
-concepts associated with compensation, prospective function, reductive
-function, and big or archetypal dreams. Prophetic-seeming imagery is never
-presented as verified prediction. Each interpretation records uncertainty,
-reflective questions, source works, and a clear statement that it cannot
-diagnose mental illness or replace professional support.
-
-The Dream Journal is linked from Home. The Parliament of Owls awards 50 Runes
-the first time each dream is recorded and another 50 when archetype, motif, or
-symbol notes are added. The Collection has a warmer library-shelf visual theme.
-
-Within the Dream Journal, an estimated symbol total counts the symbols readers
-explicitly list across their entries. A searchable reference presents central
-Jungian archetypes and related recurring patterns while emphasizing that their
-meaning depends on personal, cultural, and dream-specific context.
-
-Dream synchronization now merges entries by their unique identifier and latest
-edit time instead of replacing the entire journal. The Dream Journal also
-includes a searchable guide to Jung's wider concepts, a short historical
-comparison of Jung and Freud and their theoretical split, and a small
-non-distracting animated Jung figure.
-
 Reader profiles display public collections as full book cards, including cover
 photographs, ratings, reading status, genre, and print, e-book, or audiobook
 format. Readers can issue one another measurable challenges based on pages,
@@ -182,23 +155,15 @@ additional celestial, ocean, autumn, and violet interface themes.
 Notification read states now remain stable during activity refreshes, including
 both individual and Mark All Read actions. Achievement milestones now extend
 across collections, completed books, sessions, pages, reading time, passages,
-journals, dreams, and WordHub vocabulary.
+journals, and WordHub vocabulary.
 
 The Collection includes a visual bookshelf diagram. Each spine represents one
 book, displays a code such as #1, can be arranged alphabetically or by genre,
 and shows the book title and details on hover, focus, or tap. Read books are
 highlighted gold, busy-reading books are gray, and unread books remain plain.
 
-The animated Jung figure now wears glasses and a moustache and appears at a
-slower interval so that the Dream Journal remains calm and readable.
-
 The Flag a Quandary dialog now has a clearer, warmer admin-review style with
 focused guidance, stronger fields, and a calmer backdrop.
-
-Dream analysis has been expanded with richer Jungian reflection: saved analyses
-now include category reasoning, emotional tone, symbolic clusters, possible
-inner tensions, metrics, integration practices, reflection questions, sources,
-and the existing uncertainty and non-diagnostic cautions.
 
 After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
