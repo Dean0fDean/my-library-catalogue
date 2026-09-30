@@ -1157,6 +1157,10 @@ h2 {
   gap: 1.25rem;
 }
 
+.book-grid[hidden] {
+  display: none;
+}
+
 .collection-display-bar {
   display: flex;
   align-items: center;
