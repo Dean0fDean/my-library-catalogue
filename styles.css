@@ -702,8 +702,11 @@ h1 {
 
 .nillion-answer p {
   margin: 0;
+  max-height: 18rem;
+  overflow: auto;
   color: #eafff8;
   font: 0.98rem/1.55 Arial, sans-serif;
+  white-space: pre-wrap;
 }
 
 .nillion-assistant.thinking .nillion-answer {

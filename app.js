@@ -680,6 +680,7 @@ let notificationBaselineReady = false;
 let audioContext;
 let nillionVoiceEnabled = localStorage.getItem(NILLION_VOICE_KEY) === "1";
 let nillionResponseTimer;
+let nillionSpeechSession = 0;
 let openMenuId = null;
 let activeCoverBookId = null;
 let activeEditingBookId = null;
@@ -1995,6 +1996,231 @@ function nillionSummarizeResearchSource(source) {
   return `Nillion summary of ${source.title}${source.author ? ` by ${source.author}` : ""}: ${summary} This summary is based only on the material saved in your Research Library.`;
 }
 
+function nillionDocumentSources() {
+  return allStoryProjects()
+    .map((project) => ({
+      id: project.id,
+      title: project.title || "Untitled document",
+      text: String(
+        project.manuscriptText ||
+          richTextToPlain(project.manuscriptHtml) ||
+          project.description ||
+          project.notes ||
+          "",
+      )
+        .replace(/\s+/g, " ")
+        .trim(),
+      wordCount: currentStoryWordCount(project),
+      updatedAt: project.updatedAt || project.createdAt || "",
+    }))
+    .sort((first, second) => String(second.updatedAt).localeCompare(String(first.updatedAt)));
+}
+
+function nillionQuotedValues(value) {
+  const matches = [];
+  const pattern = /"([^"]+)"|'([^']+)'|\u201c([^\u201d]+)\u201d|\u2018([^\u2019]+)\u2019/g;
+  let match = pattern.exec(String(value || ""));
+  while (match) {
+    matches.push(match.slice(1).find(Boolean).trim());
+    match = pattern.exec(String(value || ""));
+  }
+  return matches.filter(Boolean);
+}
+
+function nillionNamedDocument(query, documents) {
+  if (/\b(this|current|open) document\b/.test(query)) {
+    const active = currentStory();
+    if (active) return documents.find((document) => document.id === active.id) || null;
+  }
+  return documents
+    .slice()
+    .sort((first, second) => second.title.length - first.title.length)
+    .find((document) => {
+      const title = normalize(document.title);
+      return title.length > 1 && query.includes(title);
+    }) || null;
+}
+
+function nillionDocumentSearchTerm(rawQuestion, document) {
+  const quoted = nillionQuotedValues(rawQuestion).filter(
+    (value) => !document || normalize(value) !== normalize(document.title),
+  );
+  if (quoted.length) return quoted[0];
+
+  const whereMatch = String(rawQuestion || "").match(
+    /^\s*where\s+(?:does|do)\s+(.+?)\s+(?:appear|occur)(?:s)?(?:\s+(?:in|inside|across|through).*)?[?!.]*$/i,
+  );
+  if (whereMatch) {
+    return whereMatch[1]
+      .replace(/^(?:the\s+)?(?:word|phrase|sentence|line|text|passage)\s+/i, "")
+      .trim();
+  }
+
+  let term = String(rawQuestion || "")
+    .replace(/[?!.]+$/g, "")
+    .replace(
+      /^.*?\b(?:find|locate|search(?:\s+(?:through|across|inside))?|scan(?:\s+(?:through|across))?|which\s+documents?\s+(?:contain|mention)|where\s+(?:does|do)\s+.+?\s+(?:appear|occur)|read)\b\s*/i,
+      "",
+    )
+    .replace(/^(?:for\s+)?(?:the\s+)?(?:word|phrase|sentence|line|text|passage)\s+/i, "")
+    .replace(/^containing\s+/i, "");
+
+  if (document) {
+    const titleIndex = normalize(term).lastIndexOf(normalize(document.title));
+    if (titleIndex > 0) term = term.slice(0, titleIndex);
+  }
+  term = term
+    .replace(
+      /\s+(?:in|inside|through|across|from)\s+(?:all\s+)?(?:of\s+)?(?:my\s+)?(?:writing\s+studio\s+)?documents?(?:\s+and\s+manuscripts?)?.*$/i,
+      "",
+    )
+    .replace(/\s+(?:in|inside|from)\s+(?:the\s+)?(?:document|manuscript)\b.*$/i, "")
+    .trim();
+  return term;
+}
+
+function nillionCountDocumentMatches(text, term, wholeWord = false) {
+  const source = normalize(text);
+  const target = normalize(term);
+  if (!source || !target) return 0;
+  if (wholeWord && !target.includes(" ")) {
+    const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return (source.match(new RegExp(`\\b${escaped}\\b`, "g")) || []).length;
+  }
+  let count = 0;
+  let index = source.indexOf(target);
+  while (index !== -1) {
+    count += 1;
+    index = source.indexOf(target, index + Math.max(1, target.length));
+  }
+  return count;
+}
+
+function nillionDocumentContexts(text, term, wholeWord = false, limit = 3) {
+  const sentences = String(text || "")
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((sentence) => sentence.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const contexts = sentences.filter(
+    (sentence) => nillionCountDocumentMatches(sentence, term, wholeWord) > 0,
+  );
+  if (contexts.length) return [...new Set(contexts)].slice(0, limit);
+
+  const normalizedText = normalize(text);
+  const normalizedTerm = normalize(term);
+  const index = normalizedText.indexOf(normalizedTerm);
+  if (index < 0) return [];
+  const start = Math.max(0, index - 80);
+  const end = Math.min(String(text).length, index + String(term).length + 120);
+  return [String(text).slice(start, end).replace(/\s+/g, " ").trim()];
+}
+
+function nillionDocumentSearchAnswer(rawQuestion, query, documents, document) {
+  const term = nillionDocumentSearchTerm(rawQuestion, document);
+  if (!term || normalize(term).length < 1) {
+    return {
+      text: "Tell me the word, phrase, or sentence to find. Quotation marks help with exact phrases, for example: Find \"green light\" in my documents.",
+    };
+  }
+  const wholeWord = /\bword\b/.test(query) && !term.includes(" ");
+  const selectedDocuments = document ? [document] : documents;
+  const matches = selectedDocuments
+    .map((item) => ({
+      document: item,
+      count: nillionCountDocumentMatches(item.text, term, wholeWord),
+      contexts: nillionDocumentContexts(item.text, term, wholeWord),
+    }))
+    .filter((item) => item.count > 0);
+  const total = matches.reduce((sum, item) => sum + item.count, 0);
+  if (!matches.length) {
+    const scope = document ? ` in ${document.title}` : " in your Writing Studio documents";
+    return { text: `I did not find \"${term}\"${scope}.` };
+  }
+
+  const locations = matches.map(
+    (item) => `${item.document.title} (${item.count} ${item.count === 1 ? "match" : "matches"})`,
+  );
+  const contexts = matches
+    .flatMap((item) =>
+      item.contexts.map((context) => `${item.document.title}: ${context}`),
+    )
+    .slice(0, 8);
+  const readMatches = /\b(read|recite|speak)\b/.test(query);
+  const text = [
+    `I found \"${term}\" ${total} ${total === 1 ? "time" : "times"} in ${matches.length} ${matches.length === 1 ? "document" : "documents"}: ${locations.join("; ")}.`,
+    contexts.length ? `Matching context:\n${contexts.map((context) => `- ${context}`).join("\n")}` : "",
+    total > contexts.length ? `${total - contexts.length} additional ${total - contexts.length === 1 ? "match is" : "matches are"} recorded above.` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  return {
+    text,
+    speech: readMatches
+      ? contexts.join(" ")
+      : `I found ${total} ${total === 1 ? "match" : "matches"}. ${locations.join("; ")}.`,
+  };
+}
+
+function nillionDocumentAnswer(rawQuestion, query) {
+  const readIntent = /^\s*(?:please\s+)?(?:read|recite|speak)\b/i.test(rawQuestion);
+  const documents = nillionDocumentSources();
+  const document = nillionNamedDocument(query, documents);
+  const mentionsDocuments = /\b(document|documents|manuscript|manuscripts|writing studio)\b/.test(query);
+  const searchVerb = /\b(find|locate|search|scan|contain|contains|mention|mentions|appear|occurs?)\b/.test(query);
+  const readExcerptIntent = readIntent && /\b(word|phrase|sentence|line|passage|part|containing)\b/.test(query);
+  if (!mentionsDocuments && !readExcerptIntent && !(document && (readIntent || searchVerb))) return "";
+  const readAllDocuments = readIntent && /\b(?:all(?:\s+of)?\s+my|every)\s+(?:writing\s+studio\s+)?(?:document|documents|manuscript|manuscripts)\b/.test(query);
+  const fullDocumentRead = readIntent && (
+    Boolean(document) ||
+    readAllDocuments ||
+    /\b(entire|whole|full|all of the)\s+(?:document|manuscript)\b/.test(query) ||
+    /\b(?:document|manuscript)\s+(?:in full|from start to finish)\b/.test(query)
+  ) && !/\b(word|phrase|sentence|line|passage|part|containing)\b/.test(query);
+  const searchIntent = /\b(find|locate|search|scan|contain|contains|mention|mentions|appear|occurs?|containing)\b/.test(query) ||
+    (readIntent && /\b(word|phrase|sentence|line|passage|part)\b/.test(query));
+  const listIntent = /\b(list|show|what|which)\b/.test(query) &&
+    /\b(documents|manuscripts|writing studio)\b/.test(query) &&
+    !searchIntent;
+
+  if (!documents.length) {
+    return { text: "You do not have any Writing Studio documents for me to scan yet." };
+  }
+  if (fullDocumentRead) {
+    if (readAllDocuments) {
+      const readable = documents.filter((item) => item.text);
+      if (!readable.length) {
+        return { text: "Your Writing Studio documents do not contain any manuscript text yet." };
+      }
+      return {
+        text: `Reading ${readable.length} ${readable.length === 1 ? "document" : "documents"}:\n\n${readable.map((item) => `${item.title} (${item.wordCount.toLocaleString()} words)\n${item.text}`).join("\n\n")}`,
+        speech: readable.map((item) => `${item.title}. ${item.text}`).join(" "),
+      };
+    }
+    const selected = document || (documents.length === 1 ? documents[0] : null);
+    if (!selected) {
+      return {
+        text: `Name the document you want me to read. Your documents are ${nillionList(documents.map((item) => item.title), 10)}.`,
+      };
+    }
+    if (!selected.text) {
+      return { text: `${selected.title} does not contain any manuscript text yet.` };
+    }
+    return {
+      text: `Reading ${selected.title} (${selected.wordCount.toLocaleString()} words):\n\n${selected.text}`,
+      speech: `${selected.title}. ${selected.text}`,
+    };
+  }
+  if (searchIntent) {
+    return nillionDocumentSearchAnswer(rawQuestion, query, documents, document);
+  }
+  if (listIntent || query === "documents" || query === "my documents") {
+    return {
+      text: `Your Writing Studio contains ${documents.length} ${documents.length === 1 ? "document" : "documents"}: ${nillionList(documents.map((item) => `${item.title} (${item.wordCount.toLocaleString()} words)`), 10)}. You can ask me to read one or find an exact word, phrase, or sentence across all of them.`,
+    };
+  }
+  return "";
+}
+
 function nillionResearchAnswer(query) {
   const sources = allWritingResearchSources();
   const namesResearch =
@@ -2120,8 +2346,10 @@ function answerNillionQuestion(rawQuestion) {
     return `Hello${currentAccount.username ? `, ${currentAccount.username}` : ""}. I am Nillion. What would you like to know about your library?`;
   }
   if (query.includes("what can you do") || query.includes("how can you help") || query === "help") {
-    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can also read and summarize saved Research Library files when you name the source.";
+    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can scan every Writing Studio document for an exact word, phrase, or sentence, read matching context, read an entire document, and summarize saved Research Library files.";
   }
+  const documentAnswer = nillionDocumentAnswer(rawQuestion, query);
+  if (documentAnswer) return documentAnswer;
   const researchAnswer = nillionResearchAnswer(query);
   if (researchAnswer) return researchAnswer;
   if (query.includes("currently reading") || query.includes("busy reading") || query.includes("reading now")) {
@@ -2267,32 +2495,68 @@ function updateNillionVoiceControl() {
 
 function speakNillionAnswer(answer) {
   if (!nillionVoiceEnabled || !("speechSynthesis" in window)) return;
+  const session = ++nillionSpeechSession;
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(answer);
+  const chunks = String(answer || "")
+    .match(/[^.!?]+[.!?]+|[^.!?]+$/g)
+    ?.flatMap((sentence) => {
+      const cleaned = sentence.replace(/\s+/g, " ").trim();
+      if (cleaned.length <= 240) return cleaned ? [cleaned] : [];
+      const parts = [];
+      let remaining = cleaned;
+      while (remaining.length > 240) {
+        let splitAt = remaining.lastIndexOf(" ", 240);
+        if (splitAt < 80) splitAt = 240;
+        parts.push(remaining.slice(0, splitAt).trim());
+        remaining = remaining.slice(splitAt).trim();
+      }
+      if (remaining) parts.push(remaining);
+      return parts;
+    }) || [];
+  if (!chunks.length) return;
   const voices = window.speechSynthesis.getVoices();
-  utterance.voice = voices.find((voice) => /^en(-|_)/i.test(voice.lang)) || null;
-  utterance.rate = 0.94;
-  utterance.pitch = 0.96;
-  const finish = () => elements.nillionAssistant?.classList.remove("speaking");
-  utterance.onstart = () => elements.nillionAssistant?.classList.add("speaking");
-  utterance.onend = finish;
-  utterance.onerror = finish;
-  window.speechSynthesis.speak(utterance);
+  const voice = voices.find((item) => /^en(-|_)/i.test(item.lang)) || null;
+  let index = 0;
+  const finish = () => {
+    if (session === nillionSpeechSession) {
+      elements.nillionAssistant?.classList.remove("speaking");
+    }
+  };
+  const speakNext = () => {
+    if (session !== nillionSpeechSession || index >= chunks.length) {
+      finish();
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(chunks[index]);
+    utterance.voice = voice;
+    utterance.rate = 0.94;
+    utterance.pitch = 0.96;
+    utterance.onstart = () => elements.nillionAssistant?.classList.add("speaking");
+    utterance.onend = () => {
+      index += 1;
+      speakNext();
+    };
+    utterance.onerror = finish;
+    window.speechSynthesis.speak(utterance);
+  };
+  speakNext();
 }
 
 function askNillion(question) {
   const trimmed = String(question || "").trim();
   if (!trimmed) return;
   window.clearTimeout(nillionResponseTimer);
+  nillionSpeechSession += 1;
   window.speechSynthesis?.cancel();
   elements.nillionAssistant.classList.remove("speaking");
   elements.nillionAssistant.classList.add("thinking");
   elements.nillionResponse.textContent = "Searching your library...";
   nillionResponseTimer = window.setTimeout(() => {
-    const answer = answerNillionQuestion(trimmed);
-    elements.nillionResponse.textContent = answer;
+    const result = answerNillionQuestion(trimmed);
+    const answer = typeof result === "string" ? { text: result } : result;
+    elements.nillionResponse.textContent = answer.text;
     elements.nillionAssistant.classList.remove("thinking");
-    speakNillionAnswer(answer);
+    speakNillionAnswer(answer.speech || answer.text);
   }, 360);
 }
 
@@ -11685,6 +11949,7 @@ elements.nillionVoiceToggle.addEventListener("click", () => {
   nillionVoiceEnabled = !nillionVoiceEnabled;
   localStorage.setItem(NILLION_VOICE_KEY, nillionVoiceEnabled ? "1" : "0");
   if (!nillionVoiceEnabled) {
+    nillionSpeechSession += 1;
     window.speechSynthesis.cancel();
     elements.nillionAssistant.classList.remove("speaking");
   }

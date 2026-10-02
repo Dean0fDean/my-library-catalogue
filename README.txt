@@ -40,6 +40,12 @@ meanings, source books and pages, and original practice sentences. WordHub
 entries can be searched, edited, and removed, and its writing fields also use
 spellcheck.
 
+Nillion can scan every Writing Studio document for an exact word, phrase, or
+sentence and report match totals with sentence context for each document. Ask
+Nillion to read the matching context or name a document to read its complete
+manuscript. With Voice enabled, long documents are spoken in queued sections so
+browser speech playback does not truncate them.
+
 Books, wishlist entries, ratings, reading sessions, saved passage text, and
 reflections synchronize through the shared online database.
 
