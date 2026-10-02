@@ -179,3 +179,8 @@ After 25 minutes of sustained use, a dismissible Go Touch Grass popup reminds
 the reader to rest their eyes, move, hydrate, or step outside. It appears only
 once per signed-in browsing session, carries no reward or streak pressure, and
 waits when another dialog is already open.
+
+Reading Log analytics display one reader-selected graph at a time. Available
+views cover pages over time, reading-speed trends, top books, genres, formats,
+time of day, weekdays, and session length. The selection is remembered on the
+device and the chosen graph can be printed with its period summary.

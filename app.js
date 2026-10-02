@@ -12,8 +12,19 @@ const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
 const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
 const NILLION_VOICE_KEY = "my-library-nillion-voice-v1";
 const COLLECTION_VIEW_KEY = "my-library-collection-view-v1";
+const READING_CHART_TYPE_KEY = "my-library-reading-chart-type-v1";
 const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
+const READING_CHART_TYPES = new Set([
+  "pages-over-time",
+  "reading-speed",
+  "books",
+  "genres",
+  "formats",
+  "time-of-day",
+  "weekdays",
+  "session-length",
+]);
 
 const DREAM_ARCHETYPES = [
   { name: "The Self", group: "Central Jungian patterns", description: "Wholeness and the regulating centre of the psyche; often approached through mandalas, sacred centres, or unifying figures." },
@@ -726,6 +737,9 @@ let highlightedCollectionBookId = "";
 let highlightedCollectionBookTimer;
 let readingChartsVisible = false;
 let readingAnalyticsRange = "recent-30";
+let readingChartType = READING_CHART_TYPES.has(localStorage.getItem(READING_CHART_TYPE_KEY))
+  ? localStorage.getItem(READING_CHART_TYPE_KEY)
+  : "pages-over-time";
 const CATALOGUE_PREVIEW_LIMIT = 8;
 
 async function apiRequest(action, options = {}) {
@@ -4090,6 +4104,8 @@ function ensureReadingEnhancementStyles() {
     .reading-chart-controls span{color:rgba(244,240,231,.62);font-size:.68rem;letter-spacing:.09em;text-transform:uppercase}
     .reading-chart-controls select{min-height:42px;padding:0 .75rem;color:var(--ink);background:rgba(244,240,231,.9);border:1px solid rgba(244,240,231,.28);border-radius:2px}
     .reading-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+    .reading-selected-chart{grid-column:1/-1}
+    .reading-selected-chart .reading-chart-card{min-height:320px}
     .reading-chart-card{min-height:260px;padding:1.2rem;background:rgba(8,29,22,.34);border:1px solid rgba(244,240,231,.14)}
     .reading-chart-card.wide{min-height:auto}
     .reading-chart-card h4{margin:0 0 1rem;color:var(--paper);font-size:1.2rem;font-weight:400}
@@ -4111,6 +4127,13 @@ function ensureReadingEnhancementStyles() {
     .reading-speed-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;padding:.65rem .7rem;background:rgba(244,240,231,.08);border:1px solid rgba(244,240,231,.1)}
     .reading-speed-list strong{color:var(--paper);font-weight:500}
     .reading-speed-list small{color:rgba(244,240,231,.62)}
+    .reading-speed-chart{display:grid;gap:.85rem}
+    .reading-speed-plot{width:100%;height:auto;min-height:220px;overflow:visible}
+    .reading-speed-grid{stroke:rgba(244,240,231,.14);stroke-width:1}
+    .reading-speed-line{fill:none;stroke:var(--gold);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+    .reading-speed-area{fill:url(#reading-speed-fill)}
+    .reading-speed-point{fill:var(--paper);stroke:var(--gold);stroke-width:2}
+    .reading-speed-axis{display:flex;justify-content:space-between;gap:.5rem;color:rgba(244,240,231,.55);font-size:.72rem}
     .reading-analytics-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem}
     .reading-analytics-grid article{padding:.9rem;background:rgba(244,240,231,.08);border:1px solid rgba(244,240,231,.12)}
     .reading-analytics-grid span{display:block;margin-bottom:.35rem;color:rgba(244,240,231,.56);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
@@ -4421,7 +4444,7 @@ function renderColumnChart(items, label, unit = "pages") {
     <article class="reading-chart-card wide">
       <h4>${escapeHtml(label)}</h4>
       <div class="reading-line-chart" role="img" aria-label="${escapeHtml(label)} column chart">${bars}</div>
-      <p class="reading-chart-note">${total.toLocaleString()} ${unit} across ${items.length} days. Hover over a bar to see the day value.</p>
+      <p class="reading-chart-note">${total.toLocaleString()} ${unit} across ${items.length} chart intervals. Hover over a bar to see its value.</p>
     </article>
   `;
 }
@@ -4432,30 +4455,57 @@ function renderSpeedTrendChart(entries) {
     .sort((first, second) =>
       `${first.date}T${first.startTime || "00:00"}`.localeCompare(`${second.date}T${second.startTime || "00:00"}`),
     )
-    .slice(-8)
+    .slice(-12)
     .map((entry) => ({
       ...entry,
       pace: Math.round(((Number(entry.pagesRead) || 0) / Number(entry.durationMinutes)) * 60),
     }));
-  const rows = paceEntries.length
-    ? paceEntries
-        .map(
-          (entry) => `
-            <li>
-              <span>
-                <strong>${escapeHtml(entry.title)}</strong>
-                <small>${formatDate(entry.date)} / ${Number(entry.pagesRead) || 0} pages in ${formatDuration(entry.durationMinutes)}</small>
-              </span>
-              <strong>${entry.pace} p/h</strong>
-            </li>
-          `,
-        )
-        .join("")
-    : "<li>No speed data yet.</li>";
+  if (!paceEntries.length) {
+    return `<article class="reading-chart-card wide"><h4>Reading speed trend</h4><p>No speed data yet. Log pages and a session duration to build this graph.</p></article>`;
+  }
+  const maximum = Math.max(...paceEntries.map((entry) => entry.pace), 1);
+  const denominator = Math.max(paceEntries.length - 1, 1);
+  const points = paceEntries.map((entry, index) => ({
+    ...entry,
+    x: 5 + (index / denominator) * 90,
+    y: 92 - (entry.pace / maximum) * 82,
+  }));
+  const pointList = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const areaPoints = `5,92 ${pointList} ${points[points.length - 1].x},92`;
+  const markers = points
+    .map(
+      (point) => `
+        <circle class="reading-speed-point" cx="${point.x}" cy="${point.y}" r="2.2">
+          <title>${escapeHtml(point.title)} / ${formatDate(point.date)}: ${point.pace} pages per hour</title>
+        </circle>
+      `,
+    )
+    .join("");
   return `
     <article class="reading-chart-card wide">
       <h4>Reading speed trend</h4>
-      <ul class="reading-speed-list">${rows}</ul>
+      <div class="reading-speed-chart">
+        <svg class="reading-speed-plot" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Reading speed line graph for the latest ${paceEntries.length} sessions">
+          <defs>
+            <linearGradient id="reading-speed-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d5a744" stop-opacity=".34"></stop>
+              <stop offset="100%" stop-color="#d5a744" stop-opacity=".03"></stop>
+            </linearGradient>
+          </defs>
+          <line class="reading-speed-grid" x1="5" y1="10" x2="95" y2="10"></line>
+          <line class="reading-speed-grid" x1="5" y1="51" x2="95" y2="51"></line>
+          <line class="reading-speed-grid" x1="5" y1="92" x2="95" y2="92"></line>
+          <polygon class="reading-speed-area" points="${areaPoints}"></polygon>
+          <polyline class="reading-speed-line" points="${pointList}"></polyline>
+          ${markers}
+        </svg>
+        <div class="reading-speed-axis" aria-hidden="true">
+          <span>${escapeHtml(formatDate(paceEntries[0].date))}</span>
+          <span>Peak ${maximum} p/h</span>
+          <span>${escapeHtml(formatDate(paceEntries[paceEntries.length - 1].date))}</span>
+        </div>
+      </div>
+      <p class="reading-chart-note">Latest ${paceEntries.length} sessions with both page and duration data. Hover over a point for details.</p>
     </article>
   `;
 }
@@ -4617,9 +4667,6 @@ function renderReadingCharts({
   const consistencyScore = scope.intervalItems.length
     ? Math.round(((scope.intervalItems.length - quietIntervals) / scope.intervalItems.length) * 100)
     : 0;
-  const bestPeriodInterval = scope.intervalItems
-    .filter((item) => item.value > 0)
-    .sort((first, second) => second.value - first.value)[0];
   const expectedWeeklyPages = scopedPages && scope.dayCount
     ? Math.round((scopedPages / scope.dayCount) * 7)
     : 0;
@@ -4633,6 +4680,47 @@ function renderReadingCharts({
     .map(
       (option) =>
         `<option value="${escapeHtml(option.value)}"${option.value === readingAnalyticsRange ? " selected" : ""}>${escapeHtml(option.label)}</option>`,
+    )
+    .join("");
+  const chartDefinitions = {
+    "pages-over-time": {
+      label: "Pages over time (column graph)",
+      html: renderColumnChart(scope.intervalItems, scope.intervalLabel),
+    },
+    "reading-speed": {
+      label: "Reading speed (line graph)",
+      html: renderSpeedTrendChart(chartLog),
+    },
+    books: {
+      label: "Top books (bar graph)",
+      html: renderBarChart(pagesByBook, "Top books by pages"),
+    },
+    genres: {
+      label: "Genres (bar graph)",
+      html: renderBarChart(pagesByGenre, "Pages by genre"),
+    },
+    formats: {
+      label: "Book formats (bar graph)",
+      html: renderBarChart(pagesByFormat, "Pages by book format"),
+    },
+    "time-of-day": {
+      label: "Time of day (pie graph)",
+      html: renderPieChart(scopedPeriodMinutes, "Time of day"),
+    },
+    weekdays: {
+      label: "Weekday rhythm (pie graph)",
+      html: renderPieChart(scopedWeekdayTotals, "Weekday rhythm"),
+    },
+    "session-length": {
+      label: "Session length (pie graph)",
+      html: renderPieChart(sessionLengthTotals, "Session length mix"),
+    },
+  };
+  if (!chartDefinitions[readingChartType]) readingChartType = "pages-over-time";
+  const chartTypeOptionsHtml = Object.entries(chartDefinitions)
+    .map(
+      ([value, definition]) =>
+        `<option value="${value}"${value === readingChartType ? " selected" : ""}>${escapeHtml(definition.label)}</option>`,
     )
     .join("");
   elements.readingChartPanel.innerHTML = `
@@ -4658,7 +4746,11 @@ function renderReadingCharts({
             <span>View period</span>
             <select id="reading-analytics-range">${rangeOptionsHtml}</select>
           </label>
-          <button class="primary-button light-button" type="button" id="print-reading-analytics">Print analytics</button>
+          <label>
+            <span>Graph to display</span>
+            <select id="reading-analytics-chart-type">${chartTypeOptionsHtml}</select>
+          </label>
+          <button class="primary-button light-button" type="button" id="print-reading-analytics">Print selected graph</button>
         </div>
       </div>
     </div>
@@ -4685,24 +4777,22 @@ function renderReadingCharts({
           note: `Projected from ${scope.label}, so it changes with the period you choose.`,
         },
       ])}
-      ${renderPieChart(scopedPeriodMinutes, "Time of day")}
-      ${renderPieChart(scopedWeekdayTotals, "Weekday rhythm")}
-      ${renderPieChart(sessionLengthTotals, "Session length mix")}
-      ${renderBarChart(pagesByBook, "Top books by pages")}
-      ${renderBarChart(pagesByGenre, "Pages by genre")}
-      ${renderBarChart(pagesByFormat, "Pages by book format")}
-      ${renderColumnChart(scope.intervalItems, scope.intervalLabel)}
-      ${renderSpeedTrendChart(chartLog)}
-      ${renderBarChart(
-        bestPeriodInterval ? { [bestPeriodInterval.label]: bestPeriodInterval.value } : {},
-        "Best interval in this period",
-      )}
+      <div class="reading-selected-chart" aria-live="polite">
+        ${chartDefinitions[readingChartType].html}
+      </div>
     </div>
   `;
   elements.readingChartPanel
     .querySelector("#reading-analytics-range")
     ?.addEventListener("change", (event) => {
       readingAnalyticsRange = event.target.value;
+      renderReadingInsights();
+    });
+  elements.readingChartPanel
+    .querySelector("#reading-analytics-chart-type")
+    ?.addEventListener("change", (event) => {
+      readingChartType = event.target.value;
+      localStorage.setItem(READING_CHART_TYPE_KEY, readingChartType);
       renderReadingInsights();
     });
   elements.readingChartPanel
@@ -9298,10 +9388,12 @@ function printReadingAnalytics() {
     totals[genre] = (totals[genre] || 0) + (Number(entry.pagesRead) || 0);
     return totals;
   }, {})).slice(0, 8);
-  const intervalRows = scope.intervalItems
-    .filter((item) => item.value > 0)
-    .sort((first, second) => second.value - first.value)
-    .slice(0, 10);
+  const chartSelect = elements.readingChartPanel?.querySelector("#reading-analytics-chart-type");
+  const selectedChart = elements.readingChartPanel?.querySelector(
+    ".reading-selected-chart .reading-chart-card",
+  );
+  const chartLabel = chartSelect?.selectedOptions?.[0]?.textContent || "Reading graph";
+  const chartHtml = selectedChart?.outerHTML || printEmpty("No graph is available for this period.");
   const previousTitle = document.title;
   elements.printSheet.innerHTML = `
     <header>
@@ -9316,12 +9408,8 @@ function printReadingAnalytics() {
         <p>Average pace: ${averagePace ? `${averagePace} pages per hour` : "not enough data"}. Median speed: ${medianPace ? `${medianPace} pages per hour` : "not enough data"}. Active reading days: ${activeDays.toLocaleString()}.</p>
       </article>
       <article>
-        <h2>${escapeHtml(scope.intervalLabel)}</h2>
-        ${
-          intervalRows.length
-            ? `<ol>${intervalRows.map((item) => `<li><strong>${escapeHtml(item.label)}</strong><span>${item.value.toLocaleString()} pages</span></li>`).join("")}</ol>`
-            : printEmpty("No reading activity in this period.")
-        }
+        <h2>${escapeHtml(chartLabel)}</h2>
+        <div class="print-reading-chart">${chartHtml}</div>
       </article>
       <article>
         <h2>Top Books</h2>

@@ -5087,6 +5087,14 @@ body.feature-menu-open::after {
   gap: 1rem;
 }
 
+.reading-selected-chart {
+  grid-column: 1 / -1;
+}
+
+.reading-selected-chart .reading-chart-card {
+  min-height: 320px;
+}
+
 .reading-chart-card {
   min-height: 260px;
   padding: 1.2rem;
@@ -5225,6 +5233,49 @@ body.feature-menu-open::after {
 
 .reading-speed-list small {
   color: rgba(244, 240, 231, 0.62);
+}
+
+.reading-speed-chart {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.reading-speed-plot {
+  width: 100%;
+  height: auto;
+  min-height: 220px;
+  overflow: visible;
+}
+
+.reading-speed-grid {
+  stroke: rgba(244, 240, 231, 0.14);
+  stroke-width: 1;
+}
+
+.reading-speed-line {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reading-speed-area {
+  fill: url(#reading-speed-fill);
+}
+
+.reading-speed-point {
+  fill: var(--paper);
+  stroke: var(--gold);
+  stroke-width: 2;
+}
+
+.reading-speed-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: rgba(244, 240, 231, 0.55);
+  font-size: 0.72rem;
 }
 
 .reading-analytics-grid {
@@ -10197,6 +10248,55 @@ body.feature-menu-open::after {
     padding-left: 1rem;
     border-left: 3px solid #555;
     white-space: pre-wrap;
+  }
+
+  .print-reading-chart .reading-chart-card {
+    min-height: 0;
+    padding: 0.8rem 0;
+    color: #111;
+    background: #fff !important;
+    border: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-reading-chart .reading-chart-card h4,
+  .print-reading-chart .reading-bar-chart span,
+  .print-reading-chart .chart-legend strong,
+  .print-reading-chart .reading-speed-list strong {
+    color: #111;
+  }
+
+  .print-reading-chart .reading-chart-card p,
+  .print-reading-chart .chart-legend li,
+  .print-reading-chart .reading-bar-chart li,
+  .print-reading-chart .reading-speed-axis {
+    color: #444;
+  }
+
+  .print-reading-chart .pie-chart,
+  .print-reading-chart .reading-bar-chart b,
+  .print-reading-chart .reading-line-chart span,
+  .print-reading-chart .reading-speed-plot {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-reading-chart .pie-chart {
+    box-shadow: inset 0 0 0 28px #fff;
+    border-color: #eee;
+  }
+
+  .print-reading-chart .reading-bar-chart div {
+    background: #eee;
+  }
+
+  .print-reading-chart .reading-speed-grid {
+    stroke: #ddd;
+  }
+
+  .print-reading-chart .reading-speed-point {
+    fill: #fff;
   }
 }
 
