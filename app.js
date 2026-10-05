@@ -556,6 +556,7 @@ const elements = {
   habitNameInput: document.querySelector("#habit-name-input"),
   habitCategoryInput: document.querySelector("#habit-category-input"),
   habitIntentionInput: document.querySelector("#habit-intention-input"),
+  habitDialogCategoryLabel: document.querySelector("#habit-dialog-category-label"),
   habitRewardDialog: document.querySelector("#habit-reward-dialog"),
   habitRewardName: document.querySelector("#habit-reward-name"),
   habitRewardCount: document.querySelector("#habit-reward-count"),
@@ -8891,8 +8892,18 @@ function openHabitForm(id = "") {
     elements.habitFormTitle.textContent = "Edit habit";
     elements.habitForm.querySelector(".submit-button").textContent = "Save changes";
   }
+  updateHabitDialogTheme();
   elements.habitDialog.showModal();
   elements.habitNameInput.focus();
+}
+
+function updateHabitDialogTheme() {
+  const category = elements.habitCategoryInput.value || "Wellbeing";
+  elements.habitDialog.style.setProperty(
+    "--habit-dialog-accent",
+    habitAccent(category),
+  );
+  elements.habitDialogCategoryLabel.textContent = category;
 }
 
 function saveHabitFromForm() {
@@ -12192,6 +12203,7 @@ elements.habitForm.addEventListener("submit", (event) => {
 elements.habitNameInput.addEventListener("input", () => {
   elements.habitNameInput.setCustomValidity("");
 });
+elements.habitCategoryInput.addEventListener("change", updateHabitDialogTheme);
 elements.habitGrid.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-habit-action]");
   if (!button) return;
@@ -12200,6 +12212,9 @@ elements.habitGrid.addEventListener("click", (event) => {
   if (button.dataset.habitAction === "delete") deleteHabit(button.dataset.id);
 });
 document.querySelector("#close-habit-button").addEventListener("click", () => {
+  elements.habitDialog.close();
+});
+document.querySelector("#cancel-habit-button").addEventListener("click", () => {
   elements.habitDialog.close();
 });
 document.querySelector("#close-habit-reward-button").addEventListener("click", () => {

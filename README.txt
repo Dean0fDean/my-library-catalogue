@@ -203,3 +203,8 @@ top of the page after account data has loaded, even when the browser restores an
 old section hash. Writing Studio documents may still be restored quietly in the
 background without stealing focus or scrolling the page. Menu navigation works
 normally after startup.
+
+The Add Habit dialog uses a dedicated Lifestyle design with a heart-and-orbit
+header, live category colour, guided fields, clear Cancel and Save actions, and
+a compact daily-check-in note. Its entrance treatment adapts to mobile screens
+and is disabled when reduced motion is requested.

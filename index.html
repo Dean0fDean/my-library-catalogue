@@ -3530,13 +3530,22 @@
     <dialog id="habit-dialog" class="habit-dialog" aria-labelledby="habit-form-title">
       <form id="habit-form" method="dialog">
         <input id="habit-id-input" type="hidden" />
-        <div class="dialog-heading">
-          <div>
+        <div class="habit-dialog-hero">
+          <div class="habit-dialog-orbit" aria-hidden="true">
+            <span class="habit-dialog-orbit-ring"></span>
+            <span class="habit-dialog-orbit-dot"></span>
+            <span class="habit-dialog-heart">&hearts;</span>
+          </div>
+          <div class="habit-dialog-heading-copy">
             <p class="eyebrow">A DAILY RHYTHM</p>
             <h2 id="habit-form-title">Add a habit</h2>
+            <p>
+              Choose one small practice you would like to return to. You can
+              shape it as your routine changes.
+            </p>
           </div>
           <button
-            class="icon-button"
+            class="icon-button habit-dialog-close"
             id="close-habit-button"
             type="button"
             aria-label="Close habit form"
@@ -3544,43 +3553,71 @@
             X
           </button>
         </div>
-        <label>
-          <span>Habit name</span>
-          <input
-            id="habit-name-input"
-            name="name"
-            type="text"
-            maxlength="100"
-            placeholder="e.g. Walk for twenty minutes"
-            required
-          />
-        </label>
-        <label>
-          <span>Area of life</span>
-          <select id="habit-category-input" name="category">
-            <option value="Wellbeing">Wellbeing</option>
-            <option value="Movement">Movement</option>
-            <option value="Mindfulness">Mindfulness</option>
-            <option value="Learning">Learning</option>
-            <option value="Creativity">Creativity</option>
-            <option value="Home">Home</option>
-            <option value="Connection">Connection</option>
-            <option value="Other">Other</option>
-          </select>
-        </label>
-        <label>
-          <span>Why this matters (optional)</span>
-          <textarea
-            id="habit-intention-input"
-            name="intention"
-            rows="4"
-            maxlength="400"
-            placeholder="A gentle reminder of the reason behind the habit."
-          ></textarea>
-        </label>
-        <button class="primary-button submit-button" type="submit">
-          Save habit
-        </button>
+        <div class="habit-dialog-body">
+          <div class="habit-category-preview" aria-live="polite">
+            <span aria-hidden="true">&hearts;</span>
+            <div>
+              <small>AREA OF LIFE</small>
+              <strong id="habit-dialog-category-label">Wellbeing</strong>
+            </div>
+          </div>
+          <label class="habit-dialog-field habit-name-field">
+            <span class="habit-dialog-label">
+              <strong>Habit name</strong>
+              <small>What would you like to practise?</small>
+            </span>
+            <input
+              id="habit-name-input"
+              name="name"
+              type="text"
+              maxlength="100"
+              placeholder="e.g. Walk for twenty minutes"
+              autocomplete="off"
+              required
+            />
+          </label>
+          <label class="habit-dialog-field">
+            <span class="habit-dialog-label">
+              <strong>Area of life</strong>
+              <small>Used to colour and organise the habit</small>
+            </span>
+            <select id="habit-category-input" name="category">
+              <option value="Wellbeing">Wellbeing</option>
+              <option value="Movement">Movement</option>
+              <option value="Mindfulness">Mindfulness</option>
+              <option value="Learning">Learning</option>
+              <option value="Creativity">Creativity</option>
+              <option value="Home">Home</option>
+              <option value="Connection">Connection</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label class="habit-dialog-field">
+            <span class="habit-dialog-label">
+              <strong>Why this matters</strong>
+              <small>Optional, but useful on difficult days</small>
+            </span>
+            <textarea
+              id="habit-intention-input"
+              name="intention"
+              rows="4"
+              maxlength="400"
+              placeholder="A gentle reminder of the reason behind the habit."
+            ></textarea>
+          </label>
+          <div class="habit-dialog-note">
+            <span aria-hidden="true">&hearts;</span>
+            <p><strong>One check-in per day.</strong> Missed days are information, not failure.</p>
+          </div>
+          <div class="habit-dialog-actions">
+            <button class="habit-cancel-button" id="cancel-habit-button" type="button">
+              Cancel
+            </button>
+            <button class="primary-button submit-button" type="submit">
+              Save habit
+            </button>
+          </div>
+        </div>
       </form>
     </dialog>
 
