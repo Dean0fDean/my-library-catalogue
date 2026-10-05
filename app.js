@@ -1714,6 +1714,18 @@ async function runStartupStep(step) {
   }
 }
 
+function settleInitialAppRoute() {
+  const requestedId = decodeURIComponent(window.location.hash.slice(1));
+  let target = requestedId ? document.getElementById(requestedId) : null;
+  if (!target) {
+    target = document.querySelector("#home");
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#home`);
+  }
+  window.requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: "auto", block: "start" });
+  });
+}
+
 async function showAuthenticatedApp(account) {
   currentAccount = account;
   localStorage.setItem(CURRENT_ACCOUNT_KEY, account.id);
@@ -1741,6 +1753,7 @@ async function showAuthenticatedApp(account) {
   renderWordhub();
   renderLifestyle();
   renderCommunity();
+  settleInitialAppRoute();
   if (dailyStreakRewardEarned) {
     showDailyStreakReward();
   }
@@ -6277,7 +6290,7 @@ function renderStories() {
   elements.storyEmpty.hidden = stories.length > 0;
   if (shouldOpenLatest) {
     currentWritingView = "manuscript";
-    openStory(stories[0].id);
+    openStory(stories[0].id, { focusEditor: false });
   }
 }
 
@@ -7118,7 +7131,7 @@ function renderActiveStoryDetails(project = currentStory()) {
   renderManuscriptInsights(project);
 }
 
-function setWritingView(view) {
+function setWritingView(view, { focusEditor = true } = {}) {
   currentWritingView = view;
   const panels = {
     overview: elements.storyPlanView,
@@ -7142,7 +7155,7 @@ function setWritingView(view) {
     button.classList.toggle("active", selected);
     button.setAttribute("aria-selected", String(selected));
   });
-  if (view === "manuscript") {
+  if (view === "manuscript" && focusEditor) {
     elements.storyDraftInput.focus();
   }
   if (view === "research") renderResearchLibrary();
@@ -7181,7 +7194,7 @@ function populateProjectForm(project) {
   elements.publishJournalButton.hidden = project.type !== "journal entry";
 }
 
-function openStory(storyId) {
+function openStory(storyId, { focusEditor = true } = {}) {
   const story = creativeWriting.find(
     (item) => item.id === storyId && item.ownerId === currentAccount?.id,
   );
@@ -7192,7 +7205,7 @@ function openStory(storyId) {
   populateProjectForm(project);
   renderStories();
   renderActiveStoryDetails(project);
-  setWritingView(currentWritingView);
+  setWritingView(currentWritingView, { focusEditor });
 }
 
 function createStory(type = "novel") {

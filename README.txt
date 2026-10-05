@@ -197,3 +197,8 @@ weekly summary totals. Habit records synchronize with the signed-in account.
 Logging a habit launches a brief spinning-heart celebration with the updated
 streak and completion count; reduced-motion devices receive the result card
 without the animated heart.
+
+Opening the app at its root now lands at the Home section after account data
+has loaded. Writing Studio documents may be restored quietly in the background
+without stealing focus or scrolling the page, while deliberate section links
+continue to open their requested destination.
