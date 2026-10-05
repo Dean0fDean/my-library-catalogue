@@ -8802,7 +8802,13 @@ function renderLifestyle() {
       total + normalizedHabitDates(habit).filter((date) => weekDates.has(date)).length,
     0,
   );
-  const possible = habits.length * days.length;
+  const possible = habits.reduce((total, habit) => {
+    const createdDate = String(habit.createdAt || "").slice(0, 10);
+    const eligibleDays = createdDate
+      ? days.filter((day) => day.date >= createdDate).length
+      : days.length;
+    return total + Math.max(1, eligibleDays);
+  }, 0);
   elements.lifestyleHabitCount.textContent = habits.length;
   elements.lifestyleTodayCount.textContent = todayCount;
   elements.lifestyleWeekCount.textContent = weekCount;
