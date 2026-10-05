@@ -8592,11 +8592,12 @@ function exportWritingProjectForWord() {
 function resetWordhubForm() {
   elements.wordhubForm.reset();
   elements.wordhubIdInput.value = "";
+  elements.wordhubWordInput.setCustomValidity("");
   elements.wordhubFormTitle.textContent = "Add a word";
   elements.wordhubCancelEdit.hidden = true;
   elements.wordhubForm.querySelector(".submit-button").textContent = "Save word";
   elements.wordhubLookupStatus.textContent =
-    "Uses the Free Dictionary API. Review and adapt the result before saving.";
+    "Uses online dictionary services. Review and adapt the result before saving.";
 }
 
 async function lookupWordDefinition() {
@@ -8738,10 +8739,13 @@ function editWordhubEntry(id) {
   elements.wordhubBookInput.value = entry.book || "";
   elements.wordhubPageInput.value = entry.page || "";
   elements.wordhubSentenceInput.value = entry.sentence;
+  elements.wordhubWordInput.setCustomValidity("");
   elements.wordhubFormTitle.textContent = "Edit word";
   elements.wordhubCancelEdit.hidden = false;
   elements.wordhubForm.querySelector(".submit-button").textContent =
     "Save changes";
+  elements.wordhubLookupStatus.textContent =
+    "Look up this word again to refresh its definition, or edit it manually.";
   elements.wordhubWordInput.focus();
 }
 

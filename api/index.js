@@ -13,6 +13,98 @@ function normalize(value) {
   return String(value || "").trim().toLocaleLowerCase();
 }
 
+async function fetchJsonWithTimeout(url, timeoutMs = 4500) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Dictionary provider returned ${response.status}.`);
+    return await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function freeDictionaryDefinitions(entries) {
+  const definitions = [];
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    for (const meaning of entry.meanings || []) {
+      for (const definition of meaning.definitions || []) {
+        if (!definition.definition) continue;
+        definitions.push({
+          partOfSpeech: String(meaning.partOfSpeech || ""),
+          definition: String(definition.definition || "").slice(0, 700),
+          example: String(definition.example || "").slice(0, 500),
+        });
+        if (definitions.length >= 8) return definitions;
+      }
+    }
+  }
+  return definitions;
+}
+
+function datamuseDefinitions(entries) {
+  const partsOfSpeech = {
+    n: "noun",
+    v: "verb",
+    adj: "adjective",
+    adv: "adverb",
+  };
+  return (Array.isArray(entries) ? entries : [])
+    .flatMap((entry) => (Array.isArray(entry.defs) ? entry.defs : []))
+    .map((value) => {
+      const [code, ...definitionParts] = String(value || "").split("\t");
+      return {
+        partOfSpeech: partsOfSpeech[code] || code || "",
+        definition: definitionParts.join(" ").trim().slice(0, 700),
+        example: "",
+      };
+    })
+    .filter((item) => item.definition)
+    .slice(0, 8);
+}
+
+async function findDictionaryDefinitions(word) {
+  try {
+    const entries = await fetchJsonWithTimeout(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+    );
+    const definitions = freeDictionaryDefinitions(entries);
+    if (definitions.length) {
+      return {
+        word: String(entries[0]?.word || word),
+        phonetic: String(entries[0]?.phonetic || ""),
+        definitions,
+        source: "Free Dictionary API",
+      };
+    }
+  } catch {
+    // The fallback keeps WordHub useful during provider outages.
+  }
+
+  try {
+    const entries = await fetchJsonWithTimeout(
+      `https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=1`,
+    );
+    const exactEntry = (Array.isArray(entries) ? entries : []).find(
+      (entry) => normalize(entry.word) === normalize(word),
+    );
+    const definitions = datamuseDefinitions(exactEntry ? [exactEntry] : []);
+    if (definitions.length) {
+      return {
+        word: String(exactEntry.word || word),
+        phonetic: "",
+        definitions,
+        source: "Datamuse Dictionary",
+      };
+    }
+  } catch {
+    // A provider-neutral error is returned below.
+  }
+
+  return null;
+}
+
 function publicUser(user) {
   return {
     id: user.id,
@@ -2546,38 +2638,11 @@ export default async function handler(request, response) {
       if (!/^[a-z][a-z '-]*$/i.test(word)) {
         return json(response, 400, { error: "Enter a valid English word." });
       }
-      const dictionaryResponse = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
-      );
-      if (!dictionaryResponse.ok) {
+      const result = await findDictionaryDefinitions(word);
+      if (!result) {
         return json(response, 404, { error: `No online definition was found for "${word}".` });
       }
-      const entries = await dictionaryResponse.json();
-      const definitions = [];
-      for (const entry of Array.isArray(entries) ? entries : []) {
-        for (const meaning of entry.meanings || []) {
-          for (const definition of meaning.definitions || []) {
-            if (!definition.definition) continue;
-            definitions.push({
-              partOfSpeech: String(meaning.partOfSpeech || ""),
-              definition: String(definition.definition || "").slice(0, 700),
-              example: String(definition.example || "").slice(0, 500),
-            });
-            if (definitions.length >= 8) break;
-          }
-          if (definitions.length >= 8) break;
-        }
-        if (definitions.length >= 8) break;
-      }
-      if (!definitions.length) {
-        return json(response, 404, { error: `No online definition was found for "${word}".` });
-      }
-      return json(response, 200, {
-        word: String(entries[0]?.word || word),
-        phonetic: String(entries[0]?.phonetic || ""),
-        definitions,
-        source: "Free Dictionary API",
-      });
+      return json(response, 200, result);
     }
 
     if (action === "reading-challenges" && request.method === "GET") {
