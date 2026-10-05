@@ -168,6 +168,7 @@
               <a href="#passages"><strong>Passages</strong><span>Saved lines and reflections</span></a>
               <a href="#creative-writing"><strong>Writing Studio</strong><span>Journal, research, plan, and write</span></a>
               <a href="#wordhub"><strong>WordHub Alcove</strong><span>Collect and practise words</span></a>
+              <a href="#lifestyle"><strong>Lifestyle</strong><span>Habits and daily rhythms</span></a>
             </div>
             <div class="menu-group">
               <p>Explore</p>
@@ -288,6 +289,11 @@
               <strong>WordHub Alcove</strong>
               <small>Keep new words in active use</small>
             </a>
+            <a href="#lifestyle">
+              <span aria-hidden="true">08</span>
+              <strong>Lifestyle</strong>
+              <small>Build habits at a humane pace</small>
+            </a>
           </div>
         </section>
 
@@ -358,7 +364,7 @@
                 <span class="nillion-answer-label">NILLION</span>
                 <p id="nillion-response" role="status" aria-live="polite">
                   I am online. Ask me about your books, reading habits, passages,
-                  writing, vocabulary, or community activity.
+                  writing, vocabulary, Lifestyle habits, or community activity.
                 </p>
               </div>
 
@@ -374,6 +380,9 @@
                 </button>
                 <button type="button" data-nillion-prompt="What can you tell me about my library?">
                   Library overview
+                </button>
+                <button type="button" data-nillion-prompt="What habits did I complete today?">
+                  Today's habits
                 </button>
                 <button type="button" data-nillion-prompt="What is in my Research Library?">
                   Research Library
@@ -2008,6 +2017,51 @@
           </div>
         </section>
 
+        <section class="lifestyle-section" id="lifestyle" aria-labelledby="lifestyle-title">
+          <div class="lifestyle-heading">
+            <div>
+              <p class="eyebrow">DAILY RHYTHMS</p>
+              <h2 id="lifestyle-title">Lifestyle</h2>
+              <p>
+                Create habits that matter to you, check them in once a day,
+                and notice steady patterns without turning life into a scorecard.
+              </p>
+            </div>
+            <button class="primary-button" id="open-habit-button" type="button">
+              <span aria-hidden="true">+</span> Add a habit
+            </button>
+          </div>
+
+          <div class="lifestyle-summary" aria-label="Lifestyle summary">
+            <article>
+              <span>ACTIVE HABITS</span>
+              <strong id="lifestyle-habit-count">0</strong>
+            </article>
+            <article>
+              <span>DONE TODAY</span>
+              <strong id="lifestyle-today-count">0</strong>
+            </article>
+            <article>
+              <span>THIS WEEK</span>
+              <strong id="lifestyle-week-count">0</strong>
+            </article>
+            <article>
+              <span>7-DAY RHYTHM</span>
+              <strong id="lifestyle-rate">0%</strong>
+            </article>
+          </div>
+
+          <div id="habit-grid" class="habit-grid" aria-live="polite"></div>
+          <div id="habit-empty" class="habit-empty">
+            <div class="habit-empty-heart" aria-hidden="true">&hearts;</div>
+            <h3>Begin with one kind habit.</h3>
+            <p>Add something you would genuinely like to return to each day.</p>
+            <button class="text-button" id="empty-habit-button" type="button">
+              Create my first habit <span aria-hidden="true">-&gt;</span>
+            </button>
+          </div>
+        </section>
+
         <section
           class="learning-section"
           id="learning-nook"
@@ -3471,6 +3525,114 @@
           <button class="primary-button" type="submit">Apply research link</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="habit-dialog" class="habit-dialog" aria-labelledby="habit-form-title">
+      <form id="habit-form" method="dialog">
+        <input id="habit-id-input" type="hidden" />
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">A DAILY RHYTHM</p>
+            <h2 id="habit-form-title">Add a habit</h2>
+          </div>
+          <button
+            class="icon-button"
+            id="close-habit-button"
+            type="button"
+            aria-label="Close habit form"
+          >
+            X
+          </button>
+        </div>
+        <label>
+          <span>Habit name</span>
+          <input
+            id="habit-name-input"
+            name="name"
+            type="text"
+            maxlength="100"
+            placeholder="e.g. Walk for twenty minutes"
+            required
+          />
+        </label>
+        <label>
+          <span>Area of life</span>
+          <select id="habit-category-input" name="category">
+            <option value="Wellbeing">Wellbeing</option>
+            <option value="Movement">Movement</option>
+            <option value="Mindfulness">Mindfulness</option>
+            <option value="Learning">Learning</option>
+            <option value="Creativity">Creativity</option>
+            <option value="Home">Home</option>
+            <option value="Connection">Connection</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+        <label>
+          <span>Why this matters (optional)</span>
+          <textarea
+            id="habit-intention-input"
+            name="intention"
+            rows="4"
+            maxlength="400"
+            placeholder="A gentle reminder of the reason behind the habit."
+          ></textarea>
+        </label>
+        <button class="primary-button submit-button" type="submit">
+          Save habit
+        </button>
+      </form>
+    </dialog>
+
+    <dialog
+      id="habit-reward-dialog"
+      class="habit-reward-dialog"
+      aria-labelledby="habit-reward-title"
+      aria-describedby="habit-reward-description"
+    >
+      <div class="habit-heart-celebration" aria-hidden="true">
+        <div class="habit-heart-glow"></div>
+        <div class="habit-heart-ring ring-one"></div>
+        <div class="habit-heart-ring ring-two"></div>
+        <span class="habit-heart-spark spark-one">+</span>
+        <span class="habit-heart-spark spark-two">+</span>
+        <span class="habit-heart-spark spark-three">+</span>
+        <div class="habit-heart-flight">
+          <div class="habit-heart-symbol">
+            <span>&hearts;</span>
+            <strong id="habit-heart-count">1</strong>
+          </div>
+        </div>
+      </div>
+      <div class="habit-reward-card">
+        <button
+          class="icon-button habit-reward-close"
+          id="close-habit-reward-button"
+          type="button"
+          aria-label="Close habit celebration"
+        >
+          X
+        </button>
+        <div class="habit-reward-emblem" aria-hidden="true">&hearts;</div>
+        <p class="eyebrow">HABIT LOGGED</p>
+        <h2 id="habit-reward-title">A rhythm is taking shape.</h2>
+        <p id="habit-reward-description">
+          <strong id="habit-reward-name">Your habit</strong> is complete for today.
+        </p>
+        <div class="habit-reward-stats">
+          <div>
+            <strong id="habit-reward-count">1</strong>
+            <span>DAY STREAK</span>
+          </div>
+          <div>
+            <strong id="habit-reward-total">1</strong>
+            <span>TOTAL CHECK-INS</span>
+          </div>
+        </div>
+        <button class="primary-button" id="acknowledge-habit-reward" type="button">
+          Continue
+        </button>
+      </div>
     </dialog>
 
     <dialog

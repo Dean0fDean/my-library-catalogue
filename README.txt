@@ -189,3 +189,11 @@ When the daily streak increases, the reward dialog now opens with a brief 3D
 book celebration carrying the new streak count on its cover. The animation
 fades after a few seconds, plays only for a newly earned daily reward, and is
 suppressed when the device requests reduced motion.
+
+The Lifestyle section lets each reader create, edit, and remove personal habits
+and record one completion per habit per day. It displays current and best
+streaks, lifetime check-ins, and a seven-day rhythm for every habit alongside
+weekly summary totals. Habit records synchronize with the signed-in account.
+Logging a habit launches a brief spinning-heart celebration with the updated
+streak and completion count; reduced-motion devices receive the result card
+without the animated heart.

@@ -9,6 +9,7 @@ const SHARES_STORAGE_KEY = "my-library-shares-v1";
 const API_TOKEN_KEY = "my-library-api-token-v1";
 const CREATIVE_WRITING_STORAGE_KEY = "my-library-creative-writing-v1";
 const WORDHUB_STORAGE_KEY = "my-library-wordhub-v1";
+const LIFESTYLE_STORAGE_KEY = "my-library-lifestyle-v1";
 const DREAMS_STORAGE_KEY = "my-library-dreams-v1";
 const NILLION_VOICE_KEY = "my-library-nillion-voice-v1";
 const COLLECTION_VIEW_KEY = "my-library-collection-view-v1";
@@ -540,6 +541,26 @@ const elements = {
   wordhubList: document.querySelector("#wordhub-list"),
   wordhubEmpty: document.querySelector("#wordhub-empty"),
   wordhubCount: document.querySelector("#wordhub-count"),
+  openHabitButton: document.querySelector("#open-habit-button"),
+  emptyHabitButton: document.querySelector("#empty-habit-button"),
+  habitGrid: document.querySelector("#habit-grid"),
+  habitEmpty: document.querySelector("#habit-empty"),
+  lifestyleHabitCount: document.querySelector("#lifestyle-habit-count"),
+  lifestyleTodayCount: document.querySelector("#lifestyle-today-count"),
+  lifestyleWeekCount: document.querySelector("#lifestyle-week-count"),
+  lifestyleRate: document.querySelector("#lifestyle-rate"),
+  habitDialog: document.querySelector("#habit-dialog"),
+  habitForm: document.querySelector("#habit-form"),
+  habitIdInput: document.querySelector("#habit-id-input"),
+  habitFormTitle: document.querySelector("#habit-form-title"),
+  habitNameInput: document.querySelector("#habit-name-input"),
+  habitCategoryInput: document.querySelector("#habit-category-input"),
+  habitIntentionInput: document.querySelector("#habit-intention-input"),
+  habitRewardDialog: document.querySelector("#habit-reward-dialog"),
+  habitRewardName: document.querySelector("#habit-reward-name"),
+  habitRewardCount: document.querySelector("#habit-reward-count"),
+  habitRewardTotal: document.querySelector("#habit-reward-total"),
+  habitHeartCount: document.querySelector("#habit-heart-count"),
   profileRunesCount: document.querySelector("#profile-runes-count"),
   profileStreakCount: document.querySelector("#profile-streak-count"),
   profileStreakBest: document.querySelector("#profile-streak-best"),
@@ -670,6 +691,7 @@ let announcements = [];
 let quandaries = [];
 let creativeWriting = loadArray(CREATIVE_WRITING_STORAGE_KEY);
 let wordhub = loadArray(WORDHUB_STORAGE_KEY);
+let lifestyleHabits = loadArray(LIFESTYLE_STORAGE_KEY);
 // Historical dream records remain in storage for compatibility, but the
 // retired Dream Journal is not loaded into the application.
 let dreams = [];
@@ -736,6 +758,7 @@ let coverFlowSuppressClick = false;
 let readerCatalogueExpanded = false;
 let highlightedCollectionBookId = "";
 let highlightedCollectionBookTimer;
+let habitRewardCounterAnimation;
 let readingChartsVisible = false;
 let readingAnalyticsRange = "recent-30";
 let readingChartType = READING_CHART_TYPES.has(localStorage.getItem(READING_CHART_TYPE_KEY))
@@ -789,7 +812,7 @@ function storeApiSession(token) {
 
 function adoptLocalAccount(localAccount, onlineAccount) {
   if (!localAccount || localAccount.id === onlineAccount.id) return;
-  [books, readingLog, passages, wishlist, creativeWriting, wordhub].forEach((items) => {
+  [books, readingLog, passages, wishlist, creativeWriting, wordhub, lifestyleHabits].forEach((items) => {
     items.forEach((item) => {
       if (item.ownerId === localAccount.id) item.ownerId = onlineAccount.id;
     });
@@ -800,6 +823,7 @@ function adoptLocalAccount(localAccount, onlineAccount) {
   saveWishlist();
   saveCreativeWriting();
   saveWordhub();
+  saveLifestyleHabits();
 }
 
 function loadArray(key) {
@@ -857,6 +881,12 @@ function saveCreativeWriting() {
 
 function saveWordhub() {
   const saved = saveCollection(WORDHUB_STORAGE_KEY, wordhub);
+  if (saved) scheduleDataSync();
+  return saved;
+}
+
+function saveLifestyleHabits() {
+  const saved = saveCollection(LIFESTYLE_STORAGE_KEY, lifestyleHabits);
   if (saved) scheduleDataSync();
   return saved;
 }
@@ -1352,6 +1382,9 @@ function cloudDataFor(accountId) {
     wordhub: wordhub
       .filter((item) => item.ownerId === accountId)
       .map(cloudSafeItem),
+    lifestyleHabits: lifestyleHabits
+      .filter((item) => item.ownerId === accountId)
+      .map(cloudSafeItem),
   };
 }
 
@@ -1363,6 +1396,7 @@ function hasCloudData(data) {
     "wishlist",
     "creativeWriting",
     "wordhub",
+    "lifestyleHabits",
   ].some(
     (key) => Array.isArray(data[key]) && data[key].length > 0,
   );
@@ -1446,12 +1480,18 @@ async function loadAccountData() {
     currentAccount.id,
     cloud.wordhub || [],
   );
+  lifestyleHabits = replaceAccountItems(
+    lifestyleHabits,
+    currentAccount.id,
+    cloud.lifestyleHabits || [],
+  );
   saveCollection(STORAGE_KEY, localSafeBooks());
   saveCollection(LOG_STORAGE_KEY, readingLog);
   saveCollection(PASSAGE_STORAGE_KEY, passages);
   saveCollection(WISHLIST_STORAGE_KEY, wishlist);
   saveCollection(CREATIVE_WRITING_STORAGE_KEY, creativeWriting);
   saveCollection(WORDHUB_STORAGE_KEY, wordhub);
+  saveCollection(LIFESTYLE_STORAGE_KEY, lifestyleHabits);
   isApplyingCloudData = false;
   await syncAccountData();
   await Promise.all(
@@ -1699,6 +1739,7 @@ async function showAuthenticatedApp(account) {
   renderJournals();
   renderStories();
   renderWordhub();
+  renderLifestyle();
   renderCommunity();
   if (dailyStreakRewardEarned) {
     showDailyStreakReward();
@@ -2351,6 +2392,7 @@ function answerNillionQuestion(rawQuestion) {
   const accountPassages = ownedByCurrent(passages);
   const accountWishlist = ownedByCurrent(wishlist);
   const accountWords = ownedByCurrent(wordhub);
+  const accountHabits = ownedByCurrent(lifestyleHabits);
   const projects = allStoryProjects();
   const scope = nillionReadingScope(query, accountLog);
   const scopedBooks = nillionReadingSummary(scope.entries);
@@ -2361,7 +2403,7 @@ function answerNillionQuestion(rawQuestion) {
     return `Hello${currentAccount.username ? `, ${currentAccount.username}` : ""}. I am Nillion. What would you like to know about your library?`;
   }
   if (query.includes("what can you do") || query.includes("how can you help") || query === "help") {
-    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, WordHub vocabulary, followers, recommendations, Runes, streaks, notifications, and achievements. I can scan every Writing Studio document for an exact word, phrase, or sentence, read matching context, read an entire document, and summarize saved Research Library files.";
+    return "I can answer questions about your collection, reading sessions and pace, saved passages, wishlist, Writing Studio projects, journals, WordHub vocabulary, Lifestyle habits, followers, recommendations, Runes, streaks, notifications, and achievements. I can scan every Writing Studio document for an exact word, phrase, or sentence, read matching context, read an entire document, and summarize saved Research Library files.";
   }
   const documentAnswer = nillionDocumentAnswer(rawQuestion, query);
   if (documentAnswer) return documentAnswer;
@@ -2430,6 +2472,28 @@ function answerNillionQuestion(rawQuestion) {
     return accountWords.length
       ? `Your WordHub Alcove holds ${accountWords.length} ${accountWords.length === 1 ? "word" : "words"}: ${nillionList(accountWords.map((entry) => entry.word), 8)}.`
       : "Your WordHub Alcove is empty.";
+  }
+  if (
+    query.includes("lifestyle") ||
+    query.includes("daily habit") ||
+    query.includes("habits today") ||
+    query.includes("habit streak") ||
+    (query.includes("habit") && !query.includes("reading habit"))
+  ) {
+    if (!accountHabits.length) {
+      return "You have not added any Lifestyle habits yet.";
+    }
+    const today = localDateString(new Date());
+    const completed = accountHabits.filter((habit) =>
+      normalizedHabitDates(habit).includes(today),
+    );
+    const strongest = [...accountHabits]
+      .map((habit) => ({ habit, streak: habitStreakStats(habit).current }))
+      .sort((first, second) => second.streak - first.streak)[0];
+    const completionLine = completed.length
+      ? `Today you completed ${nillionList(completed.map((habit) => habit.name), 6)}.`
+      : "You have not checked in a habit today yet.";
+    return `You are tracking ${accountHabits.length} ${accountHabits.length === 1 ? "habit" : "habits"}. ${completionLine} Your strongest current habit streak is ${strongest.streak} ${strongest.streak === 1 ? "day" : "days"} for ${strongest.habit.name}.`;
   }
   if (query.includes("writing project") || query.includes("manuscript") || query.includes("creative writing")) {
     const totalWords = projects.reduce((total, project) => total + currentStoryWordCount(project), 0);
@@ -8675,6 +8739,236 @@ function deleteWordhubEntry(id) {
   showToast(`"${entry.word}" removed.`);
 }
 
+function normalizedHabitDates(habit) {
+  return [...new Set((Array.isArray(habit?.logDates) ? habit.logDates : [])
+    .map((value) => String(value || "").slice(0, 10))
+    .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value)))]
+    .sort();
+}
+
+function habitStreakStats(habit) {
+  const dates = normalizedHabitDates(habit);
+  if (!dates.length) return { current: 0, best: 0, total: 0 };
+  const dateSet = new Set(dates);
+  const cursor = new Date();
+  cursor.setHours(12, 0, 0, 0);
+  if (!dateSet.has(localDateString(cursor))) cursor.setDate(cursor.getDate() - 1);
+  let current = 0;
+  while (dateSet.has(localDateString(cursor))) {
+    current += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  let best = 0;
+  let run = 0;
+  let previous = null;
+  dates.forEach((dateString) => {
+    const date = new Date(`${dateString}T12:00:00`);
+    const gap = previous ? Math.round((date - previous) / 86_400_000) : 0;
+    run = !previous || gap === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
+    previous = date;
+  });
+  return { current, best, total: dates.length };
+}
+
+function habitAccent(category) {
+  return {
+    Wellbeing: "#c15d6d",
+    Movement: "#d07a3d",
+    Mindfulness: "#7868a9",
+    Learning: "#3b7480",
+    Creativity: "#ad5f45",
+    Home: "#8a7149",
+    Connection: "#a95778",
+    Other: "#65766a",
+  }[category] || "#65766a";
+}
+
+function renderLifestyle() {
+  if (!currentAccount) return;
+  const habits = ownedByCurrent(lifestyleHabits).sort((first, second) =>
+    String(first.name).localeCompare(String(second.name), undefined, {
+      sensitivity: "base",
+    }),
+  );
+  const days = getLastSevenDays();
+  const today = days.at(-1)?.date || localDateString(new Date());
+  const weekDates = new Set(days.map((day) => day.date));
+  const todayCount = habits.filter((habit) =>
+    normalizedHabitDates(habit).includes(today),
+  ).length;
+  const weekCount = habits.reduce(
+    (total, habit) =>
+      total + normalizedHabitDates(habit).filter((date) => weekDates.has(date)).length,
+    0,
+  );
+  const possible = habits.length * days.length;
+  elements.lifestyleHabitCount.textContent = habits.length;
+  elements.lifestyleTodayCount.textContent = todayCount;
+  elements.lifestyleWeekCount.textContent = weekCount;
+  elements.lifestyleRate.textContent = `${possible ? Math.round((weekCount / possible) * 100) : 0}%`;
+  elements.habitGrid.innerHTML = habits
+    .map((habit) => {
+      const dates = normalizedHabitDates(habit);
+      const dateSet = new Set(dates);
+      const stats = habitStreakStats(habit);
+      const completedToday = dateSet.has(today);
+      return `
+        <article class="habit-card${completedToday ? " completed-today" : ""}" style="--habit-accent: ${habitAccent(habit.category)}">
+          <div class="habit-card-heading">
+            <div>
+              <p class="habit-category">${escapeHtml(habit.category || "Other")}</p>
+              <h3>${escapeHtml(habit.name)}</h3>
+            </div>
+            <div class="habit-card-actions">
+              <button type="button" data-habit-action="edit" data-id="${habit.id}">Edit</button>
+              <button type="button" data-habit-action="delete" data-id="${habit.id}">Remove</button>
+            </div>
+          </div>
+          ${habit.intention ? `<p class="habit-intention">${escapeHtml(habit.intention)}</p>` : ""}
+          <div class="habit-metrics">
+            <div><strong>${stats.current}</strong><span>Current streak</span></div>
+            <div><strong>${stats.best}</strong><span>Best streak</span></div>
+            <div><strong>${stats.total}</strong><span>Total check-ins</span></div>
+          </div>
+          <div class="habit-week" aria-label="Last seven days">
+            ${days.map((day) => `
+              <div class="habit-day${dateSet.has(day.date) ? " complete" : ""}${day.date === today ? " today" : ""}" title="${escapeHtml(formatDate(day.date))}: ${dateSet.has(day.date) ? "complete" : "not logged"}">
+                <span>${escapeHtml(day.label.slice(0, 1))}</span>
+                <i aria-hidden="true">${dateSet.has(day.date) ? "&#10003;" : ""}</i>
+              </div>
+            `).join("")}
+          </div>
+          <button class="habit-check-button${completedToday ? " logged" : ""}" type="button" data-habit-action="toggle" data-id="${habit.id}" aria-pressed="${completedToday}">
+            <span aria-hidden="true">${completedToday ? "&#10003;" : "&hearts;"}</span>
+            ${completedToday ? "Logged today - undo" : "Log today"}
+          </button>
+        </article>
+      `;
+    })
+    .join("");
+  elements.habitGrid.hidden = habits.length === 0;
+  elements.habitEmpty.hidden = habits.length > 0;
+}
+
+function openHabitForm(id = "") {
+  elements.habitForm.reset();
+  elements.habitIdInput.value = "";
+  elements.habitFormTitle.textContent = "Add a habit";
+  elements.habitForm.querySelector(".submit-button").textContent = "Save habit";
+  if (id) {
+    const habit = lifestyleHabits.find(
+      (item) => item.id === id && item.ownerId === currentAccount?.id,
+    );
+    if (!habit) return;
+    elements.habitIdInput.value = habit.id;
+    elements.habitNameInput.value = habit.name;
+    elements.habitCategoryInput.value = habit.category || "Other";
+    elements.habitIntentionInput.value = habit.intention || "";
+    elements.habitFormTitle.textContent = "Edit habit";
+    elements.habitForm.querySelector(".submit-button").textContent = "Save changes";
+  }
+  elements.habitDialog.showModal();
+  elements.habitNameInput.focus();
+}
+
+function saveHabitFromForm() {
+  const id = elements.habitIdInput.value;
+  const name = elements.habitNameInput.value.trim();
+  const duplicate = ownedByCurrent(lifestyleHabits).find(
+    (habit) => normalize(habit.name) === normalize(name) && habit.id !== id,
+  );
+  if (duplicate) {
+    elements.habitNameInput.setCustomValidity("You are already tracking a habit with this name.");
+    elements.habitNameInput.reportValidity();
+    return;
+  }
+  elements.habitNameInput.setCustomValidity("");
+  const previous = lifestyleHabits.find(
+    (habit) => habit.id === id && habit.ownerId === currentAccount?.id,
+  );
+  const habit = {
+    id: previous?.id || crypto.randomUUID(),
+    ownerId: currentAccount.id,
+    name,
+    category: elements.habitCategoryInput.value,
+    intention: elements.habitIntentionInput.value.trim(),
+    logDates: normalizedHabitDates(previous),
+    createdAt: previous?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  lifestyleHabits = previous
+    ? lifestyleHabits.map((item) => (item.id === habit.id ? habit : item))
+    : [habit, ...lifestyleHabits];
+  saveLifestyleHabits();
+  renderLifestyle();
+  elements.habitDialog.close();
+  showToast(previous ? `"${habit.name}" updated.` : `"${habit.name}" added to Lifestyle.`);
+}
+
+function deleteHabit(id) {
+  const habit = lifestyleHabits.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!habit) return;
+  lifestyleHabits = lifestyleHabits.filter((item) => item.id !== id);
+  saveLifestyleHabits();
+  renderLifestyle();
+  showToast(`"${habit.name}" removed.`);
+}
+
+function animateHabitRewardCount(from, to) {
+  window.cancelAnimationFrame(habitRewardCounterAnimation);
+  const started = performance.now();
+  const tick = (now) => {
+    const progress = Math.min(1, (now - started) / 780);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const value = Math.round(from + (to - from) * eased);
+    elements.habitRewardCount.textContent = value;
+    elements.habitHeartCount.textContent = value;
+    if (progress < 1) habitRewardCounterAnimation = requestAnimationFrame(tick);
+  };
+  habitRewardCounterAnimation = requestAnimationFrame(tick);
+}
+
+function showHabitReward(habit, previousStreak) {
+  const stats = habitStreakStats(habit);
+  elements.habitRewardName.textContent = habit.name;
+  elements.habitRewardTotal.textContent = stats.total;
+  elements.habitRewardCount.textContent = previousStreak;
+  elements.habitHeartCount.textContent = previousStreak;
+  elements.habitRewardDialog.classList.remove("celebrating");
+  void elements.habitRewardDialog.offsetWidth;
+  document.body.classList.add("habit-celebration-open");
+  elements.habitRewardDialog.showModal();
+  window.requestAnimationFrame(() => {
+    elements.habitRewardDialog.classList.add("celebrating");
+    animateHabitRewardCount(previousStreak, stats.current);
+  });
+}
+
+function toggleHabitToday(id) {
+  const habit = lifestyleHabits.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!habit) return;
+  const today = localDateString(new Date());
+  const dates = normalizedHabitDates(habit);
+  const wasLogged = dates.includes(today);
+  const previousStreak = habitStreakStats(habit).current;
+  habit.logDates = wasLogged
+    ? dates.filter((date) => date !== today)
+    : [...dates, today].sort();
+  habit.updatedAt = new Date().toISOString();
+  saveLifestyleHabits();
+  renderLifestyle();
+  if (wasLogged) {
+    showToast(`Today's check-in for "${habit.name}" was undone.`);
+  } else {
+    showHabitReward(habit, previousStreak);
+  }
+}
+
 function dreamDateLabel(value) {
   return journalDateLabel(value);
 }
@@ -11866,6 +12160,32 @@ elements.wordhubList.addEventListener("click", (event) => {
   }
 });
 
+elements.openHabitButton.addEventListener("click", () => openHabitForm());
+elements.emptyHabitButton.addEventListener("click", () => openHabitForm());
+elements.habitForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (elements.habitForm.reportValidity()) saveHabitFromForm();
+});
+elements.habitNameInput.addEventListener("input", () => {
+  elements.habitNameInput.setCustomValidity("");
+});
+elements.habitGrid.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-habit-action]");
+  if (!button) return;
+  if (button.dataset.habitAction === "toggle") toggleHabitToday(button.dataset.id);
+  if (button.dataset.habitAction === "edit") openHabitForm(button.dataset.id);
+  if (button.dataset.habitAction === "delete") deleteHabit(button.dataset.id);
+});
+document.querySelector("#close-habit-button").addEventListener("click", () => {
+  elements.habitDialog.close();
+});
+document.querySelector("#close-habit-reward-button").addEventListener("click", () => {
+  elements.habitRewardDialog.close();
+});
+document.querySelector("#acknowledge-habit-reward").addEventListener("click", () => {
+  elements.habitRewardDialog.close();
+});
+
 window.addEventListener("beforeunload", saveOpenStory);
 
 elements.dialog.addEventListener("click", (event) => {
@@ -11898,6 +12218,20 @@ elements.streakRewardDialog.addEventListener("click", (event) => {
 elements.streakRewardDialog.addEventListener("close", () => {
   elements.streakRewardDialog.classList.remove("celebrating");
   document.body.classList.remove("streak-celebration-open");
+});
+
+elements.habitDialog.addEventListener("click", (event) => {
+  if (event.target === elements.habitDialog) elements.habitDialog.close();
+});
+elements.habitRewardDialog.addEventListener("click", (event) => {
+  if (event.target === elements.habitRewardDialog) {
+    elements.habitRewardDialog.close();
+  }
+});
+elements.habitRewardDialog.addEventListener("close", () => {
+  window.cancelAnimationFrame(habitRewardCounterAnimation);
+  elements.habitRewardDialog.classList.remove("celebrating");
+  document.body.classList.remove("habit-celebration-open");
 });
 
 elements.breakReminderDialog.addEventListener("click", (event) => {

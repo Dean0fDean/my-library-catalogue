@@ -641,6 +641,7 @@ async function ensureSchema() {
           wishlist JSONB NOT NULL DEFAULT '[]'::jsonb,
           creative_writing JSONB NOT NULL DEFAULT '[]'::jsonb,
           wordhub JSONB NOT NULL DEFAULT '[]'::jsonb,
+          lifestyle_habits JSONB NOT NULL DEFAULT '[]'::jsonb,
           dreams JSONB NOT NULL DEFAULT '[]'::jsonb,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
@@ -652,6 +653,10 @@ async function ensureSchema() {
       await sql`
         ALTER TABLE library_data
         ADD COLUMN IF NOT EXISTS wordhub JSONB NOT NULL DEFAULT '[]'::jsonb
+      `;
+      await sql`
+        ALTER TABLE library_data
+        ADD COLUMN IF NOT EXISTS lifestyle_habits JSONB NOT NULL DEFAULT '[]'::jsonb
       `;
       await sql`
         ALTER TABLE library_data
@@ -1106,7 +1111,7 @@ export default async function handler(request, response) {
     if (action === "data" && request.method === "GET") {
       const rows = await sql`
         SELECT books, reading_log, passages, wishlist, creative_writing,
-               wordhub, dreams, updated_at
+               wordhub, lifestyle_habits, dreams, updated_at
         FROM library_data WHERE user_id = ${user.id}
       `;
       const row = rows[0] || {};
@@ -1117,6 +1122,7 @@ export default async function handler(request, response) {
         wishlist: row.wishlist || [],
         creativeWriting: row.creative_writing || [],
         wordhub: row.wordhub || [],
+        lifestyleHabits: row.lifestyle_habits || [],
         dreams: row.dreams || [],
         updatedAt: row.updated_at || null,
       });
@@ -1145,7 +1151,7 @@ export default async function handler(request, response) {
       await sql`
         INSERT INTO library_data (
           user_id, books, reading_log, passages, wishlist, creative_writing,
-          wordhub, dreams, updated_at
+          wordhub, lifestyle_habits, dreams, updated_at
         )
         VALUES (
           ${user.id}, ${JSON.stringify(cleanArray(body.books))}::jsonb,
@@ -1154,6 +1160,7 @@ export default async function handler(request, response) {
           ${JSON.stringify(cleanArray(body.wishlist))}::jsonb,
           ${JSON.stringify(cleanArray(body.creativeWriting))}::jsonb,
           ${JSON.stringify(cleanArray(body.wordhub))}::jsonb,
+          ${JSON.stringify(cleanArray(body.lifestyleHabits))}::jsonb,
           ${JSON.stringify(mergedDreams)}::jsonb, NOW()
         )
         ON CONFLICT (user_id) DO UPDATE SET
@@ -1163,6 +1170,7 @@ export default async function handler(request, response) {
           wishlist = EXCLUDED.wishlist,
           creative_writing = EXCLUDED.creative_writing,
           wordhub = EXCLUDED.wordhub,
+          lifestyle_habits = EXCLUDED.lifestyle_habits,
           dreams = EXCLUDED.dreams,
           updated_at = NOW()
       `;
