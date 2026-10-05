@@ -547,6 +547,7 @@ const elements = {
   learningStreakCount: document.querySelector("#learning-streak-count"),
   streakRewardDialog: document.querySelector("#streak-reward-dialog"),
   streakRewardCount: document.querySelector("#streak-reward-count"),
+  streakBookCount: document.querySelector("#streak-book-count"),
   breakReminderDialog: document.querySelector("#break-reminder-dialog"),
   learningTaskGrid: document.querySelector("#learning-task-grid"),
   chippingsRunesCount: document.querySelector("#chippings-runes-count"),
@@ -3392,7 +3393,14 @@ function showToast(message) {
 
 function showDailyStreakReward() {
   elements.streakRewardCount.textContent = streakCurrent;
+  elements.streakBookCount.textContent = streakCurrent;
+  elements.streakRewardDialog.classList.remove("celebrating");
+  void elements.streakRewardDialog.offsetWidth;
+  document.body.classList.add("streak-celebration-open");
   elements.streakRewardDialog.showModal();
+  window.requestAnimationFrame(() => {
+    elements.streakRewardDialog.classList.add("celebrating");
+  });
   dailyStreakRewardEarned = false;
 }
 
@@ -11886,6 +11894,10 @@ elements.streakRewardDialog.addEventListener("click", (event) => {
   if (event.target === elements.streakRewardDialog) {
     elements.streakRewardDialog.close();
   }
+});
+elements.streakRewardDialog.addEventListener("close", () => {
+  elements.streakRewardDialog.classList.remove("celebrating");
+  document.body.classList.remove("streak-celebration-open");
 });
 
 elements.breakReminderDialog.addEventListener("click", (event) => {

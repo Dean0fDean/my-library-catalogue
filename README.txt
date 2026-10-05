@@ -184,3 +184,8 @@ Reading Log analytics display one reader-selected graph at a time. Available
 views cover pages over time, reading-speed trends, top books, genres, formats,
 time of day, weekdays, and session length. The selection is remembered on the
 device and the chosen graph can be printed with its period summary.
+
+When the daily streak increases, the reward dialog now opens with a brief 3D
+book celebration carrying the new streak count on its cover. The animation
+fades after a few seconds, plays only for a newly earned daily reward, and is
+suppressed when the device requests reduced motion.

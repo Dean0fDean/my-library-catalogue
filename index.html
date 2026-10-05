@@ -3473,7 +3473,35 @@
       </form>
     </dialog>
 
-    <dialog id="streak-reward-dialog" class="streak-reward-dialog">
+    <dialog
+      id="streak-reward-dialog"
+      class="streak-reward-dialog"
+      aria-labelledby="streak-reward-title"
+      aria-describedby="streak-reward-description"
+    >
+      <div class="streak-book-celebration" aria-hidden="true">
+        <div class="streak-celebration-halo"></div>
+        <div class="streak-celebration-ring ring-one"></div>
+        <div class="streak-celebration-ring ring-two"></div>
+        <span class="streak-celebration-spark spark-one"></span>
+        <span class="streak-celebration-spark spark-two"></span>
+        <span class="streak-celebration-spark spark-three"></span>
+        <div class="streak-book-flight">
+          <div class="streak-book-object">
+            <div class="streak-book-face streak-book-front">
+              <small>MY LIBRARY</small>
+              <strong id="streak-book-count">0</strong>
+              <span>DAY STREAK</span>
+              <i></i>
+            </div>
+            <div class="streak-book-face streak-book-back"></div>
+            <div class="streak-book-face streak-book-spine">
+              <span>KEEP READING</span>
+            </div>
+            <div class="streak-book-face streak-book-pages"></div>
+          </div>
+        </div>
+      </div>
       <div class="streak-reward-card">
         <button
           class="icon-button streak-reward-close"
@@ -3485,8 +3513,8 @@
         </button>
         <div class="streak-reward-emblem" aria-hidden="true">S</div>
         <p class="eyebrow">DAILY READING STREAK</p>
-        <h2>Welcome back!</h2>
-        <p>
+        <h2 id="streak-reward-title">Welcome back!</h2>
+        <p id="streak-reward-description">
           Your daily streak has increased to
           <strong id="streak-reward-count">0</strong> days.
         </p>
