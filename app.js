@@ -1715,14 +1715,18 @@ async function runStartupStep(step) {
 }
 
 function settleInitialAppRoute() {
-  const requestedId = decodeURIComponent(window.location.hash.slice(1));
-  let target = requestedId ? document.getElementById(requestedId) : null;
-  if (!target) {
-    target = document.querySelector("#home");
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#home`);
-  }
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}#home`,
+  );
+  const scrollHome = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
+  scrollHome();
   window.requestAnimationFrame(() => {
-    target.scrollIntoView({ behavior: "auto", block: "start" });
+    scrollHome();
+    window.requestAnimationFrame(scrollHome);
   });
 }
 
