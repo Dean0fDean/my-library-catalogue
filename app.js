@@ -16,6 +16,8 @@ const COLLECTION_VIEW_KEY = "my-library-collection-view-v1";
 const READING_CHART_TYPE_KEY = "my-library-reading-chart-type-v1";
 const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
+const SLEEP_MODE_END_KEY = "my-library-sleep-mode-end-v1";
+const SLEEP_MODE_DURATION = 15 * 60 * 1000;
 const READING_CHART_TYPES = new Set([
   "pages-over-time",
   "reading-speed",
@@ -571,6 +573,9 @@ const elements = {
   streakRewardCount: document.querySelector("#streak-reward-count"),
   streakBookCount: document.querySelector("#streak-book-count"),
   breakReminderDialog: document.querySelector("#break-reminder-dialog"),
+  sleepModeDialog: document.querySelector("#sleep-mode-dialog"),
+  sleepModeCountdown: document.querySelector("#sleep-mode-countdown"),
+  sleepModeProgress: document.querySelector("#sleep-mode-progress"),
   learningTaskGrid: document.querySelector("#learning-task-grid"),
   chippingsRunesCount: document.querySelector("#chippings-runes-count"),
   chippingsGrid: document.querySelector("#chippings-grid"),
@@ -710,6 +715,7 @@ let dreamFactIndex = 0;
 let dreamFactTimer;
 let notificationPollTimer;
 let breakReminderTimer;
+let sleepModeTimer;
 let knownNotificationIds = new Set();
 let notificationBaselineReady = false;
 let audioContext;
@@ -1771,11 +1777,13 @@ async function showAuthenticatedApp(account) {
     refreshProfileActivity().catch(() => {});
   }, 30_000);
   scheduleBreakReminder();
+  resumeSleepMode();
 }
 
 function showLoginScreen() {
   window.clearInterval(notificationPollTimer);
   window.clearTimeout(breakReminderTimer);
+  finishSleepMode();
   notificationBaselineReady = false;
   knownNotificationIds = new Set();
   currentAccount = null;
@@ -3517,6 +3525,75 @@ function dismissBreakReminder() {
   sessionStorage.setItem(BREAK_REMINDER_DISMISSED_KEY, "1");
   window.clearTimeout(breakReminderTimer);
   elements.breakReminderDialog.close();
+}
+
+function sleepModeEndTime() {
+  const value = Number(sessionStorage.getItem(SLEEP_MODE_END_KEY));
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function sleepCountdownLabel(milliseconds) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function updateSleepModeCountdown() {
+  const endTime = sleepModeEndTime();
+  const remaining = endTime - Date.now();
+  if (!endTime || remaining <= 0) {
+    finishSleepMode("Your fifteen-minute break is complete. Welcome back.");
+    return;
+  }
+  elements.sleepModeCountdown.textContent = sleepCountdownLabel(remaining);
+  elements.sleepModeCountdown.setAttribute(
+    "aria-label",
+    `${Math.ceil(remaining / 60_000)} minutes remaining in sleep mode`,
+  );
+  const progress = Math.min(
+    100,
+    Math.max(0, ((SLEEP_MODE_DURATION - remaining) / SLEEP_MODE_DURATION) * 100),
+  );
+  elements.sleepModeProgress.style.width = `${progress}%`;
+}
+
+function showSleepMode(endTime) {
+  sessionStorage.setItem(SLEEP_MODE_END_KEY, String(endTime));
+  window.clearInterval(sleepModeTimer);
+  document.body.classList.add("sleep-mode-open");
+  if (!elements.sleepModeDialog.open) elements.sleepModeDialog.showModal();
+  updateSleepModeCountdown();
+  sleepModeTimer = window.setInterval(updateSleepModeCountdown, 1000);
+}
+
+function startSleepMode() {
+  sessionStorage.setItem(BREAK_REMINDER_DISMISSED_KEY, "1");
+  window.clearTimeout(breakReminderTimer);
+  if (elements.breakReminderDialog.open) elements.breakReminderDialog.close();
+  showSleepMode(Date.now() + SLEEP_MODE_DURATION);
+}
+
+function finishSleepMode(message = "") {
+  window.clearInterval(sleepModeTimer);
+  sessionStorage.removeItem(SLEEP_MODE_END_KEY);
+  document.body.classList.remove("sleep-mode-open");
+  if (elements.sleepModeDialog.open) elements.sleepModeDialog.close();
+  if (message) showToast(message);
+}
+
+function exitSleepMode() {
+  finishSleepMode("Sleep mode ended early. Your library is ready.");
+}
+
+function resumeSleepMode() {
+  const endTime = sleepModeEndTime();
+  if (endTime > Date.now()) {
+    sessionStorage.setItem(BREAK_REMINDER_DISMISSED_KEY, "1");
+    showSleepMode(endTime);
+  } else if (endTime) {
+    sessionStorage.removeItem(SLEEP_MODE_END_KEY);
+  }
 }
 
 function ensureAudioContext() {
@@ -11633,7 +11710,10 @@ document
   .addEventListener("click", dismissBreakReminder);
 document
   .querySelector("#dismiss-break-reminder")
-  .addEventListener("click", dismissBreakReminder);
+  .addEventListener("click", startSleepMode);
+document
+  .querySelector("#exit-sleep-mode")
+  .addEventListener("click", exitSleepMode);
 document
   .querySelector("#open-journal-button")
   .addEventListener("click", openJournalForm);
@@ -12359,6 +12439,15 @@ elements.breakReminderDialog.addEventListener("click", (event) => {
 elements.breakReminderDialog.addEventListener("close", () => {
   sessionStorage.setItem(BREAK_REMINDER_DISMISSED_KEY, "1");
   window.clearTimeout(breakReminderTimer);
+});
+elements.sleepModeDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  exitSleepMode();
+});
+elements.sleepModeDialog.addEventListener("close", () => {
+  window.clearInterval(sleepModeTimer);
+  sessionStorage.removeItem(SLEEP_MODE_END_KEY);
+  document.body.classList.remove("sleep-mode-open");
 });
 
 elements.journalDialog.addEventListener("click", (event) => {

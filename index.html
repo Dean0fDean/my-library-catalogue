@@ -3755,6 +3755,37 @@
       </div>
     </dialog>
 
+    <dialog
+      id="sleep-mode-dialog"
+      class="sleep-mode-dialog"
+      aria-labelledby="sleep-mode-title"
+      aria-describedby="sleep-mode-description"
+    >
+      <div class="sleep-mode-sky" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="sleep-mode-card">
+        <div class="sleep-mode-moon" aria-hidden="true"></div>
+        <p class="eyebrow">LIBRARY SLEEP MODE</p>
+        <h2 id="sleep-mode-title">Rest for a little while.</h2>
+        <p id="sleep-mode-description">
+          Your account remains signed in and everything is safely preserved.
+          The library will be ready when the timer ends.
+        </p>
+        <div class="sleep-mode-timer" role="timer">
+          <strong id="sleep-mode-countdown" aria-label="15 minutes remaining in sleep mode">15:00</strong>
+          <span>UNTIL YOUR LIBRARY WAKES</span>
+        </div>
+        <div class="sleep-mode-progress" aria-hidden="true">
+          <span id="sleep-mode-progress"></span>
+        </div>
+        <p class="sleep-mode-note">You can return early whenever you are ready.</p>
+        <button class="sleep-mode-exit" id="exit-sleep-mode" type="button">
+          Return to my library early
+        </button>
+      </div>
+    </dialog>
+
     <section id="print-sheet" class="print-sheet" aria-hidden="true"></section>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </body>

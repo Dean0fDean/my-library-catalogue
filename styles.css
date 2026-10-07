@@ -4565,6 +4565,10 @@ fieldset {
     animation: none !important;
   }
 
+  .sleep-mode-sky span {
+    animation: none !important;
+  }
+
   .nillion-body-group,
   .nillion-head-group,
   .nillion-arm,
@@ -5174,6 +5178,177 @@ body.streak-celebration-open {
 
 .break-reminder-card .primary-button {
   margin-top: 0.8rem;
+}
+
+body.sleep-mode-open {
+  overflow: hidden;
+}
+
+.sleep-mode-dialog {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  padding: 1.25rem;
+  overflow: hidden;
+  color: #edf6ef;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(107, 148, 128, 0.24), transparent 28rem),
+    linear-gradient(155deg, #071713, #102b22 58%, #06110e);
+  border: 0;
+}
+
+.sleep-mode-dialog[open] {
+  display: grid;
+  place-items: center;
+}
+
+.sleep-mode-dialog::backdrop {
+  background: #06110e;
+}
+
+.sleep-mode-card {
+  width: min(540px, 100%);
+  padding: clamp(2rem, 7vw, 4rem);
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  background: rgba(9, 31, 24, 0.78);
+  border: 1px solid rgba(198, 221, 203, 0.2);
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.44);
+  backdrop-filter: blur(12px);
+}
+
+.sleep-mode-card .eyebrow {
+  color: #a8cbb3;
+}
+
+.sleep-mode-card h2 {
+  margin-bottom: 0.8rem;
+  color: #f5f2e8;
+  font-size: clamp(2.5rem, 8vw, 4.2rem);
+  font-weight: 400;
+}
+
+.sleep-mode-card > p:not(.eyebrow) {
+  color: rgba(237, 246, 239, 0.7);
+  line-height: 1.65;
+}
+
+.sleep-mode-moon {
+  width: 86px;
+  aspect-ratio: 1;
+  margin: 0 auto 1.25rem;
+  background: #e9dfb1;
+  border-radius: 50%;
+  box-shadow: 0 0 52px rgba(233, 223, 177, 0.28);
+}
+
+.sleep-mode-moon::after {
+  content: "";
+  width: 78px;
+  aspect-ratio: 1;
+  display: block;
+  background: #102b22;
+  border-radius: 50%;
+  transform: translate(23px, -8px);
+}
+
+.sleep-mode-timer {
+  margin: 1.7rem 0 1rem;
+}
+
+.sleep-mode-timer strong,
+.sleep-mode-timer span {
+  display: block;
+}
+
+.sleep-mode-timer strong {
+  color: #f0e5b8;
+  font: 400 clamp(3.6rem, 15vw, 6rem)/1 Georgia, serif;
+  letter-spacing: 0.04em;
+}
+
+.sleep-mode-timer span {
+  margin-top: 0.55rem;
+  color: rgba(198, 221, 203, 0.58);
+  font: 700 0.56rem/1 Arial, sans-serif;
+  letter-spacing: 0.14em;
+}
+
+.sleep-mode-progress {
+  height: 4px;
+  overflow: hidden;
+  background: rgba(198, 221, 203, 0.14);
+}
+
+.sleep-mode-progress span {
+  width: 0;
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg, #789c84, #f0e5b8);
+  transition: width 1s linear;
+}
+
+.sleep-mode-note {
+  margin: 1.15rem 0 0;
+  font-size: 0.84rem;
+  font-style: italic;
+}
+
+.sleep-mode-exit {
+  margin-top: 1.3rem;
+  padding: 0.8rem 1rem;
+  color: #c6ddcb;
+  background: transparent;
+  border: 1px solid rgba(198, 221, 203, 0.34);
+  font: 700 0.62rem/1 Arial, sans-serif;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.sleep-mode-exit:hover,
+.sleep-mode-exit:focus-visible {
+  color: #071713;
+  background: #f0e5b8;
+  border-color: #f0e5b8;
+}
+
+.sleep-mode-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sleep-mode-sky span {
+  width: 4px;
+  aspect-ratio: 1;
+  position: absolute;
+  background: #d9e8db;
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(217, 232, 219, 0.7);
+  animation: sleep-star 3s ease-in-out infinite alternate;
+}
+
+.sleep-mode-sky span:nth-child(1) { top: 15%; left: 13%; }
+.sleep-mode-sky span:nth-child(2) { top: 27%; right: 16%; animation-delay: 0.8s; }
+.sleep-mode-sky span:nth-child(3) { bottom: 18%; left: 22%; animation-delay: 1.4s; }
+.sleep-mode-sky span:nth-child(4) { bottom: 24%; right: 10%; animation-delay: 2s; }
+.sleep-mode-sky span:nth-child(5) { top: 9%; left: 67%; animation-delay: 0.35s; }
+
+@keyframes sleep-star {
+  from { opacity: 0.25; transform: scale(0.7); }
+  to { opacity: 0.9; transform: scale(1.25); }
+}
+
+@media (max-width: 540px) {
+  .sleep-mode-dialog {
+    padding: 0.75rem;
+  }
+
+  .sleep-mode-card {
+    padding: 2.25rem 1.35rem;
+  }
 }
 
 .feature-menu[hidden] {
