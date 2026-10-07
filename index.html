@@ -3622,6 +3622,47 @@
     </dialog>
 
     <dialog
+      id="habit-archive-dialog"
+      class="habit-archive-dialog"
+      aria-labelledby="habit-archive-title"
+    >
+      <div class="habit-archive-card">
+        <header class="habit-archive-heading">
+          <div>
+            <p class="eyebrow">LONG-RANGE HABIT HISTORY</p>
+            <h2 id="habit-archive-title">Habit history</h2>
+            <p>Move through months and years, then select any day to add or remove a check-in.</p>
+          </div>
+          <button
+            class="icon-button"
+            id="close-habit-archive"
+            type="button"
+            aria-label="Close habit history"
+          >
+            X
+          </button>
+        </header>
+        <div id="habit-archive-summary" class="habit-archive-summary"></div>
+        <div class="habit-archive-navigation">
+          <button id="habit-archive-previous" type="button" aria-label="Previous month">&larr;</button>
+          <label>
+            <span>Jump to month and year</span>
+            <input id="habit-archive-month" type="month" min="1900-01" />
+          </label>
+          <button id="habit-archive-next" type="button" aria-label="Next month">&rarr;</button>
+        </div>
+        <div
+          id="habit-archive-calendar"
+          class="habit-archive-calendar"
+          aria-label="Habit history calendar"
+        ></div>
+        <p class="habit-archive-note">
+          History can be recorded from January 1900 to today. Changes save and sync automatically.
+        </p>
+      </div>
+    </dialog>
+
+    <dialog
       id="habit-reward-dialog"
       class="habit-reward-dialog"
       aria-labelledby="habit-reward-title"

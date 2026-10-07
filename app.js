@@ -18,6 +18,7 @@ const BREAK_REMINDER_DISMISSED_KEY = "my-library-break-reminder-dismissed";
 const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 const SLEEP_MODE_END_KEY = "my-library-sleep-mode-end-v1";
 const SLEEP_MODE_DURATION = 15 * 60 * 1000;
+const HABIT_HISTORY_START_DATE = "1900-01-01";
 const READING_CHART_TYPES = new Set([
   "pages-over-time",
   "reading-speed",
@@ -559,6 +560,13 @@ const elements = {
   habitCategoryInput: document.querySelector("#habit-category-input"),
   habitIntentionInput: document.querySelector("#habit-intention-input"),
   habitDialogCategoryLabel: document.querySelector("#habit-dialog-category-label"),
+  habitArchiveDialog: document.querySelector("#habit-archive-dialog"),
+  habitArchiveTitle: document.querySelector("#habit-archive-title"),
+  habitArchiveSummary: document.querySelector("#habit-archive-summary"),
+  habitArchiveMonth: document.querySelector("#habit-archive-month"),
+  habitArchivePrevious: document.querySelector("#habit-archive-previous"),
+  habitArchiveNext: document.querySelector("#habit-archive-next"),
+  habitArchiveCalendar: document.querySelector("#habit-archive-calendar"),
   habitRewardDialog: document.querySelector("#habit-reward-dialog"),
   habitRewardName: document.querySelector("#habit-reward-name"),
   habitRewardCount: document.querySelector("#habit-reward-count"),
@@ -768,6 +776,8 @@ let highlightedCollectionBookTimer;
 let habitRewardCounterAnimation;
 let openHabitHistoryId = "";
 let openHabitHistoryDate = "";
+let activeHabitArchiveId = "";
+let activeHabitArchiveMonth = "";
 let readingChartsVisible = false;
 let readingAnalyticsRange = "recent-30";
 let readingChartType = READING_CHART_TYPES.has(localStorage.getItem(READING_CHART_TYPE_KEY))
@@ -1784,6 +1794,7 @@ function showLoginScreen() {
   window.clearInterval(notificationPollTimer);
   window.clearTimeout(breakReminderTimer);
   finishSleepMode();
+  closeHabitArchive();
   notificationBaselineReady = false;
   knownNotificationIds = new Set();
   currentAccount = null;
@@ -8968,13 +8979,16 @@ function renderLifestyle() {
             <div class="habit-history-panel">
               <label>
                 <span>Choose a date</span>
-                <input type="date" value="${historyDate}" max="${today}" data-habit-history-date data-id="${habit.id}" />
+                <input type="date" value="${historyDate}" min="${HABIT_HISTORY_START_DATE}" max="${today}" data-habit-history-date data-id="${habit.id}" />
               </label>
               <button class="habit-history-button${historyDateLogged ? " remove" : ""}" type="button" data-habit-action="toggle-date" data-id="${habit.id}">
                 ${historyDateLogged ? "Remove check-in" : "Log selected day"}
               </button>
             </div>
-            <p>Use this to add a missed check-in or correct an earlier entry. Future dates cannot be logged.</p>
+            <p>Use this for one date, or open the archive to move across months and years.</p>
+            <button class="habit-archive-open" type="button" data-habit-action="archive" data-id="${habit.id}">
+              Browse full history from 1900
+            </button>
           </details>
         </article>
       `;
@@ -9054,6 +9068,7 @@ function deleteHabit(id) {
     (item) => item.id === id && item.ownerId === currentAccount?.id,
   );
   if (!habit) return;
+  if (activeHabitArchiveId === id) closeHabitArchive();
   lifestyleHabits = lifestyleHabits.filter((item) => item.id !== id);
   saveLifestyleHabits();
   renderLifestyle();
@@ -9096,14 +9111,122 @@ function validHabitDate(value) {
   return !Number.isNaN(parsed.getTime()) && localDateString(parsed) === value;
 }
 
-function toggleHabitDate(id, dateString) {
+function validHabitMonth(value) {
+  if (!/^\d{4}-\d{2}$/.test(String(value || ""))) return false;
+  const [year, month] = value.split("-").map(Number);
+  return year >= 1900 && month >= 1 && month <= 12;
+}
+
+function shiftHabitMonth(value, offset) {
+  if (!validHabitMonth(value)) return localDateString(new Date()).slice(0, 7);
+  const [year, month] = value.split("-").map(Number);
+  const shifted = new Date(year, month - 1 + offset, 1, 12, 0, 0, 0);
+  return localDateString(shifted).slice(0, 7);
+}
+
+function renderHabitArchive() {
+  const habit = lifestyleHabits.find(
+    (item) => item.id === activeHabitArchiveId && item.ownerId === currentAccount?.id,
+  );
+  if (!habit) return;
+  const today = localDateString(new Date());
+  const currentMonth = today.slice(0, 7);
+  if (
+    !validHabitMonth(activeHabitArchiveMonth) ||
+    activeHabitArchiveMonth < HABIT_HISTORY_START_DATE.slice(0, 7) ||
+    activeHabitArchiveMonth > currentMonth
+  ) {
+    activeHabitArchiveMonth = currentMonth;
+  }
+  const [year, month] = activeHabitArchiveMonth.split("-").map(Number);
+  const firstDay = new Date(year, month - 1, 1, 12, 0, 0, 0);
+  const numberOfDays = new Date(year, month, 0, 12, 0, 0, 0).getDate();
+  const leadingBlanks = firstDay.getDay();
+  const dates = normalizedHabitDates(habit);
+  const dateSet = new Set(dates);
+  const monthLabel = new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    year: "numeric",
+  }).format(firstDay);
+  const monthTotal = dates.filter((date) => date.startsWith(activeHabitArchiveMonth)).length;
+  const rangeLabel = dates.length
+    ? `${formatDate(dates[0])} to ${formatDate(dates.at(-1))}`
+    : "No check-ins recorded yet";
+  elements.habitArchiveTitle.textContent = habit.name;
+  elements.habitArchiveSummary.innerHTML = `
+    <span><strong>${monthTotal}</strong> in ${escapeHtml(monthLabel)}</span>
+    <span><strong>${dates.length}</strong> all-time check-ins</span>
+    <small>${escapeHtml(rangeLabel)}</small>
+  `;
+  elements.habitArchiveMonth.value = activeHabitArchiveMonth;
+  elements.habitArchiveMonth.min = HABIT_HISTORY_START_DATE.slice(0, 7);
+  elements.habitArchiveMonth.max = currentMonth;
+  elements.habitArchivePrevious.disabled =
+    activeHabitArchiveMonth <= HABIT_HISTORY_START_DATE.slice(0, 7);
+  elements.habitArchiveNext.disabled = activeHabitArchiveMonth >= currentMonth;
+  const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  elements.habitArchiveCalendar.innerHTML = `
+    ${weekdayLabels.map((label) => `<span class="habit-archive-weekday">${label}</span>`).join("")}
+    ${Array.from({ length: leadingBlanks }, () => '<span class="habit-archive-blank" aria-hidden="true"></span>').join("")}
+    ${Array.from({ length: numberOfDays }, (_, index) => {
+      const day = String(index + 1).padStart(2, "0");
+      const date = `${activeHabitArchiveMonth}-${day}`;
+      const logged = dateSet.has(date);
+      const future = date > today;
+      return `
+        <button
+          class="habit-archive-day${logged ? " logged" : ""}${date === today ? " today" : ""}"
+          type="button"
+          data-habit-archive-date="${date}"
+          aria-pressed="${logged}"
+          aria-label="${logged ? "Remove" : "Log"} ${escapeHtml(habit.name)} for ${escapeHtml(formatDate(date))}"
+          ${future ? "disabled" : ""}
+        >
+          <span>${index + 1}</span>
+          ${logged ? '<i aria-hidden="true">&#10003;</i>' : ""}
+        </button>
+      `;
+    }).join("")}
+  `;
+}
+
+function openHabitArchive(id) {
+  const habit = lifestyleHabits.find(
+    (item) => item.id === id && item.ownerId === currentAccount?.id,
+  );
+  if (!habit) return;
+  activeHabitArchiveId = id;
+  const preferredMonth =
+    openHabitHistoryId === id && validHabitDate(openHabitHistoryDate)
+      ? openHabitHistoryDate.slice(0, 7)
+      : normalizedHabitDates(habit).at(-1)?.slice(0, 7);
+  activeHabitArchiveMonth = preferredMonth || localDateString(new Date()).slice(0, 7);
+  renderHabitArchive();
+  elements.habitArchiveDialog.style.setProperty(
+    "--habit-archive-accent",
+    habitAccent(habit.category),
+  );
+  elements.habitArchiveDialog.showModal();
+}
+
+function closeHabitArchive() {
+  if (elements.habitArchiveDialog.open) elements.habitArchiveDialog.close();
+  activeHabitArchiveId = "";
+  activeHabitArchiveMonth = "";
+}
+
+function toggleHabitDate(id, dateString, celebrateToday = true) {
   const habit = lifestyleHabits.find(
     (item) => item.id === id && item.ownerId === currentAccount?.id,
   );
   if (!habit) return;
   const today = localDateString(new Date());
-  if (!validHabitDate(dateString) || dateString > today) {
-    showToast("Choose today or an earlier valid date.");
+  if (
+    !validHabitDate(dateString) ||
+    dateString < HABIT_HISTORY_START_DATE ||
+    dateString > today
+  ) {
+    showToast("Choose a date from 1 Jan 1900 through today.");
     return;
   }
   const dates = normalizedHabitDates(habit);
@@ -9115,7 +9238,7 @@ function toggleHabitDate(id, dateString) {
   habit.updatedAt = new Date().toISOString();
   saveLifestyleHabits();
   renderLifestyle();
-  if (dateString === today && !wasLogged) {
+  if (dateString === today && !wasLogged && celebrateToday) {
     showHabitReward(habit, previousStreak);
     return;
   }
@@ -12361,6 +12484,7 @@ elements.habitGrid.addEventListener("click", (event) => {
     }
     toggleHabitDate(button.dataset.id, date);
   }
+  if (button.dataset.habitAction === "archive") openHabitArchive(button.dataset.id);
   if (button.dataset.habitAction === "edit") openHabitForm(button.dataset.id);
   if (button.dataset.habitAction === "delete") deleteHabit(button.dataset.id);
 });
@@ -12372,8 +12496,29 @@ elements.habitGrid.addEventListener("change", (event) => {
     updateHabitHistoryButton(input);
   }
 });
+elements.habitArchiveMonth.addEventListener("change", () => {
+  activeHabitArchiveMonth = elements.habitArchiveMonth.value;
+  renderHabitArchive();
+});
+elements.habitArchivePrevious.addEventListener("click", () => {
+  activeHabitArchiveMonth = shiftHabitMonth(activeHabitArchiveMonth, -1);
+  renderHabitArchive();
+});
+elements.habitArchiveNext.addEventListener("click", () => {
+  activeHabitArchiveMonth = shiftHabitMonth(activeHabitArchiveMonth, 1);
+  renderHabitArchive();
+});
+elements.habitArchiveCalendar.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-habit-archive-date]");
+  if (!button || button.disabled) return;
+  toggleHabitDate(activeHabitArchiveId, button.dataset.habitArchiveDate, false);
+  renderHabitArchive();
+});
 document.querySelector("#close-habit-button").addEventListener("click", () => {
   elements.habitDialog.close();
+});
+document.querySelector("#close-habit-archive").addEventListener("click", () => {
+  closeHabitArchive();
 });
 document.querySelector("#cancel-habit-button").addEventListener("click", () => {
   elements.habitDialog.close();
@@ -12421,6 +12566,15 @@ elements.streakRewardDialog.addEventListener("close", () => {
 
 elements.habitDialog.addEventListener("click", (event) => {
   if (event.target === elements.habitDialog) elements.habitDialog.close();
+});
+elements.habitArchiveDialog.addEventListener("click", (event) => {
+  if (event.target === elements.habitArchiveDialog) {
+    closeHabitArchive();
+  }
+});
+elements.habitArchiveDialog.addEventListener("close", () => {
+  activeHabitArchiveId = "";
+  activeHabitArchiveMonth = "";
 });
 elements.habitRewardDialog.addEventListener("click", (event) => {
   if (event.target === elements.habitRewardDialog) {
