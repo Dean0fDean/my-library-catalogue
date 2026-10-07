@@ -19,6 +19,8 @@ const BREAK_REMINDER_DELAY = 25 * 60 * 1000;
 const SLEEP_MODE_END_KEY = "my-library-sleep-mode-end-v1";
 const SLEEP_MODE_DURATION = 15 * 60 * 1000;
 const HABIT_HISTORY_START_DATE = "1900-01-01";
+const HABIT_ANALYSIS_WINDOW_KEY = "my-library-habit-analysis-window-v1";
+const HABIT_ANALYSIS_WINDOWS = new Set(["30", "90", "365", "all"]);
 const READING_CHART_TYPES = new Set([
   "pages-over-time",
   "reading-speed",
@@ -552,6 +554,21 @@ const elements = {
   lifestyleTodayCount: document.querySelector("#lifestyle-today-count"),
   lifestyleWeekCount: document.querySelector("#lifestyle-week-count"),
   lifestyleRate: document.querySelector("#lifestyle-rate"),
+  printHabitReport: document.querySelector("#print-habit-report"),
+  habitAnalysisWindow: document.querySelector("#habit-analysis-window"),
+  habitAnalysisPeriodLabel: document.querySelector("#habit-analysis-period-label"),
+  habitAnalysisCheckins: document.querySelector("#habit-analysis-checkins"),
+  habitAnalysisCheckinsNote: document.querySelector("#habit-analysis-checkins-note"),
+  habitAnalysisConsistency: document.querySelector("#habit-analysis-consistency"),
+  habitAnalysisActiveDays: document.querySelector("#habit-analysis-active-days"),
+  habitAnalysisActiveDaysNote: document.querySelector("#habit-analysis-active-days-note"),
+  habitAnalysisStrongest: document.querySelector("#habit-analysis-strongest"),
+  habitAnalysisStrongestNote: document.querySelector("#habit-analysis-strongest-note"),
+  habitTrendChart: document.querySelector("#habit-trend-chart"),
+  habitWeekdayChart: document.querySelector("#habit-weekday-chart"),
+  habitAnalysisObservationList: document.querySelector("#habit-analysis-observation-list"),
+  habitCategoryAnalysis: document.querySelector("#habit-category-analysis"),
+  habitPerformanceList: document.querySelector("#habit-performance-list"),
   habitDialog: document.querySelector("#habit-dialog"),
   habitForm: document.querySelector("#habit-form"),
   habitIdInput: document.querySelector("#habit-id-input"),
@@ -778,6 +795,11 @@ let openHabitHistoryId = "";
 let openHabitHistoryDate = "";
 let activeHabitArchiveId = "";
 let activeHabitArchiveMonth = "";
+let habitAnalysisWindow = HABIT_ANALYSIS_WINDOWS.has(
+  localStorage.getItem(HABIT_ANALYSIS_WINDOW_KEY),
+)
+  ? localStorage.getItem(HABIT_ANALYSIS_WINDOW_KEY)
+  : "90";
 let readingChartsVisible = false;
 let readingAnalyticsRange = "recent-30";
 let readingChartType = READING_CHART_TYPES.has(localStorage.getItem(READING_CHART_TYPE_KEY))
@@ -8896,6 +8918,253 @@ function habitAccent(category) {
   }[category] || "#65766a";
 }
 
+function habitDateAtNoon(dateString) {
+  return new Date(`${dateString}T12:00:00`);
+}
+
+function habitDaysBetween(firstDate, secondDate) {
+  return Math.round(
+    (habitDateAtNoon(secondDate) - habitDateAtNoon(firstDate)) / 86_400_000,
+  );
+}
+
+function habitTrackingStart(habit, fallbackDate) {
+  const createdDate = String(habit?.createdAt || "").slice(0, 10);
+  const firstLoggedDate = normalizedHabitDates(habit)[0] || "";
+  const candidates = [createdDate, firstLoggedDate].filter(validHabitDate);
+  return candidates.length ? candidates.sort()[0] : fallbackDate;
+}
+
+function habitAnalysisData(habits, windowValue = habitAnalysisWindow) {
+  const today = localDateString(new Date());
+  const allTimeStart = habits
+    .map((habit) => habitTrackingStart(habit, today))
+    .filter(validHabitDate)
+    .sort()[0] || today;
+  const requestedDays = Number(windowValue);
+  const startDate = windowValue === "all"
+    ? allTimeStart
+    : localDateString(new Date(
+        habitDateAtNoon(today).setDate(habitDateAtNoon(today).getDate() - requestedDays + 1),
+      ));
+  const periodDays = Math.max(1, habitDaysBetween(startDate, today) + 1);
+  const activeDates = new Set();
+  const weekdayCounts = Array(7).fill(0);
+  const categoryTotals = {};
+  let checkIns = 0;
+  let opportunities = 0;
+
+  const performance = habits.map((habit) => {
+    const trackingStart = habitTrackingStart(habit, startDate);
+    const eligibleStart = trackingStart > startDate ? trackingStart : startDate;
+    const eligibleDays = eligibleStart <= today
+      ? habitDaysBetween(eligibleStart, today) + 1
+      : 0;
+    const dates = normalizedHabitDates(habit).filter(
+      (date) => date >= startDate && date <= today,
+    );
+    dates.forEach((date) => {
+      activeDates.add(date);
+      weekdayCounts[habitDateAtNoon(date).getDay()] += 1;
+    });
+    const category = habit.category || "Other";
+    categoryTotals[category] = (categoryTotals[category] || 0) + dates.length;
+    checkIns += dates.length;
+    opportunities += eligibleDays;
+    return {
+      habit,
+      dates,
+      checkIns: dates.length,
+      eligibleDays,
+      rate: eligibleDays ? Math.min(100, Math.round((dates.length / eligibleDays) * 100)) : 0,
+      lastDate: dates.at(-1) || "",
+      streak: habitStreakStats(habit),
+    };
+  });
+
+  const consistency = opportunities
+    ? Math.min(100, Math.round((checkIns / opportunities) * 100))
+    : 0;
+  const strongestHabit = [...performance]
+    .filter((item) => item.checkIns > 0)
+    .sort((first, second) =>
+      second.rate - first.rate || second.checkIns - first.checkIns ||
+      first.habit.name.localeCompare(second.habit.name),
+    )[0] || null;
+  const weekdayLabels = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const strongestWeekdayIndex = weekdayCounts.reduce(
+    (best, value, index, values) => value > values[best] ? index : best,
+    0,
+  );
+  const sortedCategories = Object.entries(categoryTotals)
+    .filter(([, total]) => total > 0)
+    .sort((first, second) => second[1] - first[1]);
+
+  const bucketSize = Math.max(1, Math.ceil(periodDays / 12));
+  const bucketCount = Math.ceil(periodDays / bucketSize);
+  const trend = Array.from({ length: bucketCount }, (_, index) => {
+    const bucketStart = new Date(habitDateAtNoon(startDate));
+    bucketStart.setDate(bucketStart.getDate() + index * bucketSize);
+    const bucketEnd = new Date(bucketStart);
+    bucketEnd.setDate(bucketEnd.getDate() + bucketSize - 1);
+    const bucketStartKey = localDateString(bucketStart);
+    const bucketEndKey = localDateString(bucketEnd) > today ? today : localDateString(bucketEnd);
+    const total = performance.reduce(
+      (sum, item) => sum + item.dates.filter(
+        (date) => date >= bucketStartKey && date <= bucketEndKey,
+      ).length,
+      0,
+    );
+    return {
+      start: bucketStartKey,
+      end: bucketEndKey,
+      total,
+      label: bucketStart.toLocaleDateString(undefined, {
+        month: "short",
+        day: periodDays <= 120 ? "numeric" : undefined,
+        year: periodDays > 365 ? "2-digit" : undefined,
+      }),
+    };
+  });
+
+  const recentStart = localDateString(new Date(
+    habitDateAtNoon(today).setDate(habitDateAtNoon(today).getDate() - 13),
+  ));
+  const previousStart = localDateString(new Date(
+    habitDateAtNoon(today).setDate(habitDateAtNoon(today).getDate() - 27),
+  ));
+  const previousEnd = localDateString(new Date(
+    habitDateAtNoon(today).setDate(habitDateAtNoon(today).getDate() - 14),
+  ));
+  const allDates = habits.flatMap(normalizedHabitDates);
+  const recentTotal = allDates.filter((date) => date >= recentStart && date <= today).length;
+  const previousTotal = allDates.filter(
+    (date) => date >= previousStart && date <= previousEnd,
+  ).length;
+  const currentStreakLeader = [...performance]
+    .sort((first, second) => second.streak.current - first.streak.current)[0] || null;
+  const observations = [];
+  if (!habits.length) {
+    observations.push("Add a habit to begin building a personal analysis.");
+  } else if (!checkIns) {
+    observations.push(`No check-ins fall within ${windowValue === "all" ? "your recorded history" : `the last ${windowValue} days`}. Try another timeframe or record a completed habit.`);
+  } else {
+    observations.push(
+      `${strongestHabit.habit.name} is your most consistent habit in this period at ${strongestHabit.rate}%.`,
+    );
+    if (weekdayCounts[strongestWeekdayIndex] > 0) {
+      observations.push(
+        `${weekdayLabels[strongestWeekdayIndex]} is your strongest check-in day. Consider placing a more difficult habit beside that existing rhythm.`,
+      );
+    }
+    if (recentTotal > previousTotal) {
+      observations.push(`Momentum is rising: ${recentTotal} check-ins in the latest 14 days, up from ${previousTotal} in the preceding 14 days.`);
+    } else if (recentTotal < previousTotal) {
+      observations.push(`Your latest 14 days contain ${recentTotal} check-ins, down from ${previousTotal}. A smaller daily target may help restore continuity.`);
+    } else {
+      observations.push(`Your latest two 14-day periods are level at ${recentTotal} check-ins each.`);
+    }
+    if (currentStreakLeader?.streak.current > 0) {
+      observations.push(`${currentStreakLeader.habit.name} currently leads your streaks at ${currentStreakLeader.streak.current} ${currentStreakLeader.streak.current === 1 ? "day" : "days"}.`);
+    }
+    if (consistency < 35 && opportunities >= 14) {
+      observations.push("Consistency is below 35% for this period. Focusing on fewer habits or attaching one to a reliable routine may be more sustainable.");
+    } else if (consistency >= 75) {
+      observations.push("Your consistency is at least 75%. Protect the conditions that make this rhythm repeatable before adding more demands.");
+    }
+  }
+
+  const label = windowValue === "all"
+    ? `All recorded history (${formatDate(startDate)} to ${formatDate(today)})`
+    : `Last ${windowValue} days (${formatDate(startDate)} to ${formatDate(today)})`;
+  return {
+    startDate,
+    today,
+    label,
+    periodDays,
+    checkIns,
+    opportunities,
+    consistency,
+    activeDays: activeDates.size,
+    weekdayCounts,
+    weekdayLabels,
+    strongestWeekdayIndex,
+    strongestHabit,
+    categories: sortedCategories,
+    performance,
+    trend,
+    observations,
+  };
+}
+
+function renderHabitAnalysis(habits) {
+  if (!elements.habitAnalysisWindow) return;
+  elements.habitAnalysisWindow.value = habitAnalysisWindow;
+  const analysis = habitAnalysisData(habits);
+  const strongestName = analysis.strongestHabit?.habit.name || "--";
+  elements.habitAnalysisPeriodLabel.textContent = analysis.label;
+  elements.habitAnalysisCheckins.textContent = analysis.checkIns.toLocaleString();
+  elements.habitAnalysisCheckinsNote.textContent = analysis.checkIns
+    ? `${analysis.opportunities.toLocaleString()} possible check-ins across ${habits.length} ${habits.length === 1 ? "habit" : "habits"}`
+    : "No check-ins in this timeframe";
+  elements.habitAnalysisConsistency.textContent = `${analysis.consistency}%`;
+  elements.habitAnalysisActiveDays.textContent = analysis.activeDays.toLocaleString();
+  elements.habitAnalysisActiveDaysNote.textContent = analysis.activeDays
+    ? `${Math.round((analysis.activeDays / analysis.periodDays) * 100)}% of days in this period`
+    : "Days with at least one check-in";
+  elements.habitAnalysisStrongest.textContent = strongestName;
+  elements.habitAnalysisStrongestNote.textContent = analysis.strongestHabit
+    ? `${analysis.strongestHabit.rate}% consistency / ${analysis.strongestHabit.checkIns} check-ins`
+    : "More data will reveal a pattern";
+
+  const trendMax = Math.max(1, ...analysis.trend.map((bucket) => bucket.total));
+  elements.habitTrendChart.innerHTML = analysis.checkIns
+    ? analysis.trend.map((bucket) => `
+        <div class="habit-trend-column" title="${escapeHtml(formatDate(bucket.start))} to ${escapeHtml(formatDate(bucket.end))}: ${bucket.total} check-ins">
+          <strong>${bucket.total}</strong>
+          <div><i style="height: ${Math.max(5, Math.round((bucket.total / trendMax) * 100))}%"></i></div>
+          <span>${escapeHtml(bucket.label)}</span>
+        </div>
+      `).join("")
+    : '<p class="habit-analysis-empty">Check-ins will form a trend chart here.</p>';
+
+  const weekdayMax = Math.max(1, ...analysis.weekdayCounts);
+  elements.habitWeekdayChart.innerHTML = analysis.weekdayLabels.map((label, index) => `
+    <div class="habit-weekday-row">
+      <span>${escapeHtml(label.slice(0, 3))}</span>
+      <div><i style="width: ${Math.round((analysis.weekdayCounts[index] / weekdayMax) * 100)}%"></i></div>
+      <strong>${analysis.weekdayCounts[index]}</strong>
+    </div>
+  `).join("");
+
+  elements.habitAnalysisObservationList.innerHTML = `
+    <ul>${analysis.observations.map((observation) => `<li>${escapeHtml(observation)}</li>`).join("")}</ul>
+  `;
+  const categoryMax = Math.max(1, ...analysis.categories.map(([, total]) => total));
+  elements.habitCategoryAnalysis.innerHTML = analysis.categories.length
+    ? analysis.categories.map(([category, total]) => `
+        <div class="habit-category-row">
+          <div><strong>${escapeHtml(category)}</strong><span>${total} ${total === 1 ? "check-in" : "check-ins"}</span></div>
+          <i><b style="width: ${Math.round((total / categoryMax) * 100)}%; background: ${habitAccent(category)}"></b></i>
+        </div>
+      `).join("")
+    : '<p class="habit-analysis-empty">Category patterns will appear after you log habits.</p>';
+
+  elements.habitPerformanceList.innerHTML = analysis.performance.length
+    ? analysis.performance.map((item) => `
+        <article class="habit-performance-row" style="--habit-accent: ${habitAccent(item.habit.category)}">
+          <div>
+            <strong>${escapeHtml(item.habit.name)}</strong>
+            <span>${escapeHtml(item.habit.category || "Other")} / ${item.checkIns} check-ins</span>
+          </div>
+          <div class="habit-performance-bar"><i style="width: ${item.rate}%"></i></div>
+          <strong>${item.rate}%</strong>
+          <small>${item.lastDate ? `Last: ${escapeHtml(formatDate(item.lastDate))}` : "Not logged in this period"}</small>
+        </article>
+      `).join("")
+    : '<p class="habit-analysis-empty">Individual results will appear after you add a habit.</p>';
+}
+
 function renderLifestyle() {
   if (!currentAccount) return;
   const habits = ownedByCurrent(lifestyleHabits).sort((first, second) =>
@@ -8930,6 +9199,7 @@ function renderLifestyle() {
   elements.lifestyleTodayCount.textContent = todayCount;
   elements.lifestyleWeekCount.textContent = weekCount;
   elements.lifestyleRate.textContent = `${possible ? Math.round((weekCount / possible) * 100) : 0}%`;
+  renderHabitAnalysis(habits);
   elements.habitGrid.innerHTML = habits
     .map((habit) => {
       const dates = normalizedHabitDates(habit);
@@ -10029,6 +10299,78 @@ function printReadingAnalytics() {
   `;
   elements.printSheet.setAttribute("aria-hidden", "false");
   document.title = `${scope.label} Reading Analytics - My Library`;
+  const cleanUp = () => {
+    document.title = previousTitle;
+    elements.printSheet.setAttribute("aria-hidden", "true");
+    window.removeEventListener("afterprint", cleanUp);
+  };
+  window.addEventListener("afterprint", cleanUp);
+  window.print();
+}
+
+function printHabitReport() {
+  const habits = ownedByCurrent(lifestyleHabits).sort((first, second) =>
+    String(first.name).localeCompare(String(second.name), undefined, {
+      sensitivity: "base",
+    }),
+  );
+  const analysis = habitAnalysisData(habits);
+  const previousTitle = document.title;
+  elements.printSheet.innerHTML = `
+    <header>
+      <p>MY LIBRARY / LIFESTYLE</p>
+      <h1>Habit Report</h1>
+      <span>${escapeHtml(currentAccount?.username || "Reader")} / ${escapeHtml(analysis.label)} / Printed ${escapeHtml(new Date().toLocaleDateString())}</span>
+    </header>
+    <main>
+      <section class="print-habit-summary">
+        <article><strong>${analysis.checkIns.toLocaleString()}</strong><span>Check-ins</span></article>
+        <article><strong>${analysis.consistency}%</strong><span>Consistency</span></article>
+        <article><strong>${analysis.activeDays.toLocaleString()}</strong><span>Active days</span></article>
+        <article><strong>${analysis.performance.length.toLocaleString()}</strong><span>Tracked habits</span></article>
+      </section>
+      <article>
+        <h2>Analysis</h2>
+        <ul>${analysis.observations.map((observation) => `<li>${escapeHtml(observation)}</li>`).join("")}</ul>
+      </article>
+      <article>
+        <h2>Individual performance</h2>
+        ${analysis.performance.length ? `
+          <table class="print-habit-table">
+            <thead><tr><th>Habit</th><th>Category</th><th>Check-ins</th><th>Consistency</th><th>Current / best streak</th></tr></thead>
+            <tbody>${analysis.performance.map((item) => `
+              <tr>
+                <td>${escapeHtml(item.habit.name)}</td>
+                <td>${escapeHtml(item.habit.category || "Other")}</td>
+                <td>${item.checkIns.toLocaleString()}</td>
+                <td>${item.rate}%</td>
+                <td>${item.streak.current} / ${item.streak.best} days</td>
+              </tr>
+            `).join("")}</tbody>
+          </table>
+        ` : printEmpty("No habits have been added.")}
+      </article>
+      <article>
+        <h2>Category balance</h2>
+        ${analysis.categories.length
+          ? `<ol>${analysis.categories.map(([category, total]) => `<li><strong>${escapeHtml(category)}</strong><span>${total.toLocaleString()} ${total === 1 ? "check-in" : "check-ins"}</span></li>`).join("")}</ol>`
+          : printEmpty("No category data is available for this timeframe.")}
+      </article>
+      <article>
+        <h2>Check-in history</h2>
+        ${analysis.performance.some((item) => item.dates.length)
+          ? analysis.performance.filter((item) => item.dates.length).map((item) => `
+              <section class="print-habit-history">
+                <h3>${escapeHtml(item.habit.name)}</h3>
+                <p>${item.dates.map((date) => escapeHtml(formatDate(date))).join("; ")}</p>
+              </section>
+            `).join("")
+          : printEmpty("No check-ins are recorded in this timeframe.")}
+      </article>
+    </main>
+  `;
+  elements.printSheet.setAttribute("aria-hidden", "false");
+  document.title = `Habit Report - My Library`;
   const cleanUp = () => {
     document.title = previousTitle;
     elements.printSheet.setAttribute("aria-hidden", "true");
@@ -12461,6 +12803,18 @@ elements.wordhubList.addEventListener("click", (event) => {
 
 elements.openHabitButton.addEventListener("click", () => openHabitForm());
 elements.emptyHabitButton.addEventListener("click", () => openHabitForm());
+elements.printHabitReport.addEventListener("click", printHabitReport);
+elements.habitAnalysisWindow.addEventListener("change", () => {
+  const nextWindow = elements.habitAnalysisWindow.value;
+  if (!HABIT_ANALYSIS_WINDOWS.has(nextWindow)) return;
+  habitAnalysisWindow = nextWindow;
+  localStorage.setItem(HABIT_ANALYSIS_WINDOW_KEY, habitAnalysisWindow);
+  renderHabitAnalysis(ownedByCurrent(lifestyleHabits).sort((first, second) =>
+    String(first.name).localeCompare(String(second.name), undefined, {
+      sensitivity: "base",
+    }),
+  ));
+});
 elements.habitForm.addEventListener("submit", (event) => {
   event.preventDefault();
   if (elements.habitForm.reportValidity()) saveHabitFromForm();

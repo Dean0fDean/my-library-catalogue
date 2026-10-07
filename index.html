@@ -2027,9 +2027,14 @@
                 and notice steady patterns without turning life into a scorecard.
               </p>
             </div>
-            <button class="primary-button" id="open-habit-button" type="button">
-              <span aria-hidden="true">+</span> Add a habit
-            </button>
+            <div class="section-actions lifestyle-actions">
+              <button class="print-list-button" id="print-habit-report" type="button">
+                Print habit report
+              </button>
+              <button class="primary-button" id="open-habit-button" type="button">
+                <span aria-hidden="true">+</span> Add a habit
+              </button>
+            </div>
           </div>
 
           <div class="lifestyle-summary" aria-label="Lifestyle summary">
@@ -2050,6 +2055,90 @@
               <strong id="lifestyle-rate">0%</strong>
             </article>
           </div>
+
+          <section class="habit-analysis" aria-labelledby="habit-analysis-title">
+            <div class="habit-analysis-heading">
+              <div>
+                <p class="eyebrow">PATTERNS OVER TIME</p>
+                <h3 id="habit-analysis-title">Habit analysis</h3>
+                <p id="habit-analysis-period-label">
+                  Insights adapt as you record more check-ins.
+                </p>
+              </div>
+              <label class="habit-analysis-window">
+                <span>Analysis timeframe</span>
+                <select id="habit-analysis-window">
+                  <option value="30">Last 30 days</option>
+                  <option value="90" selected>Last 90 days</option>
+                  <option value="365">Last year</option>
+                  <option value="all">All time</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="habit-analysis-metrics" aria-label="Habit analysis summary">
+              <article>
+                <span>CHECK-INS</span>
+                <strong id="habit-analysis-checkins">0</strong>
+                <small id="habit-analysis-checkins-note">No check-ins yet</small>
+              </article>
+              <article>
+                <span>CONSISTENCY</span>
+                <strong id="habit-analysis-consistency">0%</strong>
+                <small>Completed opportunities in this period</small>
+              </article>
+              <article>
+                <span>ACTIVE DAYS</span>
+                <strong id="habit-analysis-active-days">0</strong>
+                <small id="habit-analysis-active-days-note">Days with at least one check-in</small>
+              </article>
+              <article>
+                <span>STRONGEST RHYTHM</span>
+                <strong id="habit-analysis-strongest">--</strong>
+                <small id="habit-analysis-strongest-note">More data will reveal a pattern</small>
+              </article>
+            </div>
+
+            <div class="habit-analysis-visuals">
+              <article class="habit-analysis-chart">
+                <div class="habit-analysis-chart-heading">
+                  <div>
+                    <span>CHECK-IN TREND</span>
+                    <h4>How your rhythm changes</h4>
+                  </div>
+                </div>
+                <div id="habit-trend-chart" class="habit-trend-chart"></div>
+              </article>
+              <article class="habit-analysis-chart">
+                <div class="habit-analysis-chart-heading">
+                  <div>
+                    <span>WEEKDAY RHYTHM</span>
+                    <h4>When habits happen</h4>
+                  </div>
+                </div>
+                <div id="habit-weekday-chart" class="habit-weekday-chart"></div>
+              </article>
+            </div>
+
+            <div class="habit-analysis-details">
+              <article class="habit-analysis-observations">
+                <span>USEFUL OBSERVATIONS</span>
+                <div id="habit-analysis-observation-list"></div>
+              </article>
+              <article class="habit-analysis-categories">
+                <span>CATEGORY BALANCE</span>
+                <div id="habit-category-analysis"></div>
+              </article>
+            </div>
+
+            <div class="habit-performance-wrap">
+              <div>
+                <span>BY HABIT</span>
+                <h4>Individual performance</h4>
+              </div>
+              <div id="habit-performance-list" class="habit-performance-list"></div>
+            </div>
+          </section>
 
           <div id="habit-grid" class="habit-grid" aria-live="polite"></div>
           <div id="habit-empty" class="habit-empty">

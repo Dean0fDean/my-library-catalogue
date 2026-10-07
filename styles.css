@@ -9138,6 +9138,349 @@ body.feature-menu-open::after {
   font-weight: 400;
 }
 
+.habit-analysis {
+  margin: 1.2rem 0;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  color: var(--paper);
+  background:
+    radial-gradient(circle at 92% 0, rgba(193, 93, 109, 0.22), transparent 22rem),
+    linear-gradient(145deg, #173f31, #102d24);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 18px 46px rgba(23, 42, 34, 0.14);
+}
+
+.habit-analysis-heading,
+.habit-analysis-chart-heading,
+.habit-category-row > div,
+.habit-performance-wrap > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.habit-analysis-heading h3,
+.habit-analysis-chart-heading h4,
+.habit-performance-wrap h4 {
+  margin: 0;
+  font-weight: 400;
+}
+
+.habit-analysis-heading h3 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.habit-analysis-heading > div > p:last-child {
+  margin: 0.45rem 0 0;
+  color: rgba(255, 255, 255, 0.63);
+  font-size: 0.85rem;
+}
+
+.habit-analysis-window {
+  flex: 0 0 min(230px, 42%);
+}
+
+.habit-analysis-window span,
+.habit-analysis-chart-heading span,
+.habit-analysis-observations > span,
+.habit-analysis-categories > span,
+.habit-performance-wrap > div:first-child > span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: rgba(255, 255, 255, 0.52);
+  font: 700 0.55rem/1 Arial, sans-serif;
+  letter-spacing: 0.12em;
+}
+
+.habit-analysis-window select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 2.2rem 0.65rem 0.8rem;
+  color: var(--paper);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.habit-analysis-window select option {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.habit-analysis-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 1.6rem 0;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.habit-analysis-metrics article {
+  min-width: 0;
+  padding: 1rem;
+  background: rgba(8, 29, 23, 0.42);
+}
+
+.habit-analysis-metrics span,
+.habit-analysis-metrics strong,
+.habit-analysis-metrics small {
+  display: block;
+}
+
+.habit-analysis-metrics span {
+  color: rgba(255, 255, 255, 0.5);
+  font: 700 0.52rem/1 Arial, sans-serif;
+  letter-spacing: 0.1em;
+}
+
+.habit-analysis-metrics strong {
+  margin: 0.5rem 0 0.35rem;
+  overflow-wrap: anywhere;
+  color: #f4c9cf;
+  font-size: clamp(1.55rem, 3vw, 2.2rem);
+  font-weight: 400;
+}
+
+.habit-analysis-metrics small {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.habit-analysis-visuals,
+.habit-analysis-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.habit-analysis-chart,
+.habit-analysis-observations,
+.habit-analysis-categories,
+.habit-performance-wrap {
+  min-width: 0;
+  padding: 1.1rem;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.habit-analysis-chart-heading h4,
+.habit-performance-wrap h4 {
+  font-size: 1.35rem;
+}
+
+.habit-trend-chart {
+  min-height: 180px;
+  display: flex;
+  align-items: stretch;
+  gap: clamp(0.25rem, 1vw, 0.65rem);
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+.habit-trend-column {
+  min-width: 28px;
+  flex: 1 0 28px;
+  display: grid;
+  grid-template-rows: 1.2rem minmax(90px, 1fr) auto;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.habit-trend-column strong,
+.habit-trend-column span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habit-trend-column strong {
+  color: #f4c9cf;
+  font: 700 0.66rem/1 Arial, sans-serif;
+}
+
+.habit-trend-column > div {
+  min-height: 90px;
+  display: flex;
+  align-items: end;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.habit-trend-column i {
+  width: 100%;
+  display: block;
+  background: linear-gradient(#e49ba6, #c15d6d);
+  border-radius: 2px 2px 0 0;
+}
+
+.habit-trend-column span {
+  color: rgba(255, 255, 255, 0.5);
+  font: 0.57rem/1 Arial, sans-serif;
+}
+
+.habit-weekday-chart {
+  display: grid;
+  gap: 0.62rem;
+  margin-top: 1.15rem;
+}
+
+.habit-weekday-row {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.habit-weekday-row > span,
+.habit-weekday-row > strong {
+  color: rgba(255, 255, 255, 0.62);
+  font: 700 0.6rem/1 Arial, sans-serif;
+}
+
+.habit-weekday-row > strong {
+  color: #f4c9cf;
+  text-align: right;
+}
+
+.habit-weekday-row > div {
+  height: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+}
+
+.habit-weekday-row i {
+  height: 100%;
+  display: block;
+  background: #d98592;
+  border-radius: inherit;
+}
+
+.habit-analysis-details {
+  margin-top: 1rem;
+}
+
+.habit-analysis-observations ul {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.habit-analysis-observations li {
+  position: relative;
+  padding-left: 1.15rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.habit-analysis-observations li::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  position: absolute;
+  top: 0.48rem;
+  left: 0;
+  background: #d98592;
+  border-radius: 50%;
+}
+
+.habit-category-analysis {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.9rem;
+}
+
+.habit-category-row > div strong,
+.habit-category-row > div span {
+  font-family: Arial, sans-serif;
+  font-size: 0.68rem;
+}
+
+.habit-category-row > div span {
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.habit-category-row > i {
+  height: 6px;
+  display: block;
+  margin-top: 0.38rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+}
+
+.habit-category-row b {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+}
+
+.habit-performance-wrap {
+  margin-top: 1rem;
+}
+
+.habit-performance-list {
+  display: grid;
+  gap: 1px;
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.habit-performance-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) minmax(120px, 2fr) 3rem minmax(130px, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  background: rgba(8, 29, 23, 0.44);
+}
+
+.habit-performance-row > div:first-child strong,
+.habit-performance-row > div:first-child span {
+  display: block;
+}
+
+.habit-performance-row > div:first-child strong {
+  font-weight: 400;
+}
+
+.habit-performance-row > div:first-child span,
+.habit-performance-row small {
+  margin-top: 0.2rem;
+  color: rgba(255, 255, 255, 0.48);
+  font: 0.62rem/1.3 Arial, sans-serif;
+}
+
+.habit-performance-row > strong {
+  color: #f4c9cf;
+  font: 700 0.75rem/1 Arial, sans-serif;
+  text-align: right;
+}
+
+.habit-performance-bar {
+  height: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+}
+
+.habit-performance-bar i {
+  height: 100%;
+  display: block;
+  background: var(--habit-accent);
+  border-radius: inherit;
+}
+
+.habit-analysis-empty {
+  margin: 1rem 0 0;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .habit-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -9622,9 +9965,31 @@ body.feature-menu-open::after {
     flex-direction: column;
   }
 
+  .lifestyle-actions,
+  .habit-analysis-window {
+    width: 100%;
+    max-width: none;
+  }
+
+  .habit-analysis-heading {
+    flex-direction: column;
+  }
+
   .lifestyle-summary,
-  .habit-grid {
+  .habit-grid,
+  .habit-analysis-metrics,
+  .habit-analysis-visuals,
+  .habit-analysis-details {
     grid-template-columns: 1fr;
+  }
+
+  .habit-performance-row {
+    grid-template-columns: minmax(0, 1fr) 3rem;
+  }
+
+  .habit-performance-row > div:first-child,
+  .habit-performance-row small {
+    grid-column: 1 / -1;
   }
 
   .habit-history-panel {
@@ -12039,6 +12404,68 @@ body.habit-celebration-open {
     padding-left: 1rem;
     border-left: 3px solid #555;
     white-space: pre-wrap;
+  }
+
+  .print-habit-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #aaa;
+  }
+
+  .print-habit-summary article {
+    margin: 0;
+    padding: 0.75rem;
+    border: 0;
+    border-right: 1px solid #aaa;
+    text-align: center;
+  }
+
+  .print-habit-summary article:last-child {
+    border-right: 0;
+  }
+
+  .print-habit-summary strong,
+  .print-habit-summary span {
+    display: block;
+  }
+
+  .print-habit-summary strong {
+    font-size: 18pt;
+  }
+
+  .print-habit-summary span {
+    margin-top: 0.2rem;
+    font: 8pt Arial, sans-serif;
+    text-transform: uppercase;
+  }
+
+  .print-habit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 9pt Arial, sans-serif;
+  }
+
+  .print-habit-table th,
+  .print-habit-table td {
+    padding: 0.4rem;
+    border: 1px solid #bbb;
+    text-align: left;
+  }
+
+  .print-habit-history {
+    break-inside: avoid;
+    margin-bottom: 0.8rem;
+  }
+
+  .print-habit-history h3 {
+    margin-bottom: 0.2rem;
+  }
+
+  .print-habit-history p {
+    margin: 0;
+    font: 8.5pt/1.45 Arial, sans-serif;
   }
 
   .print-reading-chart .reading-chart-card {
