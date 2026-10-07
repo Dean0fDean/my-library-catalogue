@@ -9089,8 +9089,20 @@ body.feature-menu-open::after {
   margin-bottom: 1.2rem;
 }
 
+.habit-week-label {
+  margin: -0.15rem 0 0.7rem;
+  color: rgba(23, 42, 34, 0.53);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
 .habit-day {
   min-width: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
   text-align: center;
 }
 
@@ -9126,6 +9138,16 @@ body.feature-menu-open::after {
   outline-offset: 2px;
 }
 
+.habit-day:hover i {
+  border-color: var(--habit-accent);
+  transform: translateY(-2px);
+}
+
+.habit-day:focus-visible {
+  outline: 2px solid var(--habit-accent);
+  outline-offset: 4px;
+}
+
 .habit-check-button {
   width: 100%;
   min-height: 47px;
@@ -9149,6 +9171,96 @@ body.feature-menu-open::after {
 .habit-check-button.logged {
   color: var(--habit-accent);
   background: color-mix(in srgb, var(--habit-accent) 9%, var(--paper));
+}
+
+.habit-history {
+  margin-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--habit-accent) 20%, var(--line));
+}
+
+.habit-history summary {
+  padding: 0.9rem 0 0;
+  color: color-mix(in srgb, var(--habit-accent) 82%, var(--ink));
+  cursor: pointer;
+  font: 700 0.62rem/1.2 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.habit-history summary:focus-visible {
+  outline: 2px solid var(--habit-accent);
+  outline-offset: 4px;
+}
+
+.habit-history-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+.habit-history-panel label > span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: rgba(23, 42, 34, 0.58);
+  font: 700 0.54rem/1 Arial, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.habit-history-panel input {
+  width: 100%;
+  min-height: 43px;
+  padding: 0.65rem 0.75rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid color-mix(in srgb, var(--habit-accent) 28%, var(--line));
+}
+
+.habit-history-panel input:focus {
+  border-color: var(--habit-accent);
+  outline: 3px solid color-mix(in srgb, var(--habit-accent) 12%, transparent);
+}
+
+.habit-history-button {
+  min-height: 43px;
+  padding: 0.7rem 0.9rem;
+  color: var(--paper);
+  background: var(--habit-accent);
+  border: 1px solid var(--habit-accent);
+  font: 700 0.58rem/1.2 Arial, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.habit-history-button.remove {
+  color: #76372a;
+  background: #fff7f3;
+  border-color: rgba(118, 55, 42, 0.35);
+}
+
+.habit-history > p {
+  margin: 0.75rem 0 0;
+  color: rgba(23, 42, 34, 0.57);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 620px) {
+  .lifestyle-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .lifestyle-summary,
+  .habit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .habit-history-panel {
+    grid-template-columns: 1fr;
+  }
 }
 
 .habit-empty {

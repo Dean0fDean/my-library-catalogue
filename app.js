@@ -760,6 +760,8 @@ let readerCatalogueExpanded = false;
 let highlightedCollectionBookId = "";
 let highlightedCollectionBookTimer;
 let habitRewardCounterAnimation;
+let openHabitHistoryId = "";
+let openHabitHistoryDate = "";
 let readingChartsVisible = false;
 let readingAnalyticsRange = "recent-30";
 let readingChartType = READING_CHART_TYPES.has(localStorage.getItem(READING_CHART_TYPE_KEY))
@@ -8826,8 +8828,13 @@ function renderLifestyle() {
   );
   const possible = habits.reduce((total, habit) => {
     const createdDate = String(habit.createdAt || "").slice(0, 10);
-    const eligibleDays = createdDate
-      ? days.filter((day) => day.date >= createdDate).length
+    const firstLoggedDate = normalizedHabitDates(habit)[0] || "";
+    const trackingStart =
+      firstLoggedDate && (!createdDate || firstLoggedDate < createdDate)
+        ? firstLoggedDate
+        : createdDate;
+    const eligibleDays = trackingStart
+      ? days.filter((day) => day.date >= trackingStart).length
       : days.length;
     return total + Math.max(1, eligibleDays);
   }, 0);
@@ -8841,6 +8848,13 @@ function renderLifestyle() {
       const dateSet = new Set(dates);
       const stats = habitStreakStats(habit);
       const completedToday = dateSet.has(today);
+      const historyDate =
+        openHabitHistoryId === habit.id &&
+        validHabitDate(openHabitHistoryDate) &&
+        openHabitHistoryDate <= today
+          ? openHabitHistoryDate
+          : days.at(-2)?.date || today;
+      const historyDateLogged = dateSet.has(historyDate);
       return `
         <article class="habit-card${completedToday ? " completed-today" : ""}" style="--habit-accent: ${habitAccent(habit.category)}">
           <div class="habit-card-heading">
@@ -8859,18 +8873,32 @@ function renderLifestyle() {
             <div><strong>${stats.best}</strong><span>Best streak</span></div>
             <div><strong>${stats.total}</strong><span>Total check-ins</span></div>
           </div>
-          <div class="habit-week" aria-label="Last seven days">
+          <p class="habit-week-label">Click a day to add or remove a check-in.</p>
+          <div class="habit-week" aria-label="Editable check-ins for the last seven days">
             ${days.map((day) => `
-              <div class="habit-day${dateSet.has(day.date) ? " complete" : ""}${day.date === today ? " today" : ""}" title="${escapeHtml(formatDate(day.date))}: ${dateSet.has(day.date) ? "complete" : "not logged"}">
+              <button class="habit-day${dateSet.has(day.date) ? " complete" : ""}${day.date === today ? " today" : ""}" type="button" data-habit-action="toggle-date" data-id="${habit.id}" data-date="${day.date}" aria-pressed="${dateSet.has(day.date)}" aria-label="${dateSet.has(day.date) ? "Remove" : "Log"} ${escapeHtml(habit.name)} for ${escapeHtml(formatDate(day.date))}" title="${escapeHtml(formatDate(day.date))}: ${dateSet.has(day.date) ? "complete - click to undo" : "not logged - click to add"}">
                 <span>${escapeHtml(day.label.slice(0, 1))}</span>
                 <i aria-hidden="true">${dateSet.has(day.date) ? "&#10003;" : ""}</i>
-              </div>
+              </button>
             `).join("")}
           </div>
           <button class="habit-check-button${completedToday ? " logged" : ""}" type="button" data-habit-action="toggle" data-id="${habit.id}" aria-pressed="${completedToday}">
             <span aria-hidden="true">${completedToday ? "&#10003;" : "&hearts;"}</span>
             ${completedToday ? "Logged today - undo" : "Log today"}
           </button>
+          <details class="habit-history"${openHabitHistoryId === habit.id ? " open" : ""}>
+            <summary>Edit check-in history</summary>
+            <div class="habit-history-panel">
+              <label>
+                <span>Choose a date</span>
+                <input type="date" value="${historyDate}" max="${today}" data-habit-history-date data-id="${habit.id}" />
+              </label>
+              <button class="habit-history-button${historyDateLogged ? " remove" : ""}" type="button" data-habit-action="toggle-date" data-id="${habit.id}">
+                ${historyDateLogged ? "Remove check-in" : "Log selected day"}
+              </button>
+            </div>
+            <p>Use this to add a missed check-in or correct an earlier entry. Future dates cannot be logged.</p>
+          </details>
         </article>
       `;
     })
@@ -8985,26 +9013,56 @@ function showHabitReward(habit, previousStreak) {
   });
 }
 
-function toggleHabitToday(id) {
+function validHabitDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
+  const parsed = new Date(`${value}T12:00:00`);
+  return !Number.isNaN(parsed.getTime()) && localDateString(parsed) === value;
+}
+
+function toggleHabitDate(id, dateString) {
   const habit = lifestyleHabits.find(
     (item) => item.id === id && item.ownerId === currentAccount?.id,
   );
   if (!habit) return;
   const today = localDateString(new Date());
+  if (!validHabitDate(dateString) || dateString > today) {
+    showToast("Choose today or an earlier valid date.");
+    return;
+  }
   const dates = normalizedHabitDates(habit);
-  const wasLogged = dates.includes(today);
+  const wasLogged = dates.includes(dateString);
   const previousStreak = habitStreakStats(habit).current;
   habit.logDates = wasLogged
-    ? dates.filter((date) => date !== today)
-    : [...dates, today].sort();
+    ? dates.filter((date) => date !== dateString)
+    : [...dates, dateString].sort();
   habit.updatedAt = new Date().toISOString();
   saveLifestyleHabits();
   renderLifestyle();
-  if (wasLogged) {
-    showToast(`Today's check-in for "${habit.name}" was undone.`);
-  } else {
+  if (dateString === today && !wasLogged) {
     showHabitReward(habit, previousStreak);
+    return;
   }
+  const dateLabel = formatDate(dateString);
+  if (wasLogged) {
+    showToast(`The ${dateLabel} check-in for "${habit.name}" was removed.`);
+  } else {
+    showToast(`"${habit.name}" was logged for ${dateLabel}.`);
+  }
+}
+
+function toggleHabitToday(id) {
+  toggleHabitDate(id, localDateString(new Date()));
+}
+
+function updateHabitHistoryButton(input) {
+  const habit = lifestyleHabits.find(
+    (item) => item.id === input.dataset.id && item.ownerId === currentAccount?.id,
+  );
+  const button = input.closest(".habit-history")?.querySelector(".habit-history-button");
+  if (!habit || !button) return;
+  const isLogged = normalizedHabitDates(habit).includes(input.value);
+  button.textContent = isLogged ? "Remove check-in" : "Log selected day";
+  button.classList.toggle("remove", isLogged);
 }
 
 function dreamDateLabel(value) {
@@ -12212,8 +12270,27 @@ elements.habitGrid.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-habit-action]");
   if (!button) return;
   if (button.dataset.habitAction === "toggle") toggleHabitToday(button.dataset.id);
+  if (button.dataset.habitAction === "toggle-date") {
+    const dateInput = button
+      .closest(".habit-history")
+      ?.querySelector("input[data-habit-history-date]");
+    const date = button.dataset.date || dateInput?.value || "";
+    if (dateInput) {
+      openHabitHistoryId = button.dataset.id;
+      openHabitHistoryDate = date;
+    }
+    toggleHabitDate(button.dataset.id, date);
+  }
   if (button.dataset.habitAction === "edit") openHabitForm(button.dataset.id);
   if (button.dataset.habitAction === "delete") deleteHabit(button.dataset.id);
+});
+elements.habitGrid.addEventListener("change", (event) => {
+  const input = event.target.closest("input[data-habit-history-date]");
+  if (input) {
+    openHabitHistoryId = input.dataset.id;
+    openHabitHistoryDate = input.value;
+    updateHabitHistoryButton(input);
+  }
 });
 document.querySelector("#close-habit-button").addEventListener("click", () => {
   elements.habitDialog.close();
